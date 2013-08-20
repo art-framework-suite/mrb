@@ -1,0 +1,13 @@
+FILE=TABLE
+PRODUCT=mrb
+
+Group:
+  Flavor=ANY
+  Qualifiers=""
+
+Common:
+  Action=Setup
+    setupenv()
+    proddir()
+
+END:
