@@ -1,1 +1,20 @@
 This is the Multi Repository Build System (mrb).
+
+the PROJECT environmental varialbe must be set
+You must also "setup $PROJECT <version> <qualifiers>" before running mrb
+
+case 1:
+mkdir <some working directory>
+cd  <some working directory>
+mrb newDev
+-- will create build, localProductsXXX, and srcs subdirectories HERE
+
+case 2:
+mkdir <some code directory>
+cd <some code directory>
+mrb newDev -T <some working directory>
+-- will create srcs subdirectory HERE
+-- will create <some working directory>/build and <some working directory>/localProductsXXX
+
+localProductsXXX will be of the form localProducts_project_version_qualifiers,
+e.g. localProducts_larsoft_v0_00_01_debug_e2

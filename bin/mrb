@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+
+# mrb is a convenient "umbrella" script used to dispatch other scripts to do development 
+# releated tasks.
+
+# setEnv (setup_for_development) must be sourced in order to affect your environment
+# This is not necessary for the other mrb commands.
+# Did the user source this script?
+isSourced=""
+[[ ${BASH_SOURCE[0]} != "${0}" ]] && isSourced="yes"
+
+# Get the directory where this script resides
+thisDirAB=$(cd ${BASH_SOURCE[0]%/*} && echo $PWD/${BASH_SOURCE[0]##*/} )
+export mrb_dir=`dirname $thisDirAB`
+
+# Determine the name of this command
+thisComFull=$(basename ${BASH_SOURCE[0]})
+thisCom=${thisComFull%.*}
+
+# Export this umbrella command name to subshells (should be mrb)
+export mrb_command="$thisCom"
+
+# Define the short list of commands
+shortComList="(newDev | checkout | newProduct | setEnv | build | zapBuild | updateDepsCM | updateDepsPD)"
+
+# Simple help if no argumets
+if [ $# -lt 1 ]
+then
+  echo "Usage ${mrb_command} $shortComList [-h for help]"
+  echo "           ${mrb_command} -h   gives more information"
+
+  [ $isSourced ] && return || exit 1
+fi
+
+# Get the desired sub-command
+subcom=$1
+shift
+
+# Determine how to dispatch
+case "${subcom}" in
+
+  # Give help if necessary (note the "here document":http://en.wikipedia.org/wiki/Here_document )
+  "-h" | "--help" | "help" | "h" )
+   cat 1>&2 << EOF
+Usage ${mrb_command} $shortComList [-h for help]"
+  
+  Tools ( for help on tool, do "${mrb_command} <tool> -h" )
+
+   newDev (n)            Start a new development area
+   checkout (g)          Clone a Redmine git repository
+   newProduct (p)        Create a new product from scratch
+   setEnv (s)            Setup a development enviornment
+   build (b)             Run buildtool
+   test (b)              Run buildtool
+   install (b)           Run buildtool
+
+   zapBuild (z)          Delete everything in your build area
+   updateDepsCM (uc)     Update CMakeLists.txt file for latest dependencies
+   updateDepsPD (up)     Update product_deps file for latest dependencies
+EOF
+   ;;
+
+  # h3. The available commands 
+
+   # Set up a new development area (calls &l=bin/newDev.sh&)
+    "newDev" | "n"     ) ${mrb_dir}/newDev.sh $*
+        ;;
+
+   # Clone a Redmine git repository (calls &l=bin/checkout.sh&)
+    "checkout" | "g" ) ${mrb_dir}/checkout.sh $*
+        ;;
+
+   # Create a new product (calls &l=bin/newProduct.sh&)
+    "newProduct" | "p" ) ${mrb_dir}/newProduct.sh $*
+        ;; 
+
+  # Set up a development environment (calls &l=bin/setEnv.sh&)
+    "setEnv" | "s" )
+
+      # Check that the user sourced the script
+      if [ "$isSourced" = "yes" ]; then 
+        source ${mrb_dir}/setEnv.sh $*
+      else
+        echo 'You must source to run setEnv'
+        echo ' '
+        ${mrb_dir}/setEnv.sh -H
+        exit 5 
+      fi
+    ;;
+
+# Run buildtool 
+    "build" | "b" ) buildtool $*
+        ;;
+
+   # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)
+    "zapBuild" | "z" ) ${mrb_dir}/zapBuild.sh $*
+        ;;
+
+   # Update CMakeLists.txt for latest dependencies (calls &l=bin/updateDepsCM.sh&)
+    "updateDepsCM" | "uc" ) ${mrb_dir}/updateDepsCM.sh $*
+        ;;
+
+# Update product_deps for latest dependencies (calls &l=bin/product_deps.sh&)
+    "updateDepsPD" | "up" ) ${mrb_dir}/updateDepsPD.sh $*
+        ;;
+
+   # Dump some debug information
+   "debug" )
+      echo "mrb_dir=${mrb_dir}"
+      echo "umbCom=${mrb_command}"
+      echo "isSourced=$isSourced"
+      ;;
+
+    *) echo "Unknown command ${subcom}"
+       echo "Usage ${mrb_command} $shortComList [-h for help]"
+        ;;
+
+esac
