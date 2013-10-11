@@ -1,5 +1,9 @@
 This is the Multi Repository Build System (mrb).
 
+#
+# General Instructions
+#
+
 the PROJECT environmental varialbe must be set
 You must also "setup $PROJECT <version> <qualifiers>" before running mrb
 
@@ -18,3 +22,52 @@ mrb newDev -T <some working directory>
 
 localProductsXXX will be of the form localProducts_project_version_qualifiers,
 e.g. localProducts_larsoft_v0_00_01_debug_e2
+
+
+#
+# Working with LArSoft
+#
+
+This is an example using larsoft v0_00_01, 
+which depends on art v1_06_00 and gcc 4.7.1
+
+source /home/garren/scratch/larsoft/p/setup
+export MRB_PROJECT=larsoft
+export PRODUCTS=/home/garren/scratch/larsoft/p:/products
+setup mrb
+setup larsoft v0_00_01 -q e2:debug
+
+mkdir -p /home/garren/scratch/larsoft/test/t2
+cd /home/garren/scratch/larsoft/test/t2
+mrb newDev
+source ./localProducts_larsoft_v0_00_01_debug_e2/setup
+
+cd srcs
+mrb gitCheckout larcore
+
+cd ../build
+source mrb setup_for_development
+mrb build
+
+
+mkdir $HOME/mtest
+mkdir /home/garren/scratch/larsoft/test/t8
+cd  $HOME/mtest
+mrb newDev -T /home/garren/scratch/larsoft/test/t8
+source /home/garren/scratch/larsoft/test/t8/localProducts_larsoft_v0_00_01_debug_e2/setup
+cd srcs
+mrb gitCheckout larcore
+
+cd /home/garren/scratch/larsoft/test/t8/build
+source mrb setup_for_development
+mrb build -A
+
+
+fresh login
+cd  $HOME/mtest
+source /home/garren/scratch/larsoft/test/t8/localProducts_larsoft_v0_00_01_debug_e2/setup
+cd srcs
+mrb gitCheckout larreco
+
+
+

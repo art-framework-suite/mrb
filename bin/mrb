@@ -3,7 +3,7 @@
 # mrb is a convenient "umbrella" script used to dispatch other scripts to do development 
 # releated tasks.
 
-# setEnv (setup_for_development) must be sourced in order to affect your environment
+# setup_for_development must be sourced in order to affect your environment
 # This is not necessary for the other mrb commands.
 # Did the user source this script?
 isSourced=""
@@ -21,7 +21,7 @@ thisCom=${thisComFull%.*}
 export mrb_command="$thisCom"
 
 # Define the short list of commands
-shortComList="(newDev | checkout | newProduct | setEnv | build | zapBuild | updateDepsCM | updateDepsPD)"
+shortComList="(newDev | gitCheckout | newProduct | setup_for_development | build | zapBuild | updateDepsCM | updateDepsPD)"
 
 # Simple help if no argumets
 if [ $# -lt 1 ]
@@ -36,6 +36,23 @@ fi
 subcom=$1
 shift
 
+# Some sanity checks -
+
+# Make sure we have ups
+if [ -z ${UPS_DIR} ]
+then
+   echo "ERROR: please setup ups"
+   exit 1
+fi
+
+# Make sure the @MRB_PROJECT@ product is setup
+if [ -z ${MRB_PROJECT} ]
+then
+    echo "ERROR: MRB_PROJECT is not defined."
+    echo "       Please set \${MRB_PROJECT} to the master product (e.g., larsoft, uboone, etc.)"
+    exit 2
+fi
+
 # Determine how to dispatch
 case "${subcom}" in
 
@@ -47,9 +64,9 @@ Usage ${mrb_command} $shortComList [-h for help]"
   Tools ( for help on tool, do "${mrb_command} <tool> -h" )
 
    newDev (n)            Start a new development area
-   checkout (g)          Clone a Redmine git repository
+   gitCheckout (g)       Clone a git repository
    newProduct (p)        Create a new product from scratch
-   setEnv (s)            Setup a development enviornment
+   setup_for_development (s)            Setup a development enviornment
    build (b)             Run buildtool
    test (b)              Run buildtool
    install (b)           Run buildtool
@@ -66,24 +83,24 @@ EOF
     "newDev" | "n"     ) ${mrb_dir}/newDev.sh $*
         ;;
 
-   # Clone a Redmine git repository (calls &l=bin/checkout.sh&)
-    "checkout" | "g" ) ${mrb_dir}/checkout.sh $*
+   # Clone a Redmine git repository (calls &l=bin/gitCheckout.sh&)
+    "gitCheckout" | "g" ) ${mrb_dir}/gitCheckout.sh $*
         ;;
 
    # Create a new product (calls &l=bin/newProduct.sh&)
     "newProduct" | "p" ) ${mrb_dir}/newProduct.sh $*
         ;; 
 
-  # Set up a development environment (calls &l=bin/setEnv.sh&)
-    "setEnv" | "s" )
+  # Set up a development environment (calls &l=bin/setup_for_development.sh&)
+    "setup_for_development" | "s" )
 
       # Check that the user sourced the script
       if [ "$isSourced" = "yes" ]; then 
-        source ${mrb_dir}/setEnv.sh $*
+        source ${mrb_dir}/setup_for_development.sh $*
       else
-        echo 'You must source to run setEnv'
+        echo 'You must source to run setup_for_development'
         echo ' '
-        ${mrb_dir}/setEnv.sh -H
+        ${mrb_dir}/setup_for_development.sh -H
         exit 5 
       fi
     ;;
