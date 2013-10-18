@@ -95,11 +95,12 @@ export PRODUCTS=\$thisDirA:$PRODUCTS
 export CMAKE_INSTALL_PREFIX=\$thisDirA
 
 # Set the convience @SRCS@ environment variable
-export BLDLIB=\$thisDirA/..
 export SRCS=$PWD/srcs
 
 # Set up @${MRB_PROJECT}@
 export MRB_PROJECT=${MRB_PROJECT}
+export MRB_BUILDDIR=${MRB_BUILDDIR}
+setup mrb
 $setupLine
 echo Executed $setupLine
 EOF
@@ -230,6 +231,15 @@ if [ ! $justLP ];  then
   # Make directories
   mkdir srcs
   mkdir $topDir/build
+  if [ -z ${MRB_BUILDDIR} ]
+  then
+     MRB_BUILDDIR=$topDir/build
+  elif [ "${MRB_BUILDDIR}" = "${topDir}/build" ]
+  then
+  else
+    echo 'NOTICE: changing MRB_BUILDDIR from ${MRB_BUILDDIR} to ${topDir}/build'
+    MRB_BUILDDIR=$topDir/build
+  fi
   echo 'NOTICE: Created srcs and build directories'
 
   create_master_cmake_file
