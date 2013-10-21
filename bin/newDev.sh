@@ -236,6 +236,7 @@ if [ ! $justLP ];  then
      MRB_BUILDDIR=$topDir/build
   elif [ "${MRB_BUILDDIR}" = "${topDir}/build" ]
   then
+    MRB_BUILDDIR=$topDir/build
   else
     echo 'NOTICE: changing MRB_BUILDDIR from ${MRB_BUILDDIR} to ${topDir}/build'
     MRB_BUILDDIR=$topDir/build
