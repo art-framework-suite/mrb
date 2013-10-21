@@ -51,7 +51,12 @@ then
 fi
 
 # Construct the @git clone@ command
-gitCommand="git clone ssh://p-$REP@cdcvs.fnal.gov/cvs/projects/$REP"
+if [ "${REP}" = "larsoft" ]
+then
+    gitCommand="git clone ssh://p-$REP-alpha@cdcvs.fnal.gov/cvs/projects/$REP-alpha $REP"
+else
+    gitCommand="git clone ssh://p-$REP@cdcvs.fnal.gov/cvs/projects/$REP"
+fi
 
 echo "NOTICE: Running $gitCommand"
 
