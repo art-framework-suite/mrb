@@ -142,6 +142,16 @@ for i in $prods; do
      echo "unsetup -j $i"
      unsetup -j $i
   fi
+  # BUT, we might need to use this package when building another
+  if [ -e $thisDirA/${i}/ups/setup_deps ]
+  then
+     source $thisDirA/${i}/ups/setup_deps $flag $prjQual
+  else
+     echo "$i has no $thisDirA/${i}/ups/setup_deps file"
+     echo "copying ${CETBUILDTOOLS_DIR}/templates/setup_deps.template to $thisDirA/${i}/ups/setup_deps"
+     cp  ${CETBUILDTOOLS_DIR}/templates/setup_deps.template $thisDirA/${i}/ups/setup_deps || exit 1;
+     source $thisDirA/${i}/ups/setup_deps $flag $prjQual
+  fi
 
 done
 
