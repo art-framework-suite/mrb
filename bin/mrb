@@ -3,7 +3,7 @@
 # mrb is a convenient "umbrella" script used to dispatch other scripts to do development 
 # releated tasks.
 
-# setup_for_development must be sourced in order to affect your environment
+# setEnv must be sourced in order to affect your environment
 # This is not necessary for the other mrb commands.
 # Did the user source this script?
 isSourced=""
@@ -21,7 +21,7 @@ thisCom=${thisComFull%.*}
 export mrb_command="$thisCom"
 
 # Define the short list of commands
-shortComList="(newDev | gitCheckout | newProduct | setup_for_development | build | zapBuild | updateDepsCM | updateDepsPD)"
+shortComList="(newDev | gitCheckout | newProduct | setEnv | build | zapBuild | updateDepsCM | updateDepsPD)"
 
 # Simple help if no argumets
 if [ $# -lt 1 ]
@@ -66,7 +66,7 @@ Usage ${mrb_command} $shortComList [-h for help]"
    newDev (n)            Start a new development area
    gitCheckout (g)       Clone a git repository
    newProduct (p)        Create a new product from scratch
-   setup_for_development (s)            Setup a development enviornment
+   setEnv (s)            Setup a development enviornment
    build (b)             Run buildtool
    test (b)              Run buildtool
    install (b)           Run buildtool
@@ -91,22 +91,22 @@ EOF
     "newProduct" | "p" ) ${mrb_dir}/newProduct.sh $*
         ;; 
 
-  # Set up a development environment (calls &l=bin/setup_for_development.sh&)
-    "setup_for_development" | "s" )
+  # Set up a development environment (calls &l=bin/setEnv.sh&)
+    "setEnv" | "s" )
 
       # Check that the user sourced the script
       if [ "$isSourced" = "yes" ]; then 
-        source ${mrb_dir}/setup_for_development.sh $*
+        source ${mrb_dir}/setEnv.sh $*
       else
-        echo 'You must source to run setup_for_development'
+        echo 'You must source to run setEnv'
         echo ' '
-        ${mrb_dir}/setup_for_development.sh -H
+        ${mrb_dir}/setEnv.sh -H
         exit 5 
       fi
     ;;
 
 # Run buildtool 
-    "build" | "b" ) buildtool $*
+    "build" | "b" ) buildtool -b -i $*
         ;;
 
    # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)

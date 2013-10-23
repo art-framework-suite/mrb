@@ -7,7 +7,7 @@
 # * Construct a @setup@ script in local products
 
 # Within the srcs area is a top level @CMakeLists.txt@ file so that, if you want, you can
-# build everything in @srcs@. It also makes a main @setup_for_development@ script. 
+# build everything in @srcs@. It also makes a main @setEnv@ script. 
 
 # The local products area directory name has the version and qualifier of @${MRB_PROJECT}@ that you
 # currently have set up. It also makes a setup script in there that is necessary to set up
@@ -24,7 +24,7 @@ fullCom="${mrb_command} $thisCom"
 function usage() 
 {
   cat 1>&2 << EOF
-Usage: $fullCom [-n | -p] [-f] [-T dir] 
+Usage: $fullCom [-n | -p] [-f] [-T dir] [-V project_version] [-Q qualifiers]
   Make a new development area by creating srcs, build, and products directories.
   Options:
 
@@ -39,6 +39,10 @@ Usage: $fullCom [-n | -p] [-f] [-T dir]
           to place the products and build areas elsewhere. 
 
      -T <dir>  = Where to put the build and localProducts directories (default is current directory next to srcs)
+     
+     -V <version> = Build for this version instead of the default
+     
+     -Q <qualifiers> = Build for these qualifiers instead of the default
 
      These options are not typically used:
             -n = do not make the products area
@@ -100,9 +104,11 @@ export SRCS=$PWD/srcs
 # Set up @${MRB_PROJECT}@
 export MRB_PROJECT=${MRB_PROJECT}
 export MRB_BUILDDIR=${MRB_BUILDDIR}
+export MRB_VERSION=${MRB_VERSION}
+export MRB_QUALS=${MRB_QUALS}
 setup mrb
-$setupLine
-echo Executed $setupLine
+##$setupLine
+##echo Executed $setupLine
 EOF
 # --- End of HERE document for localProducts.../setup ---
 
@@ -126,17 +132,21 @@ justLP=""
 doForce=""
 topDir="."
 buildDirTop="."
+currentDir=${PWD}
 
 # Process options
-while getopts ":hnfpT:" OPTION
+while getopts ":hnfpQ:T:V:" OPTION
 do
     case $OPTION in
         h   ) usage ; exit 0 ;;
         n   ) echo 'NOTICE: Will not make local products area' ; doLP="" ;;
         p   ) echo 'NOTICE: Just make products area' ; justLP="yes" ;;
         f   ) doForce="yes";;
+        Q   ) echo "NOTICE: using $OPTARG qualifiers"; qualList=$OPTARG ;;
         T   ) echo "NOTICE: localPproducts and build areas will go to $OPTARG" ; topDir=$OPTARG ;;
-        *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
+        V   ) echo "NOTICE: building for $OPTARG"; thisVersion=$OPTARG ;;
+	:   ) echo "ERROR: -$OPTARG requires an argument"; usage; exit 1 ;;
+        ?   ) echo "ERROR: Unknown option -$OPTARG" ; usage ; exit 1 ;;
     esac
 done
 
@@ -158,17 +168,46 @@ then
 fi
 MRB_PROJECTUC=`echo ${MRB_PROJECT} | tr '[:lower:]' '[:upper:]'`
 prjvername="${MRB_PROJECTUC}_VERSION"
-prjver="${!prjvername}"
+oldprjver="${!prjvername}"
+if [ -z ${thisVersion} ]
+then
+    prjver="${oldprjver}"
+else
+    prjver="${thisVersion}"
+fi
 prjdirname="${MRB_PROJECTUC}_DIR"
 prjdir="${!prjdirname}"
-if [ -z ${prjver} ]
+MRB_VERSION=${prjver}
+if [ -z ${prjdir} ] && [ -z ${qualList} ]
 then
-    echo "ERROR: ${MRB_PROJECT} product is not setup. You must setup the desired version of ${MRB_PROJECT}"
+    echo "ERROR: ${MRB_PROJECT} product is not setup."
+    echo "       You must EITHER setup the desired version of ${MRB_PROJECT} OR specify the qualifiers"
+    echo "       e.g., mrb newDev -V ${prjver} -Q e2:debug"
     echo "       Available versions of ${MRB_PROJECT}:"
     ups list -aK+ ${MRB_PROJECT}
     exit 2
 fi
+# now sort out the qualifier list
+if [ -z ${qualList} ]
+then
+    # Let's figure out where the product lives
+    project_dir=$(dirname ${prjdir} | xargs dirname )
+
+    # Determine the quailfier (replace : with -)
+    setupname="SETUP_${MRB_PROJECTUC}"
+    project_qual=$(echo ${!setupname} | cut -d' ' -f8)
+
+    # Replace : with _ in directory
+    prjqual=$(echo $project_qual | tr : _)
+
+    MRB_QUALS=${project_qual}
+else
+    project_dir=$(dirname ${UPS_DIR} | xargs dirname | xargs dirname )
+    MRB_QUALS=${qualList}
+fi
+
 echo "building development area for ${MRB_PROJECT} ${prjver}"
+
 
 # Make sure we aren't off of a build or srcs directory...
 
@@ -177,8 +216,8 @@ pwda="$(pwd)/"
 
 get_mrb_bin
 
-echo ${mrb_dir}
-echo ${mrb_bin}
+##echo ${mrb_dir}
+##echo ${mrb_bin}
 
 # Are we within srcs?
 if echo $pwda | grep -q '/srcs/';
@@ -231,28 +270,20 @@ if [ ! $justLP ];  then
   # Make directories
   mkdir srcs
   mkdir $topDir/build
-  if [ -z ${MRB_BUILDDIR} ]
-  then
-     MRB_BUILDDIR=$topDir/build
-  elif [ "${MRB_BUILDDIR}" = "${topDir}/build" ]
-  then
-    MRB_BUILDDIR=$topDir/build
-  else
-    echo 'NOTICE: changing MRB_BUILDDIR from ${MRB_BUILDDIR} to ${topDir}/build'
-    MRB_BUILDDIR=$topDir/build
-  fi
+  MRB_BUILDDIR=${currentDir}/build
+  echo "MRB_BUILDDIR is ${currentDir}/build"
   echo 'NOTICE: Created srcs and build directories'
 
   create_master_cmake_file
 
-  # Make the top setup_for_development script (this is more complicated, so we'll just copy it from
-  # @templates@). See &l=templates/setup_for_development_top& for the template
-  cp ${mrb_dir}/../templates/setup_for_development_top srcs/setup_for_development
-  if [ -e srcs/setup_for_development ]
+  # Make the top setEnv script (this is more complicated, so we'll just copy it from
+  # @templates@). See &l=templates/setEnv& for the template
+  cp ${mrb_dir}/../templates/setEnv srcs/setEnv
+  if [ -e srcs/setEnv ]
   then
-    chmod a+x srcs/setup_for_development
-    echo 'NOTICE: Created srcs/setup_for_development'
-  else echo 'ERROR: failed to create srcs/setup_for_development'; exit 9
+    chmod a+x srcs/setEnv
+    echo 'NOTICE: Created srcs/setEnv'
+  else echo 'ERROR: failed to create srcs/setEnv'; exit 9
   fi
 
   # If we're on MacOSX, then copy the xcodeBuild.sh file
@@ -268,23 +299,19 @@ fi
 # Create local products area if necessary
 if [ $doLP ]; then
     # Prepare the setup script in @local_products@
-  
-    # Let's figure out where the g-2 product lives
-    project_dir=$(dirname ${prjdir} | xargs dirname )
-
-    # Determine the quailfier (replace : with -)
-    setupname="SETUP_${MRB_PROJECTUC}"
-    project_qual=$(echo ${!setupname} | cut -d' ' -f8)
-
-    # Replace : with _ in directory
-    prjqual=$(echo $project_qual | tr : _)
-
-    # Construct the version and qualifier string
-    dirVerQual="_${MRB_PROJECT}_${prjver}_${prjqual}"
 
     # Construct the call for the setup
-    setupLine="setup ${MRB_PROJECT} ${prjver} -q \"${project_qual}\""
+    if [ `ups exist ${MRB_PROJECT} ${prjver} -q ${MRB_QUALS}` ]
+    then
+        setupLine="setup ${MRB_PROJECT} ${prjver} -q \"${MRB_QUALS}\""
+    else
+        setupLine="setup ${MRB_PROJECT} ${oldprjver} -q \"${MRB_QUALS}\""
+    fi
+    MRB_QUALS=${MRB_QUALS}
 
+    # Construct the version and qualifier string
+    qualdir=`echo ${MRB_QUALS} | sed s'/:/_/'`
+    dirVerQual="_${MRB_PROJECT}_${prjver}_${qualdir}"
     # Construct the name of the @local_products@ directory
     dirName="$topDir/localProducts${dirVerQual}"
 
