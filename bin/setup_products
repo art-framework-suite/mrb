@@ -102,7 +102,7 @@ if ( $simple ) {
 }
 
 @package_list = get_package_list( $cmakefile, DIAG );
-print DIAG "DIAGNOSTICS: product list $#package_list @package_list\n";
+print DIAG "DIAGNOSTICS: packages to check: $#package_list @package_list\n";
 for $i ( 0 .. $#package_list ) {
   $pkg=$package_list[$i];
   $pfile=$sourcedir."/".$pkg."/ups/product_deps";
@@ -117,6 +117,7 @@ print TSET "setup -B cetpkgsupport \n";
 print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
 print DIAG "DIAGNOSTICS: product name $#productnames @productnames\n";
 print DIAG "DIAGNOSTICS: product version $#productversn @productversn\n";
+@setup_list=( cetbuildtools, cetpkgsupport );
 for $i ( 0 .. $#package_list ) {
   $pkg=$package_list[$i];
   $pkgdir = $builddir."/".$pkg;
@@ -173,20 +174,31 @@ for $i ( 0 .. $#package_list ) {
   ($ecount, @ehash) = find_only_for_build_products( $pfile );
 
   foreach $i ( 1 .. $ecount ) {
-    if( $ehash[$i][0] eq "cetbuildtools" ) {
-    } else {
+    $print_setup=true;
+    foreach $j ( 0 .. $#setup_list ) {
+      if( $ehash[$i][0] eq $setup_list[$j] ) {
+        $print_setup=false;
+      }
+    }
+    if ( $print_setup eq "true" ) {
       print TSET "setup -B $ehash[$i][0] $ehash[$i][1]\n";
       print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
-      ##print TSET " echo \$setup_fail \n"; 
     }
   }
   # are there products without listed qualifiers?
   @pkeys = keys %phash;
   foreach $i ( 1 .. $#pkeys ) {
+    ##print DIAG "searching for $pkeys[$i] qualifiers in $product\n";
     $p_has_qual = 0;
-    foreach $j ( 1 .. $ndeps ) {
-      if ( $pkeys[$i] eq $qlist[0][$j] ) {
-	 $p_has_qual++;
+    foreach $k ( 0 .. $#setup_list ) {
+      if( $pkeys[$i] eq $setup_list[$k] ) {
+	     $p_has_qual++;
+      } else {
+	foreach $j ( 1 .. $ndeps ) {
+	  if ( $pkeys[$i] eq $qlist[0][$j] ) {
+	     $p_has_qual++;
+	  }
+	}
       }
     }
     if ( $p_has_qual == 0 ) {
@@ -200,19 +212,26 @@ for $i ( 0 .. $#package_list ) {
       $match++;
       foreach $j ( 1 .. $ndeps ) {
 	$print_setup=true;
+	# are we building this product?
 	for $k ( 0 .. $#productnames ) {
 	  if ( $productnames[$k] eq $qlist[0][$j] ) {
 	     $print_setup=false;
 	  }
 	}
+	# is this product already in the setup list?
+	foreach $k ( 0 .. $#setup_list ) {
+	  if( $setup_list[$k] eq $qlist[0][$j] ) {
+	    $print_setup=false;
+	  }
+	}
+	##print DIAG "should I setup $qlist[0][$j]? ${print_setup}\n";
         if ( $print_setup eq "true" ) {
+	  push( @setup_list, $qlist[0][$j] );
 	  if ( $qlist[$i][$j] eq "-" ) {
 	  } elsif ( $qlist[$i][$j] eq "-nq-" ) {
             print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, TSET );
-	    #print TSET "setup -B $qlist[0][$j] $phash{$qlist[0][$j]} \n";
 	  } elsif ( $qlist[$i][$j] eq "-b-" ) {
             print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, TSET );
-	    #print TSET "setup -B $qlist[0][$j] $phash{$qlist[0][$j]} \n";
 	  } else {
 	    @qwords = split(/:/,$qlist[$i][$j]);
 	    $ql="+".$qwords[0];
@@ -220,14 +239,11 @@ for $i ( 0 .. $#package_list ) {
 	      $ql = $ql.":+".$qwords[$j];
 	    }
             print_setup_qual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ql, $ohash{$qlist[0][$j]}, TSET );
-	    #print TSET "setup -B $qlist[0][$j] $phash{$qlist[0][$j]} -q $ql \n";
 	  }
 	}
       }
     }
   }
-  ##print TSET " echo \$setup_fail \n"; 
-  ##print TSET "test \"\$setup_fail\" =  \"true\" && return 1\n"; 
   # allow for the case where there are no dependencies
   if ( $match == 0 ) {
      if( $phash{none} eq "none" ) {
@@ -253,8 +269,8 @@ $cetfl = cetpkg_info_file( $mrb_project, $mrb_version, $mrb_version, $mrb_quals,
 
 # cleanup
 close(TSET);
-print "$tmpfl\n";
 close(DIAG);
+print "$tmpfl\n";
 
 
 exit 0;
