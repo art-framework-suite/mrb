@@ -49,7 +49,7 @@ for $i ( 2 .. $#ARGV ) {
 
 # use this file for debugging
 $diagfl = $builddir."/diag_report";
-open(DIAG, "> $diagfl") or die "Couldn't open $diagfl";
+open(DIAG, "+> $diagfl") or die "Couldn't open $diagfl";
 
 $srcbase = basename($sourcedir);
 if ( $srcbase eq "ups" ) {
@@ -74,154 +74,172 @@ if ( $srcbase eq "ups" ) {
 } else {
     $inputdir = $sourcedir."/ups";
 }
-print DIAG "setup_products debug info: source dir is $sourcedir\n";
+##print DIAG "setup_products debug info: source dir is $sourcedir\n";
 
 require mrb_parse_deps;
 
-$tmpfl = $builddir."/".$MRB_PROJECT."-".$version;
-open(TSET, "> $tmpfl") or die "Couldn't open $tmpfl";
+$mrb_project = $ENV{MRB_PROJECT};
+$mrb_version = $ENV{MRB_VERSION};
+$mrb_quals = $ENV{MRB_QUALS};
+$tmpfl = $builddir."/".$mrb_project."-".$mrb_version;
+print DIAG "opening $tmpfl for $mrb_project $mrb_version\n";
+open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
 # have to find the list of packages to traverse
-$cfile=$sourcedir."/CMakeLists.txt";
+$cmakefile=$sourcedir."/CMakeLists.txt";
 
-print DIAG "setup_products debug info: cfile  is $cfile\n";
-
-@product_list = get_package_list( $cfile, DIAG );
-print DIAG "DIAGNOSTICS: product list $#product_list @product_list\n";
-for $i ( 0 .. $#product_list ) {
-  $pkg=$product_list[$i];
-  $pfile=$sourcedir."/".$pkg."/ups/product_deps";
-  print DIAG "checking $pfile for $pkg \n";
-  ($product[$i], $version[$i], $default_ver[$i], $default_qual[$i], %phash) = parse_product_list( $pfile, DIAG );
-  print DIAG "found $product[$i] $version[$i] $default_ver[$i] $default_qual[$i]\n";
-}
-
-exit 0;
-
-$pfile=$inputdir."/product_deps";
-
-($product, $version, $default_ver, $default_qual, %phash) = parse_product_list( $pfile );
-
-$tmpfl = $builddir."/".$MRB_PROJECT."-".$version;
-open(TSET, "> $tmpfl") or die "Couldn't open $tmpfl";
-
-($ndeps, @qlist) = parse_qualifier_list( $pfile, TSET );
-
-if ( $qual ) {
-  $qual = $qual.$dop;
-  $qdir = $qdir.$dop;
-} else {
-  $dq = find_default_qual( $pfile );
-  if ( $dq ) {
-    $qual = $dq.":";
-    $qdir = $dq."-";
-    $qual = $qual.$dop;
-    $qdir = $qdir.$dop;
-  } elsif ( $simple ) {
-    $qual = "-nq-";
-  } else {
-    $errfl2 = $builddir."/error-".$product."-".$version;
-    open(ERR2, "> $errfl2") or die "Couldn't open $errfl2";
-    print ERR2 "\n";
-    print ERR2 "unsetenv_ CETPKG_NAME\n";
-    print ERR2 "unsetenv_ CETPKG_VERSION\n";
-    print ERR2 "unsetenv_ CETPKG_QUAL\n";
-    print ERR2 "unsetenv_ CETPKG_TYPE\n";
-    print ERR2 "echo \"ERROR: no qualifiers specified\"\n";
-    print ERR2 "echo \"ERROR: add a defaultqual line to $pfile\"\n";
-    print ERR2 "echo \"ERROR: or specify the qualifier(s) on the command line\"\n";
-    print ERR2 "echo \"USAGE: setup_products <input-directory> <-d|-o|-p> <qualifiers>\"\n";
-    print ERR2 "return 1\n";
-    close(ERR2);
-    print "$errfl2\n";
-    exit 0;
-  }
-}
-#print DIAG "setup_products debug info: qual $qual\n";
-
-$cetfl = cetpkg_info_file( $product, $version, $default_ver, $qual, $type, $sourcedir, $builddir );
-(%ohash) = find_optional_products( $pfile );
-($ecount, @ehash) = find_only_for_build_products( $pfile );
-
+##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
 print TSET "setenv UPS_OVERRIDE -B\n";
-print TSET "setenv CETPKG_NAME $product\n";
-print TSET "setenv CETPKG_VERSION $version\n";
+print TSET "setenv CETPKG_NAME $mrb_project\n";
+print TSET "setenv CETPKG_VERSION $mrb_version\n";
 if ( $simple ) {
   print TSET "unsetenv_ CETPKG_QUAL\n";
   print TSET "unsetenv_ CETPKG_TYPE\n";
 } else {
-  print TSET "setenv CETPKG_QUAL $qual\n";
+  print TSET "setenv CETPKG_QUAL $mrb_quals\n";
   print TSET "setenv CETPKG_TYPE $type\n";
+}
+
+@package_list = get_package_list( $cmakefile, DIAG );
+print DIAG "DIAGNOSTICS: product list $#package_list @package_list\n";
+for $i ( 0 .. $#package_list ) {
+  $pkg=$package_list[$i];
+  $pfile=$sourcedir."/".$pkg."/ups/product_deps";
+  ##print DIAG "checking $pfile for $pkg \n";
+  ($productnames[$i], $productversn[$i]) = get_product_name( $pfile, DIAG );
+  $cetbver[$i] = find_cetbuildtools( $pfile );
+  print DIAG "DIAGNOSTICS: cetbuildtools $cetbver[$i]\n";
+print TSET "setup -B cetbuildtools $cetbver[$i]\n";
+print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
 }
 print TSET "setup -B cetpkgsupport \n";
 print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
-foreach $i ( 1 .. $ecount ) {
-  if( $ehash[$i][0] eq "cetbuildtools" ) {
-  } else {
-    print TSET "setup -B $ehash[$i][0] $ehash[$i][1]\n";
-    print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
-    ##print TSET " echo \$setup_fail \n"; 
+print DIAG "DIAGNOSTICS: product name $#productnames @productnames\n";
+print DIAG "DIAGNOSTICS: product version $#productversn @productversn\n";
+for $i ( 0 .. $#package_list ) {
+  $pkg=$package_list[$i];
+  $pfile=$sourcedir."/".$pkg."/ups/product_deps";
+  print DIAG "checking $pfile for $pkg \n";
+  ($product, $version, $default_ver, $default_qual, %phash) = parse_product_list( $pfile, DIAG );
+  print DIAG "found $product $version $default_ver $default_qual\n";
+  ##print DIAG "should match $productnames[$i] $productversn[$i]\n";
+  if ( $product ne $productnames[$i] ) {
+     print DIAG "ERROR: product names do not match: $product vs $productnames[$i]\n";
+     exit 1;
   }
-}
-# are there products without listed qualifiers?
-@pkeys = keys %phash;
-foreach $i ( 1 .. $#pkeys ) {
-  $p_has_qual = 0;
-  foreach $j ( 1 .. $ndeps ) {
-    if ( $pkeys[$i] eq $qlist[0][$j] ) {
-       $p_has_qual++;
+  if ( $version ne $productversn[$i] ) {
+     print DIAG "ERROR: version names do not match: $version vs $productversn[$i]\n";
+     exit 1;
+  }
+  # continue parsing for this package
+  ($ndeps, @qlist) = parse_qualifier_list( $pfile, TSET );
+
+  if ( $qual ) {
+    $qual = $qual.$dop;
+    $qdir = $qdir.$dop;
+  } else {
+    $dq = find_default_qual( $pfile );
+    if ( $dq ) {
+      $qual = $dq.":";
+      $qdir = $dq."-";
+      $qual = $qual.$dop;
+      $qdir = $qdir.$dop;
+    } elsif ( $simple ) {
+      $qual = "-nq-";
+    } else {
+      $errfl2 = $builddir."/error-".$product."-".$version;
+      open(ERR2, "> $errfl2") or die "Couldn't open $errfl2";
+      print ERR2 "\n";
+      print ERR2 "unsetenv_ CETPKG_NAME\n";
+      print ERR2 "unsetenv_ CETPKG_VERSION\n";
+      print ERR2 "unsetenv_ CETPKG_QUAL\n";
+      print ERR2 "unsetenv_ CETPKG_TYPE\n";
+      print ERR2 "echo \"ERROR: no qualifiers specified\"\n";
+      print ERR2 "echo \"ERROR: add a defaultqual line to $pfile\"\n";
+      print ERR2 "echo \"ERROR: or specify the qualifier(s) on the command line\"\n";
+      print ERR2 "echo \"USAGE: setup_products <input-directory> <-d|-o|-p> <qualifiers>\"\n";
+      print ERR2 "return 1\n";
+      close(ERR2);
+      print "$errfl2\n";
+      exit 0;
     }
   }
-  if ( $p_has_qual == 0 ) {
-    print_setup_noqual( $pkeys[$i], $phash{$pkeys[$i]}, $ohash{$pkeys[$i]}, TSET );
+  print DIAG "setup_products: using qualifier $qual for $product\n";
+
+  (%ohash) = find_optional_products( $pfile );
+  ($ecount, @ehash) = find_only_for_build_products( $pfile );
+
+  foreach $i ( 1 .. $ecount ) {
+    if( $ehash[$i][0] eq "cetbuildtools" ) {
+    } else {
+      print TSET "setup -B $ehash[$i][0] $ehash[$i][1]\n";
+      print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
+      ##print TSET " echo \$setup_fail \n"; 
+    }
   }
-}
-# now loop over the qualifier list
-$match = 0;
-foreach $i ( 1 .. $#qlist ) {
-  if ( compare_qual( $qlist[$i][0], $qual ) ) {
-    $match++;
+  # are there products without listed qualifiers?
+  @pkeys = keys %phash;
+  foreach $i ( 1 .. $#pkeys ) {
+    $p_has_qual = 0;
     foreach $j ( 1 .. $ndeps ) {
-      if ( $qlist[$i][$j] eq "-" ) {
-      } elsif ( $qlist[$i][$j] eq "-nq-" ) {
-        print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, TSET );
-	#print TSET "setup -B $qlist[0][$j] $phash{$qlist[0][$j]} \n";
-      } elsif ( $qlist[$i][$j] eq "-b-" ) {
-        print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, TSET );
-	#print TSET "setup -B $qlist[0][$j] $phash{$qlist[0][$j]} \n";
-      } else {
-	@qwords = split(/:/,$qlist[$i][$j]);
-	$ql="+".$qwords[0];
-	foreach $j ( 1 .. $#qwords ) {
-	  $ql = $ql.":+".$qwords[$j];
+      if ( $pkeys[$i] eq $qlist[0][$j] ) {
+	 $p_has_qual++;
+      }
+    }
+    if ( $p_has_qual == 0 ) {
+      print_setup_noqual( $pkeys[$i], $phash{$pkeys[$i]}, $ohash{$pkeys[$i]}, TSET );
+    }
+  }
+  # now loop over the qualifier list
+  $match = 0;
+  foreach $i ( 1 .. $#qlist ) {
+    if ( compare_qual( $qlist[$i][0], $qual ) ) {
+      $match++;
+      foreach $j ( 1 .. $ndeps ) {
+	if ( $qlist[$i][$j] eq "-" ) {
+	} elsif ( $qlist[$i][$j] eq "-nq-" ) {
+          print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, TSET );
+	  #print TSET "setup -B $qlist[0][$j] $phash{$qlist[0][$j]} \n";
+	} elsif ( $qlist[$i][$j] eq "-b-" ) {
+          print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, TSET );
+	  #print TSET "setup -B $qlist[0][$j] $phash{$qlist[0][$j]} \n";
+	} else {
+	  @qwords = split(/:/,$qlist[$i][$j]);
+	  $ql="+".$qwords[0];
+	  foreach $j ( 1 .. $#qwords ) {
+	    $ql = $ql.":+".$qwords[$j];
+	  }
+          print_setup_qual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ql, $ohash{$qlist[0][$j]}, TSET );
+	  #print TSET "setup -B $qlist[0][$j] $phash{$qlist[0][$j]} -q $ql \n";
 	}
-        print_setup_qual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ql, $ohash{$qlist[0][$j]}, TSET );
-	#print TSET "setup -B $qlist[0][$j] $phash{$qlist[0][$j]} -q $ql \n";
       }
     }
   }
-}
-##print TSET " echo \$setup_fail \n"; 
-##print TSET "test \"\$setup_fail\" =  \"true\" && return 1\n"; 
-# allow for the case where there are no dependencies
-if ( $match == 0 ) {
-   if( $phash{none} eq "none" ) {
-     #print "this package has no dependencies\n";
-   } else {
-     print TSET "\n";
-     print TSET "echo \"ERROR: failed to find any dependent products for $product $version -q $qual\"\n";
-     print TSET "echo \"       The following qualifier combinations are recognized:\"\n";
-     foreach $i ( 1 .. $#qlist ) {
-	 print TSET "echo \"         $qlist[$i][0] \"\n";
+  ##print TSET " echo \$setup_fail \n"; 
+  ##print TSET "test \"\$setup_fail\" =  \"true\" && return 1\n"; 
+  # allow for the case where there are no dependencies
+  if ( $match == 0 ) {
+     if( $phash{none} eq "none" ) {
+       #print "this package has no dependencies\n";
+     } else {
+       print TSET "\n";
+       print TSET "echo \"ERROR: failed to find any dependent products for $product $version -q $qual\"\n";
+       print TSET "echo \"       The following qualifier combinations are recognized:\"\n";
+       foreach $i ( 1 .. $#qlist ) {
+	   print TSET "echo \"         $qlist[$i][0] \"\n";
+       }
+       print TSET "return 1\n";
+       print TSET "\n";
      }
-     print TSET "return 1\n";
-     print TSET "\n";
-   }
-}
+  }
 
+}
+$cetfl = cetpkg_info_file( $mrb_project, $mrb_version, $default_ver, $mrb_quals, $type, $sourcedir, $builddir );
+
+# cleanup
 close(TSET);
 print "$tmpfl\n";
 close(DIAG);
 
-exit 0;
 
+exit 0;

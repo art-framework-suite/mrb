@@ -1,4 +1,4 @@
-# parse product_deps and qualifier_deps
+# parse product_deps
 
 # product_deps format:
 
@@ -35,11 +35,15 @@
 
 sub get_package_list {
   my @params = @_;
-  my $dfile = $params[1];
+  my $srcdir = $params[1];
+  my $dfile = $params[2];
   my $plist;
+  my $pdep;
+  my $pnames;
+  my $pver;
   $i = 0;
-  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
-  while ( $line=<PIN> ) {
+  open(CIN, "< $params[0]") or die "Couldn't open $params[0]";
+  while ( $line=<CIN> ) {
     chop $line;
     if ( index($line,"#") == 0 ) {
     } elsif ( $line !~ /\w+/ ) {
@@ -52,29 +56,55 @@ sub get_package_list {
       }
     }
   }
-  close(PIN);
-  print $dfile "get_package_list: found $i packages\n";
-  for $ii ( 0 .. $#plist ) {
-    print $dfile "get_package_list: product $ii $plist[$ii]\n";
-  }
+  close(CIN);
+##  print $dfile "get_package_list: found $i packages\n";
+##  for $ii ( 0 .. $#plist ) {
+##    print $dfile "get_package_list: product $ii $plist[$ii]\n";
+##  }
   return (@plist);
 }
 
-sub parse_product_list {
+sub get_product_name {
   my @params = @_;
   my $dfile = $params[1];
+  my $pname;
+  my $pver;
+  ##print $dfile "now check $params[0]\n";
   open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
-  $get_phash="";
-  $get_quals="";
-  $get_fragment="";
-  my $extra="none";
- print $dfile "parse_product_list: parsing $params[0]\n";
   while ( $line=<PIN> ) {
     chop $line;
     if ( index($line,"#") == 0 ) {
     } elsif ( $line !~ /\w+/ ) {
     } else {
-      print $dfile "parse_product_list: parsing $line\n";
+      @words = split(/\s+/,$line);
+      if( $words[0] eq "parent" ) {
+         ##print $dfile "found parent in $line\n";
+	 $pname=$words[1];
+	 $pver=$words[2];
+      }
+    }
+  }
+  close(PIN);
+  return ($pname, $pver);
+}
+
+sub parse_product_list {
+  my @params = @_;
+  my $dfile = $params[1];
+  my $pdep = $params[0];
+  ##print $dfile "parse_product_list: ready to open $pdep\n";
+  open(PIN, "< $pdep") or die "Couldn't open $pdep";
+  $get_phash="";
+  $get_quals="";
+  $get_fragment="";
+  my $extra="none";
+  ##print $dfile "parse_product_list: parsing $pdep\n";
+  while ( $line=<PIN> ) {
+    chop $line;
+    if ( index($line,"#") == 0 ) {
+    } elsif ( $line !~ /\w+/ ) {
+    } else {
+      ##print $dfile "parse_product_list: parsing $line\n";
       @words = split(/\s+/,$line);
       if( $words[0] eq "parent" ) {
 	 $prod=$words[1];
@@ -324,158 +354,6 @@ sub find_only_for_build_products {
   return ($count,@ephash);
 }
 
-sub get_include_directory {
-  my @params = @_;
-  $incdir = "default";
-  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
-  while ( $line=<PIN> ) {
-    chop $line;
-    if ( index($line,"#") == 0 ) {
-    } elsif ( $line !~ /\w+/ ) {
-    } else {
-      @words = split(/\s+/,$line);
-      if( $words[0] eq "incdir" ) {
-         if( $words[1] eq "product_dir" ) {
-	    $incdir = "\${UPS_PROD_DIR}/".$words[2];
-         } elsif( $words[1] eq "fq_dir" ) {
-	    $incdir = "\${\${UPS_PROD_NAME_UC}_FQ_DIR}/".$words[2];
-         } elsif( $words[1] eq "-" ) {
-	    $incdir = "none";
-	 } else {
-	    print "ERROR: $words[1] is an invalid directory path\n";
-	    print "ERROR: directory path must be specified as either \"product_dir\" or \"fq_dir\"\n";
-	    print "ERROR: using the default include directory path\n";
-	 }
-      }
-    }
-  }
-  close(PIN);
-  ##print "defining include directory $incdir\n";
-  return ($incdir);
-}
-
-sub get_bin_directory {
-  my @params = @_;
-  $bindir = "default";
-  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
-  while ( $line=<PIN> ) {
-    chop $line;
-    if ( index($line,"#") == 0 ) {
-    } elsif ( $line !~ /\w+/ ) {
-    } else {
-      @words = split(/\s+/,$line);
-      if( $words[0] eq "bindir" ) {
-         if( $words[1] eq "product_dir" ) {
-	    $bindir = "\${UPS_PROD_DIR}/".$words[2];
-         } elsif( $words[1] eq "fq_dir" ) {
-	    $bindir = "\${\${UPS_PROD_NAME_UC}_FQ_DIR}/".$words[2];
-         } elsif( $words[1] eq "-" ) {
-	    $bindir = "none";
-	 } else {
-	    print "ERROR: $words[1] is an invalid directory path\n";
-	    print "ERROR: directory path must be specified as either \"product_dir\" or \"fq_dir\"\n";
-	    print "ERROR: using the default bin directory path\n";
-	 }
-      }
-    }
-  }
-  close(PIN);
-  ##print "defining executable directory $bindir\n";
-  return ($bindir);
-}
-
-sub get_lib_directory {
-  my @params = @_;
-  $libdir = "default";
-  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
-  while ( $line=<PIN> ) {
-    chop $line;
-    if ( index($line,"#") == 0 ) {
-    } elsif ( $line !~ /\w+/ ) {
-    } else {
-      @words = split(/\s+/,$line);
-      if( $words[0] eq "libdir" ) {
-         if( $words[1] eq "product_dir" ) {
-	    $libdir = "\${UPS_PROD_DIR}/".$words[2];
-         } elsif( $words[1] eq "fq_dir" ) {
-	    $libdir = "\${\${UPS_PROD_NAME_UC}_FQ_DIR}/".$words[2];
-         } elsif( $words[1] eq "-" ) {
-	    $libdir = "none";
-	 } else {
-	    print "ERROR: $words[1] is an invalid directory path\n";
-	    print "ERROR: directory path must be specified as either \"product_dir\" or \"fq_dir\"\n";
-	    print "ERROR: using the default include directory path\n";
-	 }
-      }
-    }
-  }
-  close(PIN);
-  ##print "defining library directory $libdir\n";
-  return ($libdir);
-}
-
-sub check_fq_dir {
-  my @params = @_;
-  $fq = "true";
-  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
-  while ( $line=<PIN> ) {
-    chop $line;
-    if ( index($line,"#") == 0 ) {
-    } elsif ( $line !~ /\w+/ ) {
-    } else {
-       @words = split(/\s+/,$line);
-       if( $words[0] eq "no_fq_dir" ) {
-          $fq = "";
-       }
-    }
-  }
-  close(PIN);
-  ##print "defining library directory $libdir\n";
-  return ($fq);
-}
-
-sub check_for_fragment {
-  my @params = @_;
-  $frag = "";
-  $get_fragment="";
-  $nfrag=0;
-  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
-  while ( $line=<PIN> ) {
-    chop $line;
-    if ( index($line,"#") == 0 ) {
-      # comments might be part of a table fragment
-      if ( $get_fragment ) {
-	#print "found fragment $line\n";
-	$fraglines[$nfrag] = $line;
-	++$nfrag;
-      }
-    } elsif ( $line !~ /\w+/ ) {
-      # empty lines might be part of a table fragment
-      if ( $get_fragment ) {
-	#print "found fragment $line\n";
-	$fraglines[$nfrag] = $line;
-	++$nfrag;
-      }
-    } else {
-      @words = split(/\s+/,$line);
-      if( $words[0] eq "table_fragment_begin" ) {
-         $get_fragment="true";
-         $frag = "true";
-      } elsif( $words[0] eq "table_fragment_end" ) {
-         $get_fragment="";
-      } elsif( $get_fragment ) {
-	#print "found fragment $line\n";
-	$fraglines[$nfrag] = $line;
-	++$nfrag;
-      } else {
-      }
-    }
-  }
-  close(PIN);
-  #print "found $nfrag table fragment lines\n";
-  return ($frag,@fraglines);
-}
-
 sub find_default_qual {
   my @params = @_;
   $defq = "";
@@ -515,6 +393,27 @@ sub cetpkg_info_file {
   print CPG "to check cmake cached variables, use cmake -N -L\n";
   close(CPG);
   return($cetpkgfile);  
+}
+
+sub find_cetbuildtools {
+  my @params = @_;
+  my $count = 0;
+  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
+  while ( $line=<PIN> ) {
+    chop $line;
+    if ( index($line,"#") == 0 ) {
+    } elsif ( $line !~ /\w+/ ) {
+    } else {
+      @words = split(/\s+/,$line);
+      if( $words[0] eq "only_for_build" ) {
+       if( $words[1] eq "cetbuildtools" ) {
+           $cver = $words[2];
+	}
+      }
+    }
+  }
+  close(PIN);
+  return ($cver);
 }
 
 sub print_setup_noqual {
@@ -571,119 +470,6 @@ sub compare_qual {
   return $retval;
 }
 
-sub check_flags {
-  my @params = @_;
-  my $type = uc $params[1];
-  my $cxxflg = "";
-  my $cflg = "";
-  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
-  while ( $line=<PIN> ) {
-    chop $line;
-    @words = split(/\s+/,$line);
-    if ( $words[0] eq "CET_BASE_CXX_FLAG_${type}:" ) {
-       $cxxflg = $words[1];
-    } elsif ( $words[0] eq "CET_BASE_C_FLAG_${type}:" ) {
-       $cflg = $words[1];
-    }
-  }
-  close(PIN);
-  return ($cxxflg,$cflg);
-}
 
-sub get_cmake_inc_directory {
-  my @params = @_;
-  $incdir = "DEFAULT";
-  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
-  while ( $line=<PIN> ) {
-    chop $line;
-    if ( index($line,"#") == 0 ) {
-    } elsif ( $line !~ /\w+/ ) {
-    } else {
-      @words = split(/\s+/,$line);
-      if( $words[0] eq "incdir" ) {
-	 if( $#words < 2 ) {
-	   $incsubdir = "include";
-	 } else {
-	   $incsubdir = $words[2];
-	 }
-         if( $words[1] eq "product_dir" ) {
-	    $incdir = "product_dir/$incsubdir";
-         } elsif( $words[1] eq "fq_dir" ) {
-	    $incdir = "flavorqual_dir/$incsubdir";
-         } elsif( $words[1] eq "-" ) {
-	    $incdir = "NONE";
-	 } else {
-	    $incdir = "ERROR";
-	 }
-      }
-    }
-  }
-  close(PIN);
-  return ($incdir);
-}
-
-sub get_cmake_lib_directory {
-  my @params = @_;
-  $libdir = "DEFAULT";
-  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
-  while ( $line=<PIN> ) {
-    chop $line;
-    if ( index($line,"#") == 0 ) {
-    } elsif ( $line !~ /\w+/ ) {
-    } else {
-      @words = split(/\s+/,$line);
-      if( $words[0] eq "libdir" ) {
-	 if( $#words < 2 ) {
-	   $libsubdir = "lib";
-	 } else {
-	   $libsubdir = $words[2];
-	 }
-         if( $words[1] eq "product_dir" ) {
-	    $libdir = "product_dir/$libsubdir";
-         } elsif( $words[1] eq "fq_dir" ) {
-	    $libdir = "flavorqual_dir/$libsubdir";
-         } elsif( $words[1] eq "-" ) {
-	    $libdir = "NONE";
-	 } else {
-	    $libdir = "ERROR";
-	 }
-      }
-    }
-  }
-  close(PIN);
-  return ($libdir);
-}
-
-sub get_cmake_bin_directory {
-  my @params = @_;
-  $bindir = "DEFAULT";
-  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
-  while ( $line=<PIN> ) {
-    chop $line;
-    if ( index($line,"#") == 0 ) {
-    } elsif ( $line !~ /\w+/ ) {
-    } else {
-      @words = split(/\s+/,$line);
-      if( $words[0] eq "bindir" ) {
-	 if( $#words < 2 ) {
-	   $binsubdir = "bin";
-	 } else {
-	   $binsubdir = $words[2];
-	 }
-         if( $words[1] eq "product_dir" ) {
-	    $bindir = "product_dir/$binsubdir";
-         } elsif( $words[1] eq "fq_dir" ) {
-	    $bindir = "flavorqual_dir/$binsubdir";
-         } elsif( $words[1] eq "-" ) {
-	    $bindir = "NONE";
-	 } else {
-	    $bindir = "ERROR";
-	 }
-      }
-    }
-  }
-  close(PIN);
-  return ($bindir);
-}
 
 1;
