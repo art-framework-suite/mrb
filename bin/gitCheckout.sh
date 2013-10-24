@@ -76,9 +76,10 @@ if grep -q \($REP\) CMakeLists.txt
     echo "NOTICE: project is already in CMakeLists.txt file"
   else
     echo "# ${REP} package block" >> CMakeLists.txt
-    echo "set(${REP}_not_in_ups)" >> CMakeLists.txt
+    echo "set(${REP}_not_in_ups true)" >> CMakeLists.txt
     echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${REP} )" >> CMakeLists.txt
     echo "ADD_SUBDIRECTORY($REP)" >> CMakeLists.txt
+    echo ""  >> CMakeLists.txt
     echo "NOTICE: Added $REP to CMakeLists.txt file"
 fi
 

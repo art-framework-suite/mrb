@@ -3,8 +3,17 @@
 # Require minimum cmake version
 CMAKE_MINIMUM_REQUIRED (VERSION 2.8)
 
+# use mrb cmake modules
+set(CMAKE_MODULE_PATH $ENV{MRB_DIR}/Modules
+		      $ENV{ART_DIR}/Modules
+		      $ENV{CETBUILDTOOLS_DIR}/Modules
+		      ${CMAKE_MODULE_PATH})
+
 # Add top level include
 include_directories ( ${PROJECT_SOURCE_DIR} )
+
+# get mrb_make
+include(MRBMake)
 
 # add_subdirectory and other commands will be added below by @mrb gitCheckout@ for each package
 
