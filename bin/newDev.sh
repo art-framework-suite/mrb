@@ -98,8 +98,8 @@ export PRODUCTS=\$thisDirA:$PRODUCTS
 # Set the @MRB_INSTALL@ environment variable
 export MRB_INSTALL=\$thisDirA
 
-# Set the convience @SRCS@ environment variable
-export SRCS=$PWD/srcs
+# Set the convience @MRB_SOURCE@ environment variable
+export MRB_SOURCE=$PWD/srcs
 
 # Set up @${MRB_PROJECT}@
 export MRB_PROJECT=${MRB_PROJECT}

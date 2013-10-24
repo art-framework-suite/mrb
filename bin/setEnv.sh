@@ -17,18 +17,18 @@ function usage() {
 cat 1>&2 << EOF
 Usage: source mrb setEnv [source_area] options
 
-e.g.   source mrb setEnv $SRCS 
+e.g.   source mrb setEnv $MRB_SOURCE 
 e.g.   source mrb setEnv   # Equivalent to above
 
 The source_area must point to a directory that contains a setEnv
 file or has ups/setup_for_development 
 
-If you leave source_area blank, $SRCS is assumed.
+If you leave source_area blank, $MRB_SOURCE is assumed.
 
 EOF
 }
 
-srcDir=$SRCS
+srcDir=$MRB_SOURCE
 
 if [ $# -gt 0 ]; then
 
