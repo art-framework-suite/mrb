@@ -42,7 +42,7 @@ for $i ( 2 .. $#ARGV ) {
     } elsif( $ARGV[$i] eq "simple" ) {
       $simple = "true";
     } else {
-      $qual = $qual.$ARGV[$i].":";
+      $incoming_qual = $incoming_qual.$ARGV[$i].":";
       $qdir = $qdir.$ARGV[$i]."-";
     }
 }
@@ -75,6 +75,7 @@ if ( $srcbase eq "ups" ) {
     $inputdir = $sourcedir."/ups";
 }
 ##print DIAG "setup_products debug info: source dir is $sourcedir\n";
+print DIAG "setup_products: incoming qual is $incoming_qual\n";
 
 require mrb_parse_deps;
 
@@ -109,8 +110,8 @@ for $i ( 0 .. $#package_list ) {
   ($productnames[$i], $productversn[$i]) = get_product_name( $pfile, DIAG );
   $cetbver[$i] = find_cetbuildtools( $pfile );
   print DIAG "DIAGNOSTICS: cetbuildtools $cetbver[$i]\n";
-print TSET "setup -B cetbuildtools $cetbver[$i]\n";
-print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
+  print TSET "setup -B cetbuildtools $cetbver[$i]\n";
+  print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
 }
 print TSET "setup -B cetpkgsupport \n";
 print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
@@ -118,6 +119,8 @@ print DIAG "DIAGNOSTICS: product name $#productnames @productnames\n";
 print DIAG "DIAGNOSTICS: product version $#productversn @productversn\n";
 for $i ( 0 .. $#package_list ) {
   $pkg=$package_list[$i];
+  $pkgdir = $builddir."/".$pkg;
+  unless ( -e $pkgdir or mkdir $pkgdir ) { die "Couldn't create $pkgdir"; }
   $pfile=$sourcedir."/".$pkg."/ups/product_deps";
   print DIAG "checking $pfile for $pkg \n";
   ($product, $version, $default_ver, $default_qual, %phash) = parse_product_list( $pfile, DIAG );
@@ -134,9 +137,9 @@ for $i ( 0 .. $#package_list ) {
   # continue parsing for this package
   ($ndeps, @qlist) = parse_qualifier_list( $pfile, TSET );
 
-  if ( $qual ) {
-    $qual = $qual.$dop;
-    $qdir = $qdir.$dop;
+  if ( $incoming_qual ) {
+    $qual = $incoming_qual.$dop;
+    $qdir = $incoming_qdir.$dop;
   } else {
     $dq = find_default_qual( $pfile );
     if ( $dq ) {
@@ -196,21 +199,29 @@ for $i ( 0 .. $#package_list ) {
     if ( compare_qual( $qlist[$i][0], $qual ) ) {
       $match++;
       foreach $j ( 1 .. $ndeps ) {
-	if ( $qlist[$i][$j] eq "-" ) {
-	} elsif ( $qlist[$i][$j] eq "-nq-" ) {
-          print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, TSET );
-	  #print TSET "setup -B $qlist[0][$j] $phash{$qlist[0][$j]} \n";
-	} elsif ( $qlist[$i][$j] eq "-b-" ) {
-          print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, TSET );
-	  #print TSET "setup -B $qlist[0][$j] $phash{$qlist[0][$j]} \n";
-	} else {
-	  @qwords = split(/:/,$qlist[$i][$j]);
-	  $ql="+".$qwords[0];
-	  foreach $j ( 1 .. $#qwords ) {
-	    $ql = $ql.":+".$qwords[$j];
+	$print_setup=true;
+	for $k ( 0 .. $#productnames ) {
+	  if ( $productnames[$k] eq $qlist[0][$j] ) {
+	     $print_setup=false;
 	  }
-          print_setup_qual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ql, $ohash{$qlist[0][$j]}, TSET );
-	  #print TSET "setup -B $qlist[0][$j] $phash{$qlist[0][$j]} -q $ql \n";
+	}
+        if ( $print_setup eq "true" ) {
+	  if ( $qlist[$i][$j] eq "-" ) {
+	  } elsif ( $qlist[$i][$j] eq "-nq-" ) {
+            print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, TSET );
+	    #print TSET "setup -B $qlist[0][$j] $phash{$qlist[0][$j]} \n";
+	  } elsif ( $qlist[$i][$j] eq "-b-" ) {
+            print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, TSET );
+	    #print TSET "setup -B $qlist[0][$j] $phash{$qlist[0][$j]} \n";
+	  } else {
+	    @qwords = split(/:/,$qlist[$i][$j]);
+	    $ql="+".$qwords[0];
+	    foreach $j ( 1 .. $#qwords ) {
+	      $ql = $ql.":+".$qwords[$j];
+	    }
+            print_setup_qual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ql, $ohash{$qlist[0][$j]}, TSET );
+	    #print TSET "setup -B $qlist[0][$j] $phash{$qlist[0][$j]} -q $ql \n";
+	  }
 	}
       }
     }
@@ -232,9 +243,13 @@ for $i ( 0 .. $#package_list ) {
        print TSET "\n";
      }
   }
+  $cetfl = cetpkg_info_file( $product, $version, $default_ver, $qual, $type, $sourcedir, $pkgdir );
+  # pretend this is a product
+  $product_uc = uc($product);
+  print TSET "setenv  ${product_uc}_VERSION $version\n";
 
 }
-$cetfl = cetpkg_info_file( $mrb_project, $mrb_version, $default_ver, $mrb_quals, $type, $sourcedir, $builddir );
+$cetfl = cetpkg_info_file( $mrb_project, $mrb_version, $mrb_version, $mrb_quals, $type, $sourcedir, $builddir );
 
 # cleanup
 close(TSET);
