@@ -98,6 +98,7 @@ sub parse_product_list {
   $get_quals="";
   $get_fragment="";
   my $extra="none";
+  my %phash = ();
   ##print $dfile "parse_product_list: parsing $pdep\n";
   while ( $line=<PIN> ) {
     chop $line;
@@ -419,6 +420,7 @@ sub find_cetbuildtools {
 sub print_setup_noqual {
   my @params = @_;
   my $efl = $params[3];
+  ##print $efl "# print_setup_noqual called with $params[0] $params[1] $params[2]\n";
   if( $params[2] eq "optional" ) { 
   print $efl "# setup of $params[0] is optional\n"; 
   print $efl "unset have_prod\n"; 
@@ -437,6 +439,7 @@ sub print_setup_noqual {
 sub print_setup_qual {
   my @params = @_;
   my $efl = $params[4];
+  ##print $efl "# print_setup_qual called with $params[0] $params[1] $params[2] $params[3]\n";
   if( $params[3] eq "optional" ) { 
   print $efl "# setup of $params[0] is optional\n"; 
   print $efl "unset have_prod\n"; 
@@ -448,7 +451,6 @@ sub print_setup_qual {
   } else {
   print $efl "setup -B $params[0] $params[1] -q $params[2]\n";
   print $efl "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
-	#print TSET "setup -B $qlist[0][$j] $phash{$qlist[0][$j]} -q $ql \n";
   }
   return 0;
 }
