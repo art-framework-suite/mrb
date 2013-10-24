@@ -106,7 +106,7 @@ EOF
     ;;
 
 # Run buildtool 
-    "build" | "b" ) buildtool -b -i $*
+    "build" | "b" ) buildtool -b -I $MRB_INSTALL -i $*
         ;;
 
    # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)

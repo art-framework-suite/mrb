@@ -95,8 +95,8 @@ source $project_dir/setup >> /dev/null 2>&1
 # Add this products area to the @PRODUCTS@ path
 export PRODUCTS=\$thisDirA:$PRODUCTS
 
-# Set the @CMAKE_INSTALL_PREFIX@ environment variable
-export CMAKE_INSTALL_PREFIX=\$thisDirA
+# Set the @MRB_INSTALL@ environment variable
+export MRB_INSTALL=\$thisDirA
 
 # Set the convience @SRCS@ environment variable
 export SRCS=$PWD/srcs
