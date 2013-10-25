@@ -83,7 +83,7 @@ $mrb_project = $ENV{MRB_PROJECT};
 $mrb_version = $ENV{MRB_VERSION};
 $mrb_quals = $ENV{MRB_QUALS};
 $tmpfl = $builddir."/".$mrb_project."-".$mrb_version;
-print DIAG "opening $tmpfl for $mrb_project $mrb_version\n";
+##print DIAG "opening $tmpfl for $mrb_project $mrb_version\n";
 open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
 ##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
@@ -105,21 +105,21 @@ $dfile = $sourcedir."/dependency_list";
 # have to find the list of packages to traverse
 $cmakefile=$sourcedir."/CMakeLists.txt";
 @package_list = get_package_list( $cmakefile, DIAG );
-print DIAG "DIAGNOSTICS: packages to check: $#package_list @package_list\n";
+##print DIAG "DIAGNOSTICS: packages to check: $#package_list @package_list\n";
 for $i ( 0 .. $#package_list ) {
   $pkg=$package_list[$i];
   $pfile=$sourcedir."/".$pkg."/ups/product_deps";
   ##print DIAG "checking $pfile for $pkg \n";
   ($productnames[$i], $productversn[$i]) = get_product_name( $pfile, DIAG );
   $cetbver[$i] = find_cetbuildtools( $pfile );
-  print DIAG "DIAGNOSTICS: cetbuildtools $cetbver[$i]\n";
+  ##print DIAG "DIAGNOSTICS: cetbuildtools $cetbver[$i]\n";
   print TSET "setup -B cetbuildtools $cetbver[$i]\n";
   print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
 }
 print TSET "setup -B cetpkgsupport \n";
 print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
-print DIAG "DIAGNOSTICS: product name $#productnames @productnames\n";
-print DIAG "DIAGNOSTICS: product version $#productversn @productversn\n";
+##print DIAG "DIAGNOSTICS: product name $#productnames @productnames\n";
+##print DIAG "DIAGNOSTICS: product version $#productversn @productversn\n";
 @setup_list=( cetbuildtools, cetpkgsupport );
 for $i ( 0 .. $#package_list ) {
   $pkg=$package_list[$i];
