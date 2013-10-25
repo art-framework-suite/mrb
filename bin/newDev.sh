@@ -61,10 +61,12 @@ function get_mrb_bin()
     mrb_bin=`cd ${reldir} && /bin/pwd ${pwd_P_arg}`
 }
 
-function create_master_cmake_file()
+function copy_files_to_srcs()
 {
   # Make the main CMakeLists.txt file (note the use of a here documents)
   cp ${mrb_bin}/../templates/CMakeLists.txt.master srcs/CMakeLists.txt || exit 1;
+  # this is a hack....
+  cp ${mrb_bin}/../templates/dependency_list srcs/ || exit 1;
   echo 'NOTICE: Created srcs/CMakeLists.txt'
 }
 
@@ -274,7 +276,7 @@ if [ ! $justLP ];  then
   echo "MRB_BUILDDIR is ${currentDir}/build"
   echo 'NOTICE: Created srcs and build directories'
 
-  create_master_cmake_file
+  copy_files_to_srcs
 
   # Make the top setEnv script (this is more complicated, so we'll just copy it from
   # @templates@). See &l=templates/setEnv& for the template
