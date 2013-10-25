@@ -75,7 +75,7 @@ if ( $srcbase eq "ups" ) {
     $inputdir = $sourcedir."/ups";
 }
 ##print DIAG "setup_products debug info: source dir is $sourcedir\n";
-print DIAG "setup_products: incoming qual is $incoming_qual\n";
+##print DIAG "setup_products: incoming qual is $incoming_qual\n";
 
 require mrb_parse_deps;
 
@@ -85,9 +85,6 @@ $mrb_quals = $ENV{MRB_QUALS};
 $tmpfl = $builddir."/".$mrb_project."-".$mrb_version;
 print DIAG "opening $tmpfl for $mrb_project $mrb_version\n";
 open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
-
-# have to find the list of packages to traverse
-$cmakefile=$sourcedir."/CMakeLists.txt";
 
 ##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
 print TSET "setenv UPS_OVERRIDE -B\n";
@@ -101,6 +98,12 @@ if ( $simple ) {
   print TSET "setenv CETPKG_TYPE $type\n";
 }
 
+# parse a list of dependencies
+$dfile = $sourcedir."/dependency_list";
+%deplist = get_dependency_list( $dfile, DIAG );
+
+# have to find the list of packages to traverse
+$cmakefile=$sourcedir."/CMakeLists.txt";
 @package_list = get_package_list( $cmakefile, DIAG );
 print DIAG "DIAGNOSTICS: packages to check: $#package_list @package_list\n";
 for $i ( 0 .. $#package_list ) {
@@ -123,9 +126,9 @@ for $i ( 0 .. $#package_list ) {
   $pkgdir = $builddir."/".$pkg;
   unless ( -e $pkgdir or mkdir $pkgdir ) { die "Couldn't create $pkgdir"; }
   $pfile=$sourcedir."/".$pkg."/ups/product_deps";
-  print DIAG "checking $pfile for $pkg \n";
+  #print DIAG "checking $pfile for $pkg \n";
   ($product, $version, $default_ver, $default_qual, %phash) = parse_product_list( $pfile, DIAG );
-  print DIAG "found $product $version $default_ver $default_qual\n";
+  ##print DIAG "found $product $version $default_ver $default_qual\n";
   ##print DIAG "should match $productnames[$i] $productversn[$i]\n";
   if ( $product ne $productnames[$i] ) {
      print DIAG "ERROR: product names do not match: $product vs $productnames[$i]\n";
@@ -202,7 +205,7 @@ for $i ( 0 .. $#package_list ) {
       }
     }
     if ( $p_has_qual == 0 ) {
-      print_setup_noqual( $pkeys[$i], $phash{$pkeys[$i]}, $ohash{$pkeys[$i]}, TSET );
+      print_setup_noqual( $pkeys[$i], $phash{$pkeys[$i]}, $ohash{$pkeys[$i]}, "", TSET );
     }
   }
   # now loop over the qualifier list
@@ -227,18 +230,23 @@ for $i ( 0 .. $#package_list ) {
 	##print DIAG "should I setup $qlist[0][$j]? ${print_setup}\n";
         if ( $print_setup eq "true" ) {
 	  push( @setup_list, $qlist[0][$j] );
+	  # is this part of my extended package list?
+	  # if it is in the middle of the build list, use setup -j
+	  # if we are not building anything it depends on, use regular setup
+	  $usej = check_product_dependencies( $qlist[0][$j], \%deplist, \@package_list, DIAG );
+	  ##print DIAG "check_product_dependencies returned $usej\n";
 	  if ( $qlist[$i][$j] eq "-" ) {
 	  } elsif ( $qlist[$i][$j] eq "-nq-" ) {
-            print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, TSET );
+            print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, $usej, TSET );
 	  } elsif ( $qlist[$i][$j] eq "-b-" ) {
-            print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, TSET );
+            print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, $usej, TSET );
 	  } else {
 	    @qwords = split(/:/,$qlist[$i][$j]);
 	    $ql="+".$qwords[0];
 	    foreach $j ( 1 .. $#qwords ) {
 	      $ql = $ql.":+".$qwords[$j];
 	    }
-            print_setup_qual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ql, $ohash{$qlist[0][$j]}, TSET );
+            print_setup_qual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ql, $ohash{$qlist[0][$j]}, $usej, TSET );
 	  }
 	}
       }

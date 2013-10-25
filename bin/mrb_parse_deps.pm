@@ -419,7 +419,7 @@ sub find_cetbuildtools {
 
 sub print_setup_noqual {
   my @params = @_;
-  my $efl = $params[3];
+  my $efl = $params[4];
   ##print $efl "# print_setup_noqual called with $params[0] $params[1] $params[2]\n";
   if( $params[2] eq "optional" ) { 
   print $efl "# setup of $params[0] is optional\n"; 
@@ -430,7 +430,7 @@ sub print_setup_noqual {
   print $efl "test \"\$have_prod\" = \"true\" && setup -B $params[0] $params[1] \n";
   print $efl "unset have_prod\n"; 
   } else {
-  print $efl "setup -B $params[0] $params[1] \n";
+  print $efl "setup -B $params[3] $params[0] $params[1] \n";
   print $efl "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
   }
   return 0;
@@ -438,7 +438,7 @@ sub print_setup_noqual {
 
 sub print_setup_qual {
   my @params = @_;
-  my $efl = $params[4];
+  my $efl = $params[5];
   ##print $efl "# print_setup_qual called with $params[0] $params[1] $params[2] $params[3]\n";
   if( $params[3] eq "optional" ) { 
   print $efl "# setup of $params[0] is optional\n"; 
@@ -449,7 +449,7 @@ sub print_setup_qual {
   print $efl "test \"\$have_prod\" = \"true\" && setup -B $params[0] $params[1] -q $params[2] \n";
   print $efl "unset have_prod\n"; 
   } else {
-  print $efl "setup -B $params[0] $params[1] -q $params[2]\n";
+  print $efl "setup -B $params[4] $params[0] $params[1] -q $params[2]\n";
   print $efl "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
   }
   return 0;
@@ -472,6 +472,66 @@ sub compare_qual {
   return $retval;
 }
 
+# can we use a simple database to store this info?
+sub get_dependency_list {
+  my @params = @_;
+  my $depfile = $params[0];
+  my $dfl = $params[1];
+  my %dhash = ();
+  my @dlist;
+  # read the dependency list and make a hash file keyed on product name
+  open(DIN, "< $depfile") or die "Couldn't open $depfile";
+  while ( $line=<DIN> ) {
+    chop $line;
+    if ( index($line,"#") == 0 ) {
+    } elsif ( $line !~ /\w+/ ) {
+    } else {
+      @words = split(/\s+/,$line);
+      @dlist = ();
+      if( $words[1] eq "-" ) {
+        $dhash{ $words[0] } = "";
+      } else {
+	foreach $i  ( 1 .. $#words ) {
+	  $dlist[$i-1] = $words[$i];
+	}
+        $dhash{ $words[0] } = join( ',', @dlist );
+      }
+    }
+  }
+  close(DIN);
+  ##my @dkeys = keys %dhash;
+  ##foreach $i ( 0 .. $#dkeys ) {
+  ##   print $dfl "get_dependency_list: $dkeys[$i] has $dhash{$dkeys[$i]}\n";
+  ##}
+  return %dhash;
+}
 
+sub check_product_dependencies {
+  my $prd = $_[0];
+  my $dhash_ref = $_[1];
+  my $plist = $_[2];
+  my $dfl = $_[3];
+  my $usej = "";
+  my $found_match = false;
+  ##print $dfl "check_product_dependencies: checking product $prd\n";
+  my @dkeys = keys %$dhash_ref;
+  ##print $dfl "check_product_dependencies: dhash_ref has $#dkeys keys\n";
+  # this is the list of products we are building
+  foreach $i ( 0 .. $#plist ) {
+     ##print $dfl "check_product_dependencies: param $i $plist[$i]\n";
+     @pl = split( /\,/, $dhash_ref->{$plist[$i]} );
+     ##print $dfl "check_product_dependencies: $plist[$i] uses @pl\n";
+     foreach $j ( 0 .. $#pl ) {
+	if ( $prd eq $pl[$j] ) {
+           ##print $dfl "check_product_dependencies: $plist[$i] depends on $prd\n";
+           ##print $dfl "check_product_dependencies: $prd depends on $dhash_ref->{$prd}\n";
+	   $found_match = true;
+	   if ( $dhash_ref->{$prd} eq "" ) { $found_match = false; }
+	}
+     }
+  }
+  if ( $found_match eq "true" ) { $usej = "-j"; }
+  return $usej;
+}
 
 1;
