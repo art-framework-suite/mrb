@@ -55,7 +55,7 @@ git archive --prefix=${pkgver}/ \
 cd ${pkgdir}
 tar xf ${mydir}/${package}-${pkgver}.tar
 
-ups declare ${package} ${pkgver} -r ${package}/${pkgver} -0 -m ${package}.table  -z ${product_dir}
+ups declare -c ${package} ${pkgver} -r ${package}/${pkgver} -0 -m ${package}.table  -z ${product_dir}
 
 ups list -aK+ ${package} ${pkgver}   -z ${product_dir}
 
