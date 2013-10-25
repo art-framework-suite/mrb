@@ -75,10 +75,16 @@ if grep -q \($REP\) CMakeLists.txt
   then
     echo "NOTICE: project is already in CMakeLists.txt file"
   else
-    echo "# ${REP} package block" >> CMakeLists.txt
-    echo "set(${REP}_not_in_ups true)" >> CMakeLists.txt
-    echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${REP} )" >> CMakeLists.txt
-    echo "ADD_SUBDIRECTORY($REP)" >> CMakeLists.txt
+    cp ${MRB_DIR}/templates/CMakeLists.txt.master CMakeLists.txt || exit 1;
+    # have to accumulate the include_directories command in one fragment
+    # and the add_subdirectory commands in another fragment
+    echo "# ${REP} package block" >> cmake_inlude_dirs
+    echo "set(${REP}_not_in_ups true)" >> cmake_inlude_dirs
+    echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${REP} )" >> cmake_inlude_dirs
+    cat cmake_inlude_dirs >> CMakeLists.txt
+    echo ""  >> CMakeLists.txt
+    echo "ADD_SUBDIRECTORY($REP)" >> cmake_add_subdir
+    cat cmake_add_subdir >> CMakeLists.txt
     echo ""  >> CMakeLists.txt
     echo "NOTICE: Added $REP to CMakeLists.txt file"
 fi
