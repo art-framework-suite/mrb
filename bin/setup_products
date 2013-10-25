@@ -111,6 +111,13 @@ for $i ( 0 .. $#package_list ) {
   $pfile=$sourcedir."/".$pkg."/ups/product_deps";
   ##print DIAG "checking $pfile for $pkg \n";
   ($productnames[$i], $productversn[$i]) = get_product_name( $pfile, DIAG );
+  # call unsetup if the $productnames[$i] has been setup
+  $psetup = "SETUP_".uc($productnames[$i]);
+  $is_setup=$ENV{$psetup};
+  ##print DIAG "$psetup for $productnames[$i] is $is_setup\n";
+  if ( $is_setup ) {
+    print TSET "unsetup -j $productnames[$i]\n";
+  }
   $cetbver[$i] = find_cetbuildtools( $pfile );
   ##print DIAG "DIAGNOSTICS: cetbuildtools $cetbver[$i]\n";
   print TSET "setup -B cetbuildtools $cetbver[$i]\n";
