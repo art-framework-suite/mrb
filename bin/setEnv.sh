@@ -48,7 +48,27 @@ if [ $# -gt 0 ]; then
   fi
 
 fi
- 
+
+# search qualifiers
+qlist=`echo ${MRB_QUALS} | sed -e 's/:/ /g' | tr " " "\n"| sort |tr "\n" " "`
+myq=""
+for qual in ${qlist}
+do
+  if [ ${qual} == "debug" ]
+  then
+    dop="-d"
+  elif [ ${qual} == "opt" ]
+  then
+    dop="-o"
+  elif [ ${qual} == "prof" ]
+  then
+    dop="-p"
+  else
+    myq=${qual}:${myq}
+  fi
+done
+
+
 # We must be sitting in a build area
 if pwd | egrep -q '/build[^/]*$';
 then
