@@ -1,0 +1,12 @@
+# LArSoft dependency list
+# first pass is a toy and created by hand
+# product	dependencies
+larsoft		larana  larcore lardata  lareventdisplay  larevt  larexamples  larreco  larsim
+larana		larcore lardata larevt larsim
+larcore		-
+lardata		larcore
+lareventdisplay	larcore lardata larevt larsim
+larevt		larcore lardata
+larexamples	larcore lardata larevt larsim
+larreco		larcore lardata larevt larsim
+larsim		larcore lardata larevt
