@@ -104,7 +104,7 @@ EOF
         ;;
 
    # install into local product area
-    "build" | "i" ) buildtool -b -I $MRB_INSTALL -i $*
+    "install" | "i" ) buildtool -b -I $MRB_INSTALL -i $*
         ;;
 
    # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)
