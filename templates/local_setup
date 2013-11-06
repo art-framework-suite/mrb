@@ -1,18 +1,4 @@
-# Ron's ups bootstrap "setup"
-#   $RCSfile: setup,v $
-#   $Revision: 1.25 $
-#   $Date: 2012/10/24 17:13:30 $
-# Note: on some systems, if there is a "setup" command in PATH before "." then you
-# may have to specify a path (either rel. or abs.) to this "setup" file:
-#      source path/setup
-#  OR  .      path/setup
-# so that the shell does not search the path for an executable file to source
 #
-# When sourcing this file from a script, you may have to tell this
-# source file where it (or actually the products database) is via the prod_db
-# shell (or env) variable. I.e.:
-#    set prod_db=/some/path; source /some/path/this_file
-# or  prod_db=/some/path; . /some/path/this_file
 
 test $?shell = 1 && set ss=csh || ss=sh
 #echo Shell type is $ss.
@@ -23,86 +9,40 @@ test $?shell = 1 && set ss=csh || ss=sh
 test "$ss" = csh && alias set_ set && alias vecho_ 'if ($?vv == 1) echo \!*' || eval 'vecho_() { test -n "${vv-}" && echo "$@"; return 0; }'
 test "$ss" =  sh && eval 'set_() { sts=$?;for xx in "$@";do var=`expr "$xx" : "\([^=]*\)"`;val=`expr "$xx" : "[^=]*=\(.*\)"`;eval "$var=\"$val\"";done;return $sts; }'
 test "$ss" =  sh && eval 'setenv() { export $1;eval "$1=\"\${2-}\""; }; source() { file=$1; shift; . $file "$@"; }; unsetenv_() { unset "$@"; }'
-test "$ss" =  sh && eval 'tnotnull() { eval "test -n \"\${$1-}\""; }'                                   && eval 'nullout() { "$@" >/dev/null 2>&1; }'
-test "$ss" = csh && alias tnotnull "eval '"'test $?'"\!* -eq 1'       && eval '"'test -n "$'"\!*"'"'"'" && alias nullout "\!* >& /dev/null" && alias unsetenv_ unsetenv
+test "$ss" =  sh && eval 'tnotnull() { eval "test -n \"\${$1-}\""; }'                             && eval 'nullout() { "$@" >/dev/null 2>&1; }'
+test "$ss" = csh && alias tnotnull "eval '"'test $?'"\!* -eq 1' && eval '"'test -n "$'"\!*"'"'"'" && alias nullout "\!* >& /dev/null" && alias unsetenv_ unsetenv
+test "$ss" = csh && alias return exit
 
-# now is if we were passed a path or if not, if we can figure it out (maybe if we are interactive)
+set_ msg1='ERROR: You MUST setup ups'
+
+tnotnull UPS_DIR || ( echo ""; echo "$msg1"; echo "" )
+tnotnull UPS_DIR || return
+
+# make sure we know where this script lives
+# now if we were passed a path or if not, we can figure it out (maybe if we are interactive)
 #   bash, zsh, ksh and tcsh pass params to a source file, csh does not. but someone will be writing csh scripts
-set_ msg='Please set shell or env. variable prod_db (to be the path to the products DB). Fix this and other errors may go away.'
-tnotnull prod_db && set_ db=`sh -c "cd $prod_db >/dev/null 2>&1 && pwd"` && vecho_ 'setting db from prod_db variable' || set_ db=
+set_ msg2='Please set shell or env. variable fw_db (to be the path to the framework source code). Fix this and other errors may go away.'
+tnotnull fw_db && set_ db=`sh -c "cd $fw_db >/dev/null 2>&1 && pwd"` && vecho_ 'setting db from fw_db variable' || set_ db=
 
 test -z "$db" && tnotnull BASH_SOURCE && set_ me=`dirname $BASH_SOURCE` && set_ db=`sh -c "cd $me >/dev/null 2>&1 && pwd"` && vecho_ 'setting db via BASH_SOURCE'
 
 # history is applicable only for interactive t/csh
 test -z "$db" -a "$ss" = csh && test $?history = 0 && set history=5  # make sure history 1 works
-test -z "$db" -a "$ss" = csh && set me=`history 1|sed 's/^[ 	0-9:]*//'` && test -n "$me" && set me=`dirname $me[2]` \
+test -z "$db" -a "$ss" = csh && set me=`history 1|sed 's/^[     0-9:]*//'` && test -n "$me" && set me=`dirname $me[2]` \
     && set db=`sh -c "cd $me >/dev/null 2>&1 && pwd"` && vecho_ 'setting db via interactive history'
+#echo This script lives in $db
 
-test -z "$db" && echo "$msg" || vecho_ "db=$db"
+test -z "$db" && echo "$msg2" || vecho_ "db=$db"
+test -n "$db" && setenv MRB_TOP `dirname $db`
 
-# NEED TO DETERMINE WHERE an appropriate ups exe is.
-#  Need to rely on some ups product install standards:
-#   The starting point is flavor -- it is determined here and it must match the
-#     a flavor specified in the $db/ups/current.chain file.
-#   The version is taken from the current.chain file based on the flavor match.
-#   The PROD_DIR is retrieved from the version file.
-#   Although, for some products, the exe might be under PROD_DIR/flavor/bin
-#   for ups, the exe is always assumed to be under PROD_DIR/bin.
-# Because the ups product is the foundational product, I _will_not_ support ups's
-#  full flavor matching but I _will_ support the 64/32 matching, and the backward
-# compatible os+majRev.
-set_ os=`uname -s` os_rev1=`uname -r |cut -d. -f1-2` os_rev2=`uname -r |cut -d. -f1` mach=`uname -m` libc1= libc2=
-test $os = Linux && set_ libc1=-`/bin/ls /lib*/libc-*|sed '{s/.*libc-//;s/[^0-9]*$//;q}'` libc2=-`/bin/ls /lib*/libc-*|sed 's/.*libc-\([0-9]*\.[0-9]*\).*/\1/;q'`
-set_ b64=`sh -c "case $mach in x86_64|sun*) echo 64bit;;*) :;;esac"`
-set_ mach=`sh -c "case $mach in *86*|sun*) :;; *) echo $mach;;esac"`
-set_ fl1=$os$mach$b64+$os_rev1$libc1 fl2=$os$mach+$os_rev1$libc1 fl3=$os$mach$b64+$os_rev1$libc2 fl4=$os$mach+$os_rev1$libc2
-set_ fl5=$os$mach$b64+$os_rev1       fl6=$os$mach+$os_rev1       fl7=$os$mach$b64+$os_rev2       fl8=$os$mach+$os_rev2
+#echo The local product directory is $db
+#echo The top directory is $MRB_TOP
 
-vecho_ "the flavors are: $fl1 $fl2 $fl3 $fl4 $fl5 $fl6 $fl7 $fl8"
+setup mrb
 
-setenv UPS_SHELL $ss
+setenv MRB_INSTALL $db
+setenv MRB_SOURCE $MRB_TOP/srcs
+setenv MRB_PROJECT larsoft
+setenv MRB_BUILDDIR $MRB_TOP/build
+setenv PRODUCTS "$MRB_INSTALL":/home/garren/scratch/larsoft/p
 
-test -n "$db"        && set_ pdp=`sed -n '/^ *PROD_DIR_PREFIX/{s/.*= *//;s|${UPS_THIS_DB}|'"$db|;p;}" $db/.upsfiles/dbconfig`
-# the following assumes VERSION immediately follows FLAVOR in the current.chain file
-set_ ver= flv= chainf=
-test                 -d $db/ups/current.chain && set_ chainf="`echo $db/ups/current.chain/*`"
-test -z "$chainf" -a -f $db/ups/current.chain && set_ chainf=$db/ups/current.chain
-test -n "$db" -a -n "$chainf"              && set_ ver=`sed -n "/^[^#]*=[ 	]*${fl1}[ 	]*"'$/{n;s/.*=[ 	]*//;p;}' $chainf | env grep .` && set_ flv=$fl1
-test -n "$db" -a -n "$chainf" -a -z "$ver" && set_ ver=`sed -n "/^[^#]*=[ 	]*${fl2}[ 	]*"'$/{n;s/.*=[ 	]*//;p;}' $chainf | env grep .` && set_ flv=$fl2
-test -n "$db" -a -n "$chainf" -a -z "$ver" && set_ ver=`sed -n "/^[^#]*=[ 	]*${fl3}[ 	]*"'$/{n;s/.*=[ 	]*//;p;}' $chainf | env grep .` && set_ flv=$fl3
-test -n "$db" -a -n "$chainf" -a -z "$ver" && set_ ver=`sed -n "/^[^#]*=[ 	]*${fl4}[ 	]*"'$/{n;s/.*=[ 	]*//;p;}' $chainf | env grep .` && set_ flv=$fl4
-test -n "$db" -a -n "$chainf" -a -z "$ver" && set_ ver=`sed -n "/^[^#]*=[ 	]*${fl5}[ 	]*"'$/{n;s/.*=[ 	]*//;p;}' $chainf | env grep .` && set_ flv=$fl5
-test -n "$db" -a -n "$chainf" -a -z "$ver" && set_ ver=`sed -n "/^[^#]*=[ 	]*${fl6}[ 	]*"'$/{n;s/.*=[ 	]*//;p;}' $chainf | env grep .` && set_ flv=$fl6
-test -n "$db" -a -n "$chainf" -a -z "$ver" && set_ ver=`sed -n "/^[^#]*=[ 	]*${fl7}[ 	]*"'$/{n;s/.*=[ 	]*//;p;}' $chainf | env grep .` && set_ flv=$fl7
-test -n "$db" -a -n "$chainf" -a -z "$ver" && set_ ver=`sed -n "/^[^#]*=[ 	]*${fl8}[ 	]*"'$/{n;s/.*=[ 	]*//;p;}' $chainf | env grep .` && set_ flv=$fl8
-
-test -n "$db" && vecho_ "the current version of ups for this flavor is $ver "`test -n "$ver" && vecho_ "flv=$flv"`
-
-# now get the prddir and exe
-set_ prddir=
-test -n "$ver"                 -a -d $db/ups/$ver.version \
-    && set_ prddir=`sed -n -e "/=[ 	]*$flv"'$/,/PROD_DIR/{' -e "/PROD_DIR/{s/.*= *//;s|^\([^/]\)|$pdp/\1|;p;}" -e '}' $db/ups/$ver.version/${flv}_` \
-    && vecho_ "prddir=$prddir"
-test -n "$ver" -a -z "$prddir" -a -f $db/ups/$ver.version \
-    && set_ prddir=`sed -n -e "/=[ 	]*$flv"'$/,/PROD_DIR/{' -e "/PROD_DIR/{s/.*= *//;s|^\([^/]\)|$pdp/\1|;p;}" -e '}' $db/ups/$ver.version` \
-    && vecho_ "prddir=$prddir"
-# NOTE: PROD_DIR (in .version file) may/should already have flv. CYGWIN test -x .../bin/ups does not work b/c the file is ups.exe (cygwin /bin/ls is smart).
-tnotnull prddir && nullout /bin/ls $prddir/bin/ups      && set_ exe=$prddir/bin/ups      || set_ exe=
-tnotnull prddir && test -z "$exe"  && nullout /bin/ls $prddir/$flv/bin/ups && set_ exe=$prddir/$flv/bin/ups
-test -z "$exe"  && set_ exe=`which ups`
-test -z "$exe"  && echo "ERROR: did not find ups binary" || vecho_ "using ups exe $exe"
-tnotnull PRODUCTS && set_ products=$PRODUCTS || set_ products=$db; expr ":${products}:" : ".*:${db}:" >/dev/null || set_ products=${db}:$products
-tnotnull UPS_DIR && setenv PATH `echo :${PATH}: | sed -e "s|:${UPS_DIR}/*bin:|:|" -e 's|^:||;s|:$||'`; unsetenv_ SETUP_UPS UPS_DIR
-test -n "$exe" && setenv PRODUCTS $products && source `$exe setup ups $ver`
-
-#tnotnull prddir && set_ ovexe=`sh -c 'for ff in '$prddir'/.ups_OVERRIDE $UPS_DIR/ups/ups_OVERRIDE;do if [ -x $ff ];then echo $ff;exit;fi;done;exit 1'`
-#tnotnull ovexe  && set_ ov="`$ovexe`" && setenv UPS_OVERRIDE "$ov"
-
-test -n "$exe" && test -f "$db/setup.initial" && source "$db/setup.initial"
-
-## MRB definitions
-source $db/mrb_definitions
-
-test "$ss" = csh && unalias tnotnull nullout set_ vecho_ unsetenv_
-unset ss sts msg db me os os_rev1 os_rev2 mach libc1 libc2 b64 fl1 fl2 fl3 fl4 fl5 fl6 fl7 fl8 pdp ver flv chainf prddir prdbin exe products olddb
-unset set_ setenv unsetenv_ tnotnull source nullout ovexe ov vecho_

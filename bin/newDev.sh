@@ -82,38 +82,31 @@ function create_local_setup()
     # --- Start of HERE document for localProducts.../setup ---
 
     # --- Comments below pertain to that file ---
-    cat > $dirName/mrb_definitions << EOF
-
-# This scriptlet is sourced by ${MRB_INSTALL}/setup
-
-# Make sure this script is sourced
-if [[ \${BASH_SOURCE[0]} == "\${0}" ]]; then
-  echo "You must source this script. e.g. source setup"
-  exit 1
-fi
-
-
-# Set the MRB environment
-setenv MRB_INSTALL ${MRB_INSTALL}
-setenv MRB_SOURCE $PWD/srcs
-setenv MRB_PROJECT ${MRB_PROJECT}
-setenv MRB_BUILDDIR ${MRB_BUILDDIR}
+    cat >> $dirName/setup << EOF
 setenv MRB_VERSION ${MRB_VERSION}
-setenv MRB_QUALS ${MRB_QUALS}
+setenv MRB_QUALS "${MRB_QUALS}"
 
-# define the product path
-setenv PRODUCTS ${MRB_INSTALL}:${PRODUCTS}
-
-# setup mrb
-setup mrb
+# report the environment
+echo
+echo MRB_SOURCE=\$MRB_SOURCE
+echo MRB_BUILDDIR=\$MRB_BUILDDIR
+echo MRB_PROJECT=\$MRB_PROJECT
+echo MRB_VERSION=\$MRB_VERSION
+echo MRB_QUALS=\$MRB_QUALS
+echo MRB_INSTALL=\$MRB_INSTALL
+echo
+echo PRODUCTS=\$PRODUCTS
+echo
 
 ##$setupLine
 ##echo Executed $setupLine
+
+test "$ss" = csh && unalias tnotnull nullout set_ vecho_ unsetenv_
+unset ss sts msg1 msg2 db me
+unset set_ setenv unsetenv_ tnotnull source nullout ovexe ov vecho_
+
 EOF
 # --- End of HERE document for localProducts.../setup ---
-
-    # Make sure we make the script executable
-    chmod a+x $dirName/setup
 
     # Display what we did (note the short HERE document)
     cat << EOF
