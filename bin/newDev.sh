@@ -74,14 +74,17 @@ function copy_files_to_srcs()
 
 function create_local_setup()
 {
-    # Write the setup script
+    # copy the setup script
+    cp ${mrb_bin}/../templates/local_setup  $dirName/setup
+    
+    # Write mrb_definitions
 
     # --- Start of HERE document for localProducts.../setup ---
 
     # --- Comments below pertain to that file ---
-    cat > $dirName/setup << EOF
-#!/usr/bin/env bash
-# Setup script (source it)
+    cat > $dirName/mrb_definitions << EOF
+
+# This scriptlet is sourced by ${MRB_INSTALL}/setup
 
 # Make sure this script is sourced
 if [[ \${BASH_SOURCE[0]} == "\${0}" ]]; then
@@ -89,28 +92,21 @@ if [[ \${BASH_SOURCE[0]} == "\${0}" ]]; then
   exit 1
 fi
 
-# Determine where this script is running
-thisDirAB=\$(cd \${BASH_SOURCE[0]%/*} && echo \$PWD/\${BASH_SOURCE[0]##*/} )
-thisDirA=\`dirname \$thisDirAB\`
 
-# Source the basic setup script
-source $project_dir/setup >> /dev/null 2>&1
+# Set the MRB environment
+setenv MRB_INSTALL ${MRB_INSTALL}
+setenv MRB_SOURCE $PWD/srcs
+setenv MRB_PROJECT ${MRB_PROJECT}
+setenv MRB_BUILDDIR ${MRB_BUILDDIR}
+setenv MRB_VERSION ${MRB_VERSION}
+setenv MRB_QUALS ${MRB_QUALS}
 
-# Add this products area to the @PRODUCTS@ path
-export PRODUCTS=\$thisDirA:$PRODUCTS
+# define the product path
+setenv PRODUCTS ${MRB_INSTALL}:${PRODUCTS}
 
-# Set the @MRB_INSTALL@ environment variable
-export MRB_INSTALL=\$thisDirA
-
-# Set the convience @MRB_SOURCE@ environment variable
-export MRB_SOURCE=$PWD/srcs
-
-# Set up @${MRB_PROJECT}@
-export MRB_PROJECT=${MRB_PROJECT}
-export MRB_BUILDDIR=${MRB_BUILDDIR}
-export MRB_VERSION=${MRB_VERSION}
-export MRB_QUALS=${MRB_QUALS}
+# setup mrb
 setup mrb
+
 ##$setupLine
 ##echo Executed $setupLine
 EOF
@@ -318,6 +314,12 @@ if [ $doLP ]; then
     dirVerQual="_${MRB_PROJECT}_${prjver}_${qualdir}"
     # Construct the name of the @local_products@ directory
     dirName="$topDir/localProducts${dirVerQual}"
+
+    if [ "$topDir" != "." ]; then
+      MRB_INSTALL=${dirName}
+    else
+      MRB_INSTALL=${currentDir}/localProducts${dirVerQual}
+    fi
 
     #  Make sure the directory does not exist already
     if [ -e "$dirName" ]
