@@ -67,7 +67,7 @@ do
     myq=${qual}:${myq}
   fi
 done
-
+quals=`echo ${myq} | sed -e 's/::/:/g' | sed -e 's/:$//'`
 
 # We must be sitting in a build area
 if pwd | egrep -q '/build[^/]*$';
@@ -75,7 +75,7 @@ then
 
     # Source @setup_for_development@ either in this directory or in ups
     if [ -r ${srcDir}/setEnv ]; then
-      source ${srcDir}/setEnv $*
+      source ${srcDir}/setEnv ${dop} ${quals}
     else
       echo "Cannot find ${srcDir}/setEnv"
       return
