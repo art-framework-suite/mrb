@@ -3,6 +3,22 @@
 # mrb is a convenient "umbrella" script used to dispatch other scripts to do development 
 # releated tasks.
 
+function run_buildtool()
+{
+   echo $MRB_BUILDDIR
+   if [ -z $MRB_BUILDDIR ]; then
+      echo "ERROR: MRB_BUILDDIR is undefined"
+      exit 1
+   fi 
+   if [ ! -e $MRB_BUILDDIR/cetpkg_variable_report ]; then
+      echo "ERROR: you must \"source mrb setEnv\" in $MRB_BUILDDIR"
+      exit 2
+   fi
+   cd $MRB_BUILDDIR
+   echo "calling buildtool $*"
+   buildtool $*
+}
+
 # setEnv must be sourced in order to affect your environment
 # This is not necessary for the other mrb commands.
 # Did the user source this script?
@@ -98,11 +114,11 @@ EOF
     ;;
 
 # Run buildtool 
-    "build" | "b" ) buildtool $*
+    "build" | "b" ) run_buildtool $*
         ;;
 
    # install into local product area
-    "install" | "i" ) buildtool -b -I $MRB_INSTALL -i $*
+    "install" | "i" ) run_buildtool -b -I $MRB_INSTALL -i $*
         ;;
 
    # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)
