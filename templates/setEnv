@@ -47,7 +47,8 @@ test -z "$db" && echo "$msg2" || vecho_ "db=$db"
 test -n "$db" && setenv CETPKG_SOURCE $db
 
 # make sure we know the current directory
-setenv CETPKG_BUILD `pwd`
+tnotnull MRB_BUILDDIR  && setenv CETPKG_BUILD $MRB_BUILDDIR
+test -z "$CETPKG_BUILD" && setenv CETPKG_BUILD `pwd`
 #echo Build directory is $CETPKG_BUILD
 
 echo The working build directory is $CETPKG_BUILD
@@ -68,13 +69,10 @@ test -e "$CETPKG_BUILD/diag_report" && cat $CETPKG_BUILD/diag_report
 
 echo ----------------------------------------------------------------
 
-# add lib to LD_LIBRARY_PATH
-##source $CETBUILDTOOLS_DIR/bin/set_dev_lib
-# add bin to path
-##source $CETBUILDTOOLS_DIR/bin/set_dev_bin
-
-# final sanity check and report
-##source $CETBUILDTOOLS_DIR/bin/set_dev_check_report
+# set FHICL_FILE_PATH
+tnotnull MRB_BUILDDIR  && mkdir -p ${MRB_BUILDDIR}/fcl
+tnotnull MRB_BUILDDIR  && setenv FHICL_FILE_PATH ${MRB_BUILDDIR}/fcl:${FHICL_FILE_PATH}
+setenv FHICL_FILE_PATH `dropit -D -p "$FHICL_FILE_PATH"`
 
 # cleanup before exiting
 test "$ss" = csh && unalias tnotnull nullout set_ vecho_ return
