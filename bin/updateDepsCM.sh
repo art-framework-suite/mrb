@@ -7,9 +7,7 @@
 # Determine the name of this command
 thisComFull=$(basename $0)
 thisCom=${thisComFull%.*}
-
-# Merge it with the "umbrella" command (like gm2d)
-fullCom="$umbCom $thisCom"
+fullCom="${mrb_command} $thisCom"
 
 # Function to show command usage
 function usage() {
@@ -19,12 +17,9 @@ Usage: $fullCom
 
   Options:
      -b = Copy CMakeLists.txt to CMakeLists.txt.bak first (backup)
-     -f = Specify the file (default is CMakeLists.txt)
 EOF
 }
 
-# Choose the file
-f="CMakeLists.txt"
 doBak=""
 
 # Determine command options (just -h for help)
@@ -33,22 +28,69 @@ do
     case $OPTION in
         h   ) usage ; exit 0 ;;
         b   ) doBak="yes" ;;
-        f   ) f=$OPTARG ;;
         *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
     esac
 done
 
 # Some sanity checks -
-if [ ! -r $f ]; then
-    echo "$f not found"
+if [ ! -r $MRB_SOURCE/CMakeLists.txt ]; then
+    echo "$MRB_SOURCE/CMakeLists.txt not found"
     exit 1
+fi
+
+if [ -z $MRB_SOURCE ]
+then
+  echo "ERROR: MRB_SOURCE is undefined."
+  exit 1
 fi
 
 # Backup?
 if [ $doBak ]; then
-  cp $f ${f}.bak
+  cp $MRB_SOURCE/CMakeLists.txt $MRB_SOURCE/CMakeLists.txt.bak
+  cp $MRB_SOURCE/cmake_add_subdir $MRB_SOURCE/cmake_add_subdir.bak
+  cp $MRB_SOURCE/cmake_inlude_dirs $MRB_SOURCE/cmake_inlude_dirs.bak
 fi
 
-python $thisDirA/update_deps_cmakeliststxt.py $f
+# find the directories
+# ignore any directory that does not contain ups/product_deps
+list=`ls $MRB_SOURCE -1`
+for file in $list
+do
+   if [ -d $file ]
+   then
+     if [ -r $file/ups/product_deps ]
+     then
+       pkglist="$file $pkglist"
+     fi
+   fi
+done
+
+echo ""
+echo "updateDepsCM: rewrite $MRB_SOURCE/CMakeLists.txt for these packages:"
+echo "        $pkglist"
+echo ""
+
+# Construct a new CMakeLists.txt file in srcs
+cp ${MRB_DIR}/templates/CMakeLists.txt.master $MRB_SOURCE/CMakeLists.txt || exit 1;
+rm -f $MRB_SOURCE/cmake_add_subdir
+echo "# DO NOT DELETE cmake_add_subdir" > $MRB_SOURCE/cmake_add_subdir
+rm -f $MRB_SOURCE/cmake_inlude_dirs
+echo "# DO NOT DELETE cmake_inlude_dirs" > $MRB_SOURCE/cmake_inlude_dirs
+
+# have to accumulate the include_directories command in one fragment
+# and the add_subdirectory commands in another fragment
+for pkg in $pkglist
+do
+   echo "# ${pkg} package block" >> $MRB_SOURCE/cmake_inlude_dirs
+   echo "set(${pkg}_not_in_ups true)" >> $MRB_SOURCE/cmake_inlude_dirs
+   echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${pkg} )" >> $MRB_SOURCE/cmake_inlude_dirs
+   echo "ADD_SUBDIRECTORY(${pkg})" >> $MRB_SOURCE/cmake_add_subdir
+   echo "NOTICE: Adding ${pkg} to CMakeLists.txt file"
+done
+
+cat $MRB_SOURCE/cmake_inlude_dirs >> $MRB_SOURCE/CMakeLists.txt
+echo ""  >> $MRB_SOURCE/CMakeLists.txt
+cat $MRB_SOURCE/cmake_add_subdir >> $MRB_SOURCE/CMakeLists.txt
+echo ""  >> $MRB_SOURCE/CMakeLists.txt
 
 exit 0

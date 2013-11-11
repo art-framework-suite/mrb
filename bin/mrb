@@ -37,7 +37,7 @@ thisCom=${thisComFull%.*}
 export mrb_command="$thisCom"
 
 # Define the short list of commands
-shortComList="(newDev | gitCheckout | setEnv | build | install | zapBuild )"
+shortComList="(newDev | gitCheckout | setEnv | build | install | zapBuild | updateDepsCM )"
 
 # Simple help if no argumets
 if [ $# -lt 1 ]
@@ -86,6 +86,7 @@ Usage ${mrb_command} $shortComList [-h for help]"
    install (i)           Run buildtool
 
    zapBuild (z)          Delete everything in your build area
+   updateDepsCM (uc)     Update CMakeLists.txt file for latest dependencies
 EOF
    ;;
 
@@ -127,10 +128,6 @@ EOF
 
    # Update CMakeLists.txt for latest dependencies (calls &l=bin/updateDepsCM.sh&)
     "updateDepsCM" | "uc" ) ${mrb_dir}/updateDepsCM.sh $*
-        ;;
-
-# Update product_deps for latest dependencies (calls &l=bin/product_deps.sh&)
-    "updateDepsPD" | "up" ) ${mrb_dir}/updateDepsPD.sh $*
         ;;
 
    # Dump some debug information
