@@ -1,0 +1,35 @@
+# CMakeLists.txt file for %%PD%%
+
+#  This simply copies files into an install directory - there is no build
+
+CMAKE_MINIMUM_REQUIRED (VERSION 2.8)
+
+PROJECT (%%PD%%)
+
+# cetbuildtools contains our cmake modules
+set( CETBUILDTOOLS_VERSION $ENV{CETBUILDTOOLS_VERSION} )
+if( NOT CETBUILDTOOLS_VERSION )
+  message( FATAL_ERROR "ERROR: setup cetbuildtools to get the cmake modules" )
+endif()
+set( CMAKE_MODULE_PATH $ENV{CETBUILDTOOLS_DIR}/Modules ${CMAKE_MODULE_PATH} )
+
+# Add any modules from this source necessary for building
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules ${CMAKE_MODULE_PATH} )
+
+include(CetCMakeEnv)
+
+# gm2softwaretools has no architecture dependence
+cet_cmake_env( noarch )
+
+# Make sure cetbuildtools is set up (version is minimum)
+find_ups_product(cetbuildtools v2_03_03)
+
+# source code
+add_subdirectory(bin)
+add_subdirectory(test)
+add_subdirectory(ups)
+
+# packaging utility
+include(UseCPack)
+
+

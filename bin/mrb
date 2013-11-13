@@ -37,7 +37,7 @@ thisCom=${thisComFull%.*}
 export mrb_command="$thisCom"
 
 # Define the short list of commands
-shortComList="(newDev | gitCheckout | setEnv | build | install | zapBuild | updateDepsCM )"
+shortComList="(newDev | gitCheckout | newProduct | setEnv | build | install | zapBuild | updateDepsCM )"
 
 # Simple help if no argumets
 if [ $# -lt 1 ]
@@ -81,6 +81,7 @@ Usage ${mrb_command} $shortComList [-h for help]"
 
    newDev (n)            Start a new development area
    gitCheckout (g)       Clone a git repository
+   newProduct (p)        Create a new product from scratch
    setEnv (s)            Setup a development enviornment
    build (b)             Run buildtool
    install (i)           Run buildtool
@@ -99,6 +100,10 @@ EOF
    # Clone a Redmine git repository (calls &l=bin/gitCheckout.sh&)
     "gitCheckout" | "g" ) ${mrb_dir}/gitCheckout.sh $*
         ;;
+
+   # Create a new product (calls &l=bin/newProduct.sh&)
+    "newProduct" | "p" ) ${mrb_dir}/newProduct.sh $*
+        ;; 
 
   # Set up a development environment (calls &l=bin/setEnv.sh&)
     "setEnv" | "s" )
