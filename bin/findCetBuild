@@ -1,0 +1,65 @@
+#!/usr/bin/env perl
+#
+
+use File::Basename;
+use lib dirname($0);
+
+$sourcedir= $ENV{MRB_SOURCE};
+$builddir = $ENV{MRB_BUILDDIR};
+
+
+require mrb_parse_deps;
+
+$mrb_project = $ENV{MRB_PROJECT};
+$mrb_version = $ENV{MRB_VERSION};
+$mrb_quals = $ENV{MRB_QUALS};
+$tmpfl = $builddir."/".$mrb_project."-".$mrb_version;
+##print DIAG "opening $tmpfl for $mrb_project $mrb_version\n";
+open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
+
+##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
+print TSET "setenv UPS_OVERRIDE -B\n";
+print TSET "setenv CETPKG_NAME $mrb_project\n";
+print TSET "setenv CETPKG_VERSION $mrb_version\n";
+if ( $simple ) {
+  print TSET "unsetenv_ CETPKG_QUAL\n";
+  print TSET "unsetenv_ CETPKG_TYPE\n";
+} else {
+  print TSET "setenv CETPKG_QUAL $mrb_quals\n";
+  print TSET "setenv CETPKG_TYPE $type\n";
+}
+
+# parse a list of dependencies
+$dfile = $sourcedir."/dependency_list";
+%deplist = get_dependency_list( $dfile, DIAG );
+
+# have to find the list of packages to traverse
+$cmakefile=$sourcedir."/CMakeLists.txt";
+@package_list = get_package_list( $cmakefile, DIAG );
+##print DIAG "DIAGNOSTICS: packages to check: $#package_list @package_list\n";
+$use_cetbver="v0_00_00";
+for $i ( 0 .. $#package_list ) {
+  $pkg=$package_list[$i];
+  $pfile=$sourcedir."/".$pkg."/ups/product_deps";
+  ##print DIAG "checking $pfile for $pkg \n";
+  ($productnames[$i], $productversn[$i]) = get_product_name( $pfile, DIAG );
+  # call unsetup if the $productnames[$i] has been setup
+  $psetup = "SETUP_".uc($productnames[$i]);
+  $is_setup=$ENV{$psetup};
+  ##print DIAG "$psetup for $productnames[$i] is $is_setup\n";
+  if ( $is_setup ) {
+    print TSET "unsetup -j $productnames[$i]\n";
+  }
+  $cetbver[$i] = find_cetbuildtools( $pfile );
+  print "comparing $use_cetbver, $cetbver[$i]\n";
+  $use_cetbver = compare_versions( $use_cetbver, $cetbver[$i] );
+  ##print DIAG "DIAGNOSTICS: cetbuildtools $cetbver[$i]\n";
+  print TSET "# checking $pkg\n";
+  print TSET "setup -B cetbuildtools $cetbver[$i]\n";
+  print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
+}
+  print TSET "# using  THIS VERSION\n";
+  print TSET "setup -B cetbuildtools $use_cetbver\n";
+  print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
+print TSET "setup -B cetpkgsupport \n";
+print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
