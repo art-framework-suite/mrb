@@ -78,8 +78,9 @@ if grep -q \($REP\) CMakeLists.txt
     cp ${MRB_DIR}/templates/CMakeLists.txt.master CMakeLists.txt || exit 1;
     # have to accumulate the include_directories command in one fragment
     # and the add_subdirectory commands in another fragment
+    pkgname=`grep parent ${MRB_SOURCE}/${REP}/ups/product_deps  | grep -v \# | awk '{ printf $2; }'`
     echo "# ${REP} package block" >> cmake_inlude_dirs
-    echo "set(${REP}_not_in_ups true)" >> cmake_inlude_dirs
+    echo "set(${pkgname}_not_in_ups true)" >> cmake_inlude_dirs
     echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${REP} )" >> cmake_inlude_dirs
     cat cmake_inlude_dirs >> CMakeLists.txt
     echo ""  >> CMakeLists.txt

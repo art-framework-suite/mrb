@@ -79,13 +79,14 @@ echo "# DO NOT DELETE cmake_inlude_dirs" > $MRB_SOURCE/cmake_inlude_dirs
 
 # have to accumulate the include_directories command in one fragment
 # and the add_subdirectory commands in another fragment
-for pkg in $pkglist
+for REP in $pkglist
 do
-   echo "# ${pkg} package block" >> $MRB_SOURCE/cmake_inlude_dirs
-   echo "set(${pkg}_not_in_ups true)" >> $MRB_SOURCE/cmake_inlude_dirs
-   echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${pkg} )" >> $MRB_SOURCE/cmake_inlude_dirs
-   echo "ADD_SUBDIRECTORY(${pkg})" >> $MRB_SOURCE/cmake_add_subdir
-   echo "NOTICE: Adding ${pkg} to CMakeLists.txt file"
+   pkgname=`grep parent ${MRB_SOURCE}/${REP}/ups/product_deps  | grep -v \# | awk '{ printf $2; }'`
+   echo "# ${REP} package block" >> $MRB_SOURCE/cmake_inlude_dirs
+   echo "set(${pkgname}_not_in_ups true)" >> $MRB_SOURCE/cmake_inlude_dirs
+   echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${REP} )" >> $MRB_SOURCE/cmake_inlude_dirs
+   echo "ADD_SUBDIRECTORY(${REP})" >> $MRB_SOURCE/cmake_add_subdir
+   echo "NOTICE: Adding ${REP} to CMakeLists.txt file"
 done
 
 cat $MRB_SOURCE/cmake_inlude_dirs >> $MRB_SOURCE/CMakeLists.txt
