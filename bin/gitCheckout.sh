@@ -14,6 +14,57 @@ function usage() {
 
 }
 
+run_git_command() {
+    echo "NOTICE: Running $gitCommand"
+    # Run the git clone command
+    $gitCommand
+
+    # Did it work?
+    if [ $? -ne 0 ];
+    then
+	echo 'ERROR: The git command failed!'
+	exit 1
+    fi
+}
+
+git_flow_init() {
+    myrep=$1
+    cd $myrep
+    git flow init -d > /dev/null
+
+    # Check for a remote @develop@ branch. If there is one, track it.
+    if git branch -r | grep -q origin/develop;
+    then
+	## Make @develop@ a tracking branch
+	echo 'NOTICE: Making develop a tracking branch of origin/develop'
+	git checkout master
+	git branch -d develop
+	git branch --track develop origin/develop
+	git checkout develop
+    fi
+
+    # Display informational messages
+    echo "NOTICE: You can now 'cd $myrep'"
+}
+
+add_to_cmake() {
+    myrep=$1
+    cd ${MRB_SOURCE}
+    cp ${MRB_DIR}/templates/CMakeLists.txt.master CMakeLists.txt || exit 1;
+    # have to accumulate the include_directories command in one fragment
+    # and the add_subdirectory commands in another fragment
+    pkgname=`grep parent ${MRB_SOURCE}/${myrep}/ups/product_deps  | grep -v \# | awk '{ printf $2; }'`
+    echo "# ${myrep} package block" >> cmake_inlude_dirs
+    echo "set(${pkgname}_not_in_ups true)" >> cmake_inlude_dirs
+    echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${myrep} )" >> cmake_inlude_dirs
+    cat cmake_inlude_dirs >> CMakeLists.txt
+    echo ""  >> CMakeLists.txt
+    echo "ADD_SUBDIRECTORY($myrep)" >> cmake_add_subdir
+    cat cmake_add_subdir >> CMakeLists.txt
+    echo ""  >> CMakeLists.txt
+    echo "NOTICE: Added $myrep to CMakeLists.txt file"
+}
+
 # Determine command options (just -h for help)
 while getopts ":h" OPTION
 do
@@ -50,63 +101,49 @@ then
     exit 1
 fi
 
-# Construct the @git clone@ command
+# Construct the git clone command
+larsoft_list="larcore  lardata larevt larsim larreco larana larexamples lareventdisplay"
 if [ "${REP}" = "larsoft" ]
 then
     gitCommand="git clone ssh://p-$REP-alpha@cdcvs.fnal.gov/cvs/projects/$REP-alpha $REP"
+    run_git_command
+elif [ "${REP}" = "larsoft_suite" ]
+then
+    for code in ${larsoft_list}
+    do
+        gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
+	run_git_command
+    done
+    gitCommand="git clone ssh://p-larsoft-alpha@cdcvs.fnal.gov/cvs/projects/larsoft-alpha larsoft"
+    run_git_command
 else
     gitCommand="git clone ssh://p-$REP@cdcvs.fnal.gov/cvs/projects/$REP"
-fi
-
-echo "NOTICE: Running $gitCommand"
-
-# Run the @git clone@ command
-$gitCommand
-
-# Did it work?
-if [ $? -ne 0 ];
-then
-    echo 'ERROR: The git command failed!'
-    exit 1
-fi
-
-# Add this product to the CMakeLists.txt file in srcs
-if grep -q \($REP\) CMakeLists.txt
-  then
-    echo "NOTICE: project is already in CMakeLists.txt file"
-  else
-    cp ${MRB_DIR}/templates/CMakeLists.txt.master CMakeLists.txt || exit 1;
-    # have to accumulate the include_directories command in one fragment
-    # and the add_subdirectory commands in another fragment
-    pkgname=`grep parent ${MRB_SOURCE}/${REP}/ups/product_deps  | grep -v \# | awk '{ printf $2; }'`
-    echo "# ${REP} package block" >> cmake_inlude_dirs
-    echo "set(${pkgname}_not_in_ups true)" >> cmake_inlude_dirs
-    echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${REP} )" >> cmake_inlude_dirs
-    cat cmake_inlude_dirs >> CMakeLists.txt
-    echo ""  >> CMakeLists.txt
-    echo "ADD_SUBDIRECTORY($REP)" >> cmake_add_subdir
-    cat cmake_add_subdir >> CMakeLists.txt
-    echo ""  >> CMakeLists.txt
-    echo "NOTICE: Added $REP to CMakeLists.txt file"
+    run_git_command
 fi
 
 # Turn on git flow (we will be left with the @develop@ branch selected)
-cd $REP
-git flow init -d > /dev/null
-
-# Check for a remote @develop@ branch. If there is one, track it.
-if git branch -r | grep -q origin/develop;
+if [ "${REP}" = "larsoft_suite" ]
 then
-    ## Make @develop@ a tracking branch
-    echo 'NOTICE: Making develop a tracking branch of origin/develop'
-    git checkout master
-    git branch -d develop
-    git branch --track develop origin/develop
-    git checkout develop
+    for code in ${larsoft_list} larsoft
+    do 
+       git_flow_init $code
+    done
+else
+  git_flow_init $REP
 fi
 
-# Display informational messages
-echo "NOTICE: You can now 'cd $REP'"
+# Add this product to the CMakeLists.txt file in srcs
+if [ "${REP}" = "larsoft_suite" ]
+then
+   echo "You must now run \"mrb updateDepsCM\""
+else
+   if grep -q \($REP\) ${MRB_SOURCE}/CMakeLists.txt
+     then
+       echo "NOTICE: project is already in CMakeLists.txt file"
+     else
+       add_to_cmake $REP
+   fi
+fi
 
 echo " "
 echo "You are now on the develop branch (check with 'git branch')"
