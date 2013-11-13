@@ -106,6 +106,7 @@ $dfile = $sourcedir."/dependency_list";
 $cmakefile=$sourcedir."/CMakeLists.txt";
 @package_list = get_package_list( $cmakefile, DIAG );
 ##print DIAG "DIAGNOSTICS: packages to check: $#package_list @package_list\n";
+$use_cetbver="v0_00_00";
 for $i ( 0 .. $#package_list ) {
   $pkg=$package_list[$i];
   $pfile=$sourcedir."/".$pkg."/ups/product_deps";
@@ -120,9 +121,10 @@ for $i ( 0 .. $#package_list ) {
   }
   $cetbver[$i] = find_cetbuildtools( $pfile );
   ##print DIAG "DIAGNOSTICS: cetbuildtools $cetbver[$i]\n";
-  print TSET "setup -B cetbuildtools $cetbver[$i]\n";
-  print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
+  $use_cetbver = compare_versions( $use_cetbver, $cetbver[$i] );
 }
+print TSET "setup -B cetbuildtools $use_cetbver\n";
+print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
 print TSET "setup -B cetpkgsupport \n";
 print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
 ##print DIAG "DIAGNOSTICS: product name $#productnames @productnames\n";

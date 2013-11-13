@@ -534,4 +534,23 @@ sub check_product_dependencies {
   return $usej;
 }
 
+sub compare_versions {
+  my $ver1 = $_[0];
+  my $ver2 = $_[1];
+  my $version = $ver1;
+  my @vers1 = ();
+  my @vers2 = ();
+  @vers1 = split(/_/,$ver1);
+  @vers2 = split(/_/,$ver2);
+  if ( $vers2[0] gt $vers1[0] ) {
+     $version = $ver2;
+  } elsif ( ( $vers2[0] eq $vers1[0]) && ($vers2[1] gt $vers1[1] ) ) {
+     $version = $ver2;
+  } elsif ( ( $vers2[0] eq $vers1[0]) && ($vers2[1] eq $vers1[1] ) && ($vers2[2] gt $vers1[2]) ) {
+     $version = $ver2;
+  }
+  return $version;
+
+}
+
 1;
