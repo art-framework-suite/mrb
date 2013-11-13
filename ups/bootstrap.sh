@@ -30,7 +30,7 @@ then
 fi
 
 package=mrb
-pkgver=v0_02_01
+pkgver=v0_03_00
 
 get_my_dir
 
