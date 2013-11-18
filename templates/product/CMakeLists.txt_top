@@ -57,7 +57,6 @@ cet_report_compiler_flags()
 
 # Locate some UPS areas (the versions are just minimum required) and setup include paths
 # These are needed for Art stuff
-find_ups_product(gm2softwaretools v201209_02)
 find_ups_product(cetbuildtools v2_03_03)
 find_ups_product(cpp0x v1_03_14)
 find_ups_product(libsigcpp v2_2_10)
