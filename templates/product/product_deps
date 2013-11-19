@@ -3,8 +3,6 @@
 # The *parent* line must the first non-commented line and defines this product and version
 # The version must be of the form vxx_yy_zz (e.g. v01_02_03)
 parent %%PD%% v0_0_1
-
-# The defaultqual should correspond to Art's default qualifier (e.g. a7)
 defaultqual e2
 
 # These optional lines define where headers, libraries, and executables go and should
@@ -18,15 +16,26 @@ defaultqual e2
 # Add the dependent product and version
 
 product          version
-art              v1_02_04
+lareventdisplay	v0_00_04
+larexamples	v0_00_04
+larana		v0_00_04
+larreco		v0_00_04
+gcc		v4_7_1
 
-only_for_build  cetbuildtools v2_03_03
-only_for_build  gm2softwaretools v201209_02
+# list products required ONLY for the build
+# any products here must NOT have qualifiers
+only_for_build  cetbuildtools   v3_07_00
 
 # We now define allowed qualifiers and the corresponding qualifiers for the depdencies.
 # Make a table by adding columns before "notes". 
-#
-qualifier        art        notes
-e2:debug         e2:debug   
-e2:opt           e2:opt     
-e2:prof          e2:prof    
+# e2  - with gcc 4.7.1 and -std=c++0x
+qualifier	lareventdisplay	larexamples	larreco		larana	 	gcc	notes
+e2:debug	e2:debug	e2:debug	e2:debug	e2:debug	-nq-
+e2:opt		e2:opt		e2:opt		e2:opt		e2:opt		-nq-
+e2:prof		e2:prof		e2:prof		e2:prof		e2:prof		-nq-
+
+# Preserve tabs and formatting in emacs and vi / vim:
+
+### Local Variables:
+### tab-width: 8
+### End:

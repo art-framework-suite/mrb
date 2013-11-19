@@ -16,15 +16,6 @@ bindir  product_dir bin
 # Since this is a no-flavor product, the next line must be no_fq_dir
 no_fq_dir
 
-# With "product  version" table below, we now define depdendencies
+only_for_build  cetbuildtools   v3_07_00
 
-# Add the dependent product and version
 
-product          version
-cetbuildtools    v2_03_03
-
-# We now define allowed qualifiers and the corresponding qualifiers for the depdencies.
-# Make a table by adding columns 
-#
-qualifier        cetbuildtools
--nq-              -nq-                 

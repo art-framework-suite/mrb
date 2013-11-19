@@ -18,11 +18,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules ${CMAKE_MODULE_PATH} )
 
 include(CetCMakeEnv)
 
-# gm2softwaretools has no architecture dependence
+# %%PD%% has no architecture dependence
 cet_cmake_env( noarch )
 
 # Make sure cetbuildtools is set up (version is minimum)
-find_ups_product(cetbuildtools v2_03_03)
+find_ups_product(cetbuildtools v3_00_00)
 
 # source code
 add_subdirectory(bin)
