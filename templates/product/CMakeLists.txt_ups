@@ -1,22 +1,6 @@
-# cmake driver file for @ups/@
-
-execute_process( COMMAND date
-                 OUTPUT_VARIABLE datime
-                 OUTPUT_STRIP_TRAILING_WHITESPACE )
 
 # create package configuration and version files
 
 process_ups_files()
 
-configure_file ( ${%%PD%%_SOURCE_DIR}/ups/%%PD%%-config.cmake.in
-                 ${%%PD%%_BINARY_DIR}/ups/%%PD%%-config.cmake @ONLY )
-configure_file ( ${%%PD%%_SOURCE_DIR}/ups/%%PD%%-config-version.cmake.in
-                 ${%%PD%%_BINARY_DIR}/ups/%%PD%%-config-version.cmake @ONLY )
-
-install (FILES ${%%PD%%_BINARY_DIR}/ups/%%PD%%-config.cmake
-               ${%%PD%%_BINARY_DIR}/ups/%%PD%%-config-version.cmake
-	 DESTINATION ${flavorqual_dir}/lib/%%PD%%-${version} )
-
-# Add setup line to source_for_local.sh in local products area (no qualifier needed here)
-install(CODE "file(APPEND ${CMAKE_INSTALL_PREFIX}/source_for_local.sh \"\nsetup -j ${product} ${version} -q \\\"${full_qualifier}\\\"\")")
-
+cet_cmake_config()

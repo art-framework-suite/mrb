@@ -110,16 +110,18 @@ function createFiles() {
   # ups files
 
   # From &l=templates/product/pkg-config-version.cmake.in&
-  sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/pkg-config-version.cmake.in > ${PD}-config-version.cmake.in
+  #sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/pkg-config-version.cmake.in > ${PD}-config-version.cmake.in
 
   # From &l=templates/product/pkg-config.cmake.in&
-  sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/pkg-config.cmake.in > ${PD}-config.cmake.in
+  #sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/pkg-config.cmake.in > ${PD}-config.cmake.in
+  cp ${templateDir}/product-config.cmake.in.template product-config.cmake.in
 
   # From &l=templates/product/product_deps&
   if [ "$noflav" ]; then
     sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/product_deps_noflav > product_deps
   else
     sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/product_deps > product_deps
+    cp ${templateDir}/setup_deps.template setup_deps
   fi
 
   # From &l=templates/product/setup_for_development&
