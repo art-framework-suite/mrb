@@ -76,6 +76,15 @@ fi
 # Capture the product name
 REP=$1
 
+# Make sure MRB_SOURCE is defined
+if [ -z ${MRB_SOURCE} ]
+then
+    echo 'ERROR: MRB_SOURCE is not defined'
+    echo '       Please make sure you have sourced your localProducts*/setup file'
+    exit 1
+fi
+
+cd ${MRB_SOURCE}
 # Ensure that the current directory is @srcs/@
 if echo $PWD | egrep -q "/srcs$";
 then
@@ -91,6 +100,7 @@ then
     echo "ERROR: $REP directory already exists!"
     exit 1
 fi
+
 
 # Construct the git clone command
 larsoft_list="larcore  lardata larevt larsim larreco larana larexamples lareventdisplay"
