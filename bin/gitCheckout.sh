@@ -30,6 +30,11 @@ run_git_command() {
 git_flow_init() {
     myrep=$1
     cd $myrep
+	
+    # We need to make sure we are on the master branch first (or else git flow init will fail)
+    git checkout master
+
+    # Initialize git flow
     git flow init -d > /dev/null
 
     # Check for a remote @develop@ branch. If there is one, track it.
