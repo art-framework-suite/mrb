@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Setup a development environment by calling a @setup_for_development@ script
+# Setup a development environment by calling a @setEnv@ script
 
 # Usage: 
 #   <pre>
@@ -8,8 +8,7 @@
 #   e.g. source mrb setEnv ~/mysrcs/srcs -d e1
 #  </pre>
 
-#  The source_area must point to a directory that contains a setEnv
-#  file or has ups/setup_for_development 
+#  The source_area must point to a directory that contains a setEnv file
 
 # Function to show command usage
 function usage() {
@@ -20,8 +19,7 @@ Usage: source mrb setEnv [source_area] options
 e.g.   source mrb setEnv $MRB_SOURCE 
 e.g.   source mrb setEnv   # Equivalent to above
 
-The source_area must point to a directory that contains a setEnv
-file or has ups/setup_for_development 
+The source_area must point to a directory that contains a setEnv file
 
 If you leave source_area blank, $MRB_SOURCE is assumed.
 
@@ -69,19 +67,40 @@ do
 done
 quals=`echo ${myq} | sed -e 's/::/:/g' | sed -e 's/:$//'`
 
-# We must be sitting in a build area
+# Check if we are sitting in the right build area
 if pwd | egrep -q '/build[^/]*$';
 then
+  if [ $PWD != ${MRB_BUILDDIR} ];
+  then
+     echo "NOTICE: Changing \$MRB_BUILDDIR to $PWD"
+     export MRB_BUILDDIR=$PWD
+  fi
+fi
 
-    # Source @setup_for_development@ either in this directory or in ups
-    if [ -r ${srcDir}/setEnv ]; then
-      source ${srcDir}/setEnv ${dop} ${quals}
-    else
-      echo "Cannot find ${srcDir}/setEnv"
+# MRB_BUILDDIR must point to a directory called build
+if echo ${MRB_BUILDDIR} | egrep -q '/build[^/]*$';
+then
+
+   # Directory must exist
+   if [ -d "$MRB_BUILDDIR" ];
+   then 
+
+      # Source @setup_for_development@ either in this directory or in ups
+      if [ -r ${srcDir}/setEnv ]; then
+        source ${srcDir}/setEnv ${dop} ${quals}
+      else
+        echo "Cannot find ${srcDir}/setEnv"
+        return
+      fi
+
+   else
+      echo "ERROR - Build directory $MRB_BUILDDIR does not exist"
       return
-    fi
+
+   fi
+   
 else
-    echo 'Your current directory must be a build area (e.g. starts with build)'
+    echo "ERROR: \$MRB_BUILDDIR must point to a directory that starts with build"
 fi
 
 return
