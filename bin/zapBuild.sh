@@ -22,16 +22,27 @@ do
     esac
 done
 
+# Let's make sure we are not already sitting in a build area
+if pwd | egrep -q '/build[^/]*$';
+  then
+     if [ $PWD != ${MRB_BUILDDIR} ];
+       then
+         echo "ERROR: You are sitting in $PWD, but \$MRB_BUILDDIR=${MRB_BUILDDIR} !!"
+         echo "cd to \$MRB_BUILDDIR or out of the build area"
+         exit 3
+     fi
+fi
+
 # Make sure we're in a build area (something called .../buildbla)
 cd ${MRB_BUILDDIR}
 if pwd | egrep -q '/build[^/]*$';
   then
-    echo 'Removing everything in ${MRB_BUILDDIR}'
+    echo "Removing everything in ${MRB_BUILDDIR}"
     rm -rf *
     echo 'You must now run the following:'
     echo '    source mrb setEnv <OPTIONS>'
 
   else
-    echo 'You are not in a build directory!!'
+    echo "ERROR: ${MRB_BUILDDIR} does not point to a directory that starts with build"
     exit 2
 fi
