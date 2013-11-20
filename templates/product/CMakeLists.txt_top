@@ -11,9 +11,6 @@
 #  make install
 #  make package (builds distribution tarfile)
 # ======================================================================
-# LarSoft is an empty product
-# It sets up all of the larsoft ups products (lardata, larsim, larreco, etc.)
-# ======================================================================
 
 
 # use cmake 2.8 or later
