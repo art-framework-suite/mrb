@@ -20,6 +20,7 @@ thisCom=${thisComFull%.*}
 # Merge it with the "umbrella" command (like mrb)
 fullCom="${mrb_command} $thisCom"
 
+
 # Function to show command usage
 function usage() 
 {
@@ -86,6 +87,7 @@ function create_local_setup()
 setenv PRODUCTS "\$MRB_INSTALL":${PRODUCTS}
 setenv MRB_VERSION ${MRB_VERSION}
 setenv MRB_QUALS "${MRB_QUALS}"
+setenv MRB_PROJECT "${MRB_PROJECT}"
 
 # report the environment
 echo
@@ -304,7 +306,7 @@ if [ $doLP ]; then
     MRB_QUALS=${MRB_QUALS}
 
     # Construct the version and qualifier string
-    qualdir=`echo ${MRB_QUALS} | sed s'/:/_/'`
+    qualdir=`echo ${MRB_QUALS} | sed s'/:/_/g'`
     dirVerQual="_${MRB_PROJECT}_${prjver}_${qualdir}"
     # Construct the name of the @local_products@ directory
     dirName="$topDir/localProducts${dirVerQual}"
