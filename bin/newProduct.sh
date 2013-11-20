@@ -162,10 +162,10 @@ function createFiles() {
       # have to accumulate the include_directories command in one fragment
       # and the add_subdirectory commands in another fragment
       pkgname=`grep parent ${MRB_SOURCE}/${PRODNAME}/ups/product_deps  | grep -v \# | awk '{ printf $2; }'`
-      echo "# ${PRODNAME} package block" >> cmake_inlude_dirs
-      echo "set(${pkgname}_not_in_ups true)" >> cmake_inlude_dirs
-      echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${PRODNAME} )" >> cmake_inlude_dirs
-      cat cmake_inlude_dirs >> CMakeLists.txt
+      echo "# ${PRODNAME} package block" >> cmake_include_dirs
+      echo "set(${pkgname}_not_in_ups true)" >> cmake_include_dirs
+      echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${PRODNAME} )" >> cmake_include_dirs
+      cat cmake_include_dirs >> CMakeLists.txt
       echo ""  >> CMakeLists.txt
       echo "ADD_SUBDIRECTORY($PRODNAME)" >> cmake_add_subdir
       cat cmake_add_subdir >> CMakeLists.txt

@@ -48,7 +48,7 @@ fi
 if [ $doBak ]; then
   cp $MRB_SOURCE/CMakeLists.txt $MRB_SOURCE/CMakeLists.txt.bak
   cp $MRB_SOURCE/cmake_add_subdir $MRB_SOURCE/cmake_add_subdir.bak
-  cp $MRB_SOURCE/cmake_inlude_dirs $MRB_SOURCE/cmake_inlude_dirs.bak
+  cp $MRB_SOURCE/cmake_include_dirs $MRB_SOURCE/cmake_include_dirs.bak
 fi
 
 # find the directories
@@ -74,22 +74,22 @@ echo ""
 cp ${MRB_DIR}/templates/CMakeLists.txt.master $MRB_SOURCE/CMakeLists.txt || exit 1;
 rm -f $MRB_SOURCE/cmake_add_subdir
 echo "# DO NOT DELETE cmake_add_subdir" > $MRB_SOURCE/cmake_add_subdir
-rm -f $MRB_SOURCE/cmake_inlude_dirs
-echo "# DO NOT DELETE cmake_inlude_dirs" > $MRB_SOURCE/cmake_inlude_dirs
+rm -f $MRB_SOURCE/cmake_include_dirs
+echo "# DO NOT DELETE cmake_include_dirs" > $MRB_SOURCE/cmake_include_dirs
 
 # have to accumulate the include_directories command in one fragment
 # and the add_subdirectory commands in another fragment
 for REP in $pkglist
 do
    pkgname=`grep parent ${MRB_SOURCE}/${REP}/ups/product_deps  | grep -v \# | awk '{ printf $2; }'`
-   echo "# ${REP} package block" >> $MRB_SOURCE/cmake_inlude_dirs
-   echo "set(${pkgname}_not_in_ups true)" >> $MRB_SOURCE/cmake_inlude_dirs
-   echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${REP} )" >> $MRB_SOURCE/cmake_inlude_dirs
+   echo "# ${REP} package block" >> $MRB_SOURCE/cmake_include_dirs
+   echo "set(${pkgname}_not_in_ups true)" >> $MRB_SOURCE/cmake_include_dirs
+   echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${REP} )" >> $MRB_SOURCE/cmake_include_dirs
    echo "ADD_SUBDIRECTORY(${REP})" >> $MRB_SOURCE/cmake_add_subdir
    echo "NOTICE: Adding ${REP} to CMakeLists.txt file"
 done
 
-cat $MRB_SOURCE/cmake_inlude_dirs >> $MRB_SOURCE/CMakeLists.txt
+cat $MRB_SOURCE/cmake_include_dirs >> $MRB_SOURCE/CMakeLists.txt
 echo ""  >> $MRB_SOURCE/CMakeLists.txt
 cat $MRB_SOURCE/cmake_add_subdir >> $MRB_SOURCE/CMakeLists.txt
 echo ""  >> $MRB_SOURCE/CMakeLists.txt
