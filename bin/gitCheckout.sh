@@ -30,18 +30,9 @@ run_git_command() {
 git_flow_init() {
     myrep=$1
     cd $myrep
+    # this is necessary for those packages where the default branch is not master
+    git checkout master
     git flow init -d > /dev/null
-
-    # Check for a remote @develop@ branch. If there is one, track it.
-    if git branch -r | grep -q origin/develop;
-    then
-	## Make @develop@ a tracking branch
-	echo 'NOTICE: Making develop a tracking branch of origin/develop'
-	git checkout master
-	git branch -d develop
-	git branch --track develop origin/develop
-	git checkout develop
-    fi
 
     # Display informational messages
     echo "NOTICE: You can now 'cd $myrep'"
