@@ -44,6 +44,5 @@ setup mrb
 
 setenv MRB_INSTALL $db
 setenv MRB_SOURCE $MRB_TOP/srcs
-setenv MRB_PROJECT larsoft
 setenv MRB_BUILDDIR $MRB_TOP/build
 
