@@ -127,6 +127,13 @@ print TSET "setup -B cetbuildtools $use_cetbver\n";
 print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
 print TSET "setup -B cetpkgsupport \n";
 print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
+# now check for an old build directory 
+$old_build_dir=$ENV{OLD_MRB_BUILDDIR};
+if ( $old_build_dir ) {
+   ##print DIAG "DIAGNOSTICS: found old build directory $old_build_dir\n";
+  print TSET "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${old_build_dir}\'`\n";
+  print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${old_build_dir}\'\`\n";
+}
 ##print DIAG "DIAGNOSTICS: product name $#productnames @productnames\n";
 ##print DIAG "DIAGNOSTICS: product version $#productversn @productversn\n";
 @setup_list=( cetbuildtools, cetpkgsupport );
@@ -281,9 +288,7 @@ for $i ( 0 .. $#package_list ) {
   $product_uc = uc($product);
   print TSET "setenv  ${product_uc}_VERSION $version\n";
   print TSET "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${product}/lib\'\`\n";
-  print TSET "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${product}/${version}/lib\'\`\n";
   print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${product}/lib\'\`\n";
-  print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${product}/${version}/lib\'\`\n";
   print TSET "setenv  LD_LIBRARY_PATH $ENV{MRB_BUILDDIR}/${product}/lib:\${LD_LIBRARY_PATH}\n";
   print TSET "setenv  DYLD_LIBRARY_PATH $ENV{MRB_BUILDDIR}/${product}/lib:\${DYLD_LIBRARY_PATH}\n";
 
