@@ -187,7 +187,7 @@ for $i ( 0 .. $#package_list ) {
       exit 0;
     }
   }
-  print DIAG "setup_products: using qualifier $qual for $product\n";
+  ##print DIAG "setup_products: using qualifier $qual for $product\n";
 
   (%ohash) = find_optional_products( $pfile );
   ($ecount, @ehash) = find_only_for_build_products( $pfile );
@@ -200,6 +200,7 @@ for $i ( 0 .. $#package_list ) {
       }
     }
     if ( $print_setup eq "true" ) {
+      print TSET "echo Configuring $product\n";
       print TSET "setup -B $ehash[$i][0] $ehash[$i][1]\n";
       print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
     }
