@@ -109,11 +109,6 @@ function createFiles() {
 
   # ups files
 
-  # From &l=templates/product/pkg-config-version.cmake.in&
-  #sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/pkg-config-version.cmake.in > ${PD}-config-version.cmake.in
-
-  # From &l=templates/product/pkg-config.cmake.in&
-  #sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/pkg-config.cmake.in > ${PD}-config.cmake.in
   cp ${templateDir}/product-config.cmake.in.template product-config.cmake.in
 
   # From &l=templates/product/product_deps&
