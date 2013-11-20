@@ -54,7 +54,7 @@ open(DIAG, "+> $diagfl") or die "Couldn't open $diagfl";
 $srcbase = basename($sourcedir);
 if ( $srcbase eq "ups" ) {
     $inputdir = $sourcedir;
-    ##print DIAG "setup_products debug info: have the old setup_for_development\n";
+#    print DIAG "setup_products debug info: have the old setup_for_development\n";
     $errfl2 = "problem_report";
     open(ERR2, "> $errfl2") or die "Couldn't open $errfl2";
     print ERR2 "\n";
@@ -74,8 +74,8 @@ if ( $srcbase eq "ups" ) {
 } else {
     $inputdir = $sourcedir."/ups";
 }
-##print DIAG "setup_products debug info: source dir is $sourcedir\n";
-##print DIAG "setup_products: incoming qual is $incoming_qual\n";
+#print DIAG "setup_products debug info: source dir is $sourcedir\n";
+#print DIAG "setup_products: incoming qual is $incoming_qual\n";
 
 require mrb_parse_deps;
 
@@ -83,10 +83,10 @@ $mrb_project = $ENV{MRB_PROJECT};
 $mrb_version = $ENV{MRB_VERSION};
 $mrb_quals = $ENV{MRB_QUALS};
 $tmpfl = $builddir."/".$mrb_project."-".$mrb_version;
-##print DIAG "opening $tmpfl for $mrb_project $mrb_version\n";
+#print DIAG "opening $tmpfl for $mrb_project $mrb_version\n";
 open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
-##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
+#print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
 print TSET "setenv UPS_OVERRIDE -B\n";
 print TSET "setenv CETPKG_NAME $mrb_project\n";
 print TSET "setenv CETPKG_VERSION $mrb_version\n";
@@ -105,46 +105,46 @@ $dfile = $sourcedir."/dependency_list";
 # have to find the list of packages to traverse
 $cmakefile=$sourcedir."/CMakeLists.txt";
 @package_list = get_package_list( $cmakefile, DIAG );
-##print DIAG "DIAGNOSTICS: packages to check: $#package_list @package_list\n";
+#print DIAG "DIAGNOSTICS: packages to check: $#package_list @package_list\n";
 $use_cetbver="v0_00_00";
 for $i ( 0 .. $#package_list ) {
   $pkg=$package_list[$i];
   $pfile=$sourcedir."/".$pkg."/ups/product_deps";
-  ##print DIAG "checking $pfile for $pkg \n";
+#  print DIAG "checking $pfile for $pkg \n";
   ($productnames[$i], $productversn[$i]) = get_product_name( $pfile, DIAG );
   # call unsetup if the $productnames[$i] has been setup
   $psetup = "SETUP_".uc($productnames[$i]);
   $is_setup=$ENV{$psetup};
-  ##print DIAG "$psetup for $productnames[$i] is $is_setup\n";
+#  print DIAG "$psetup for $productnames[$i] is $is_setup\n";
   if ( $is_setup ) {
     print TSET "unsetup -j $productnames[$i]\n";
   }
   $cetbver[$i] = find_cetbuildtools( $pfile );
-  ##print DIAG "DIAGNOSTICS: cetbuildtools $cetbver[$i]\n";
+#  print DIAG "DIAGNOSTICS: cetbuildtools $cetbver[$i]\n";
   $use_cetbver = compare_versions( $use_cetbver, $cetbver[$i] );
 }
 print TSET "setup -B cetbuildtools $use_cetbver\n";
 print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
 print TSET "setup -B cetpkgsupport \n";
 print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
-##print DIAG "DIAGNOSTICS: product name $#productnames @productnames\n";
-##print DIAG "DIAGNOSTICS: product version $#productversn @productversn\n";
+#print DIAG "DIAGNOSTICS: product name $#productnames @productnames\n";
+#print DIAG "DIAGNOSTICS: product version $#productversn @productversn\n";
 @setup_list=( cetbuildtools, cetpkgsupport );
 for $i ( 0 .. $#package_list ) {
   $pkg=$package_list[$i];
   $pkgdir = $builddir."/".$pkg;
   unless ( -e $pkgdir or mkdir $pkgdir ) { die "Couldn't create $pkgdir"; }
   $pfile=$sourcedir."/".$pkg."/ups/product_deps";
-  #print DIAG "checking $pfile for $pkg \n";
+#  print DIAG "checking $pfile for $pkg \n";
   ($product, $version, $default_ver, $default_qual, %phash) = parse_product_list( $pfile, DIAG );
-  ##print DIAG "found $product $version $default_ver $default_qual\n";
-  ##print DIAG "should match $productnames[$i] $productversn[$i]\n";
+#  print DIAG "found $product $version $default_ver $default_qual\n";
+#  print DIAG "should match $productnames[$i] $productversn[$i]\n";
   if ( $product ne $productnames[$i] ) {
-     print DIAG "ERROR: product names do not match: $product vs $productnames[$i]\n";
+#     print DIAG "ERROR: product names do not match: $product vs $productnames[$i]\n";
      exit 1;
   }
   if ( $version ne $productversn[$i] ) {
-     print DIAG "ERROR: version names do not match: $version vs $productversn[$i]\n";
+#     print DIAG "ERROR: version names do not match: $version vs $productversn[$i]\n";
      exit 1;
   }
   # continue parsing for this package
@@ -180,7 +180,7 @@ for $i ( 0 .. $#package_list ) {
       exit 0;
     }
   }
-  print DIAG "setup_products: using qualifier $qual for $product\n";
+#  print DIAG "setup_products: using qualifier $qual for $product\n";
 
   (%ohash) = find_optional_products( $pfile );
   ($ecount, @ehash) = find_only_for_build_products( $pfile );
@@ -193,6 +193,7 @@ for $i ( 0 .. $#package_list ) {
       }
     }
     if ( $print_setup eq "true" ) {
+      print TSET "echo Configuring $product\n";
       print TSET "setup -B $ehash[$i][0] $ehash[$i][1]\n";
       print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
     }
@@ -200,7 +201,7 @@ for $i ( 0 .. $#package_list ) {
   # are there products without listed qualifiers?
   @pkeys = keys %phash;
   foreach $i ( 1 .. $#pkeys ) {
-    ##print DIAG "searching for $pkeys[$i] qualifiers in $product\n";
+#    print DIAG "searching for $pkeys[$i] qualifiers in $product\n";
     $p_has_qual = 0;
     foreach $k ( 0 .. $#setup_list ) {
       if( $pkeys[$i] eq $setup_list[$k] ) {
@@ -236,14 +237,14 @@ for $i ( 0 .. $#package_list ) {
 	    $print_setup=false;
 	  }
 	}
-	##print DIAG "should I setup $qlist[0][$j]? ${print_setup}\n";
+#	print DIAG "should I setup $qlist[0][$j]? ${print_setup}\n";
         if ( $print_setup eq "true" ) {
 	  push( @setup_list, $qlist[0][$j] );
 	  # is this part of my extended package list?
 	  # if it is in the middle of the build list, use setup -j
 	  # if we are not building anything it depends on, use regular setup
 	  $usej = check_product_dependencies( $qlist[0][$j], \%deplist, \@package_list, DIAG );
-	  ##print DIAG "check_product_dependencies returned $usej\n";
+#	  print DIAG "check_product_dependencies returned $usej\n";
 	  if ( $qlist[$i][$j] eq "-" ) {
 	  } elsif ( $qlist[$i][$j] eq "-nq-" ) {
             print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, $usej, TSET );
@@ -280,8 +281,12 @@ for $i ( 0 .. $#package_list ) {
   # pretend this is a product
   $product_uc = uc($product);
   print TSET "setenv  ${product_uc}_VERSION $version\n";
-
+  print TSET "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${product}/lib\'\`\n";
+  print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${product}/lib\'\`\n";
+  print TSET "setenv  LD_LIBRARY_PATH $ENV{MRB_BUILDDIR}/${product}/lib:\${LD_LIBRARY_PATH}\n";
+  print TSET "setenv  DYLD_LIBRARY_PATH $ENV{MRB_BUILDDIR}/${product}/lib:\${DYLD_LIBRARY_PATH}\n"; 
 }
+
 $cetfl = cetpkg_info_file( $mrb_project, $mrb_version, $mrb_version, $mrb_quals, $type, $sourcedir, $builddir );
 
 # cleanup
