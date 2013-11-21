@@ -9,15 +9,17 @@ fullCom="${mrb_command} $thisCom"
 
 # Usage function
 function usage() {
-    echo "Usage: $fullCom <svnRepositoryName> [version]"
+    echo "Usage: $fullCom [-d destination_name] <svnRepositoryName> [version]"
     echo "   Checkout a svn Repository to your development area. You should be in the srcs directory"
     echo "   If the version is not specified, you will be on the head"
+    echo "   If you provide a full path, version is ignored"
 
 }
 
 run_svn_command() {
     echo "NOTICE: Running $svnCommand"
     # Run the svn co command
+    cd ${MRB_SOURCE}
     $svnCommand
 
     # Did it work?
@@ -47,10 +49,11 @@ add_to_cmake() {
 }
 
 # Determine command options (just -h for help)
-while getopts ":h" OPTION
+while getopts ":hd:" OPTION
 do
     case $OPTION in
         h   ) usage ; exit 0 ;;
+        d   ) echo "NOTICE: svn checkout will use  $OPTARG" ; destinationDir=$OPTARG ;;
         *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
     esac
 done
@@ -63,7 +66,7 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-# Capture the product name
+# Capture the product name and optional destination
 REP=$1
 
 # check for version
@@ -83,31 +86,61 @@ else
     exit 1
 fi
 
-# Make sure this product isn't already checked out
-if ls -1 | egrep -q ^${REP}$;
+if [ -z "${MRB_SOURCE}" ]
 then
-    echo "ERROR: $REP directory already exists!"
+    echo 'ERROR: MRB_SOURCE must be defined'
+    echo '       source the appropriate localProductsXXX/setup'
+    exit 1
+fi
+
+# check to see if we have a path already
+if echo ${REP} | grep -q '/';
+then
+  have_path=true
+  repbase=`basename ${REP}`
+else
+  have_path=false
+  repbase=${REP}
+fi
+
+# Make sure this product isn't already checked out
+# You can only have one copy of a given repository in any given srcs directory
+if [ -d ${MRB_SOURCE}/${repbase} ]
+then
+    echo "ERROR: $repbase directory already exists!"
+    exit 1
+fi
+if [ "x${destinationDir}" != "x" ] && [ -d ${MRB_SOURCE}/${destinationDir} ]
+then
+    echo "ERROR: ${MRB_SOURCE}/${destinationDir} directory already exists!"
     exit 1
 fi
 
 # Construct the svn checkout command
-
-
 if [ "${REP}" = "nutools" ]
 then
-    svnCommand="svn co  svn+ssh://p-nusoftart@cdcvs.fnal.gov/cvs/projects/nusoftsvn/$VER/nutools"
+    svnCommand="svn co  svn+ssh://p-nusoftart@cdcvs.fnal.gov/cvs/projects/nusoftsvn/$VER/nutools ${destinationDir}"
+    run_svn_command
+elif [ "${have_path}" = "true" ]
+then
+    svnCommand="svn co ${REP} ${destinationDir}"
     run_svn_command
 else
-    svnCommand="svn co http://cdcvs.fnal.gov/subversion/$REP/$VER $REP"
+    if [ -z " ${destinationDir}" ]
+    then
+       svnCommand="svn co http://cdcvs.fnal.gov/subversion/$REP/$VER $REP "
+    else
+       svnCommand="svn co http://cdcvs.fnal.gov/subversion/$REP/$VER  ${destinationDir}"
+    fi
     run_svn_command
 fi
 
 # Add this product to the CMakeLists.txt file in srcs
-if grep -q \($REP\) ${MRB_SOURCE}/CMakeLists.txt
+if grep -q \($repbase\) ${MRB_SOURCE}/CMakeLists.txt
   then
     echo "NOTICE: project is already in CMakeLists.txt file"
   else
-    add_to_cmake $REP
+    add_to_cmake $repbase
 fi
 
 echo " "
