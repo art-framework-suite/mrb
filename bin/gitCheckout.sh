@@ -9,7 +9,7 @@ fullCom="${mrb_command} $thisCom"
 
 # Usage function
 function usage() {
-    echo "Usage: $fullCom <gitRepositoryName>"
+    echo "Usage: $fullCom <gitRepositoryName> [destination_name]"
     echo "   Clone a Git Repository to your development area. You should be in the srcs directory"
 
 }
@@ -115,12 +115,21 @@ then
     exit 1
 fi
 
+# check to see if we have a path already
+if echo ${REP} | grep -q '/';
+then
+  have_path=true
+  repbase=`basename ${REP}`
+else
+  have_path=false
+  repbase=${REP}
+fi
 
 # Make sure this product isn't already checked out
 # You can only have one copy of a given repository in any given srcs directory
-if [ -d ${MRB_SOURCE}/${REP} ]
+if [ -d ${MRB_SOURCE}/${repbase} ]
 then
-    echo "ERROR: $REP directory already exists!"
+    echo "ERROR: $repbase directory already exists!"
     exit 1
 fi
 if [ "x${destinationDir}" != "x" ] && [ -d ${MRB_SOURCE}/${destinationDir} ]
@@ -150,10 +159,9 @@ then
     done
     gitCommand="git clone ssh://p-larsoft-alpha@cdcvs.fnal.gov/cvs/projects/larsoft-alpha larsoft"
     clone_init_cmake larsoft
-elif [ `echo ${REP} | grep -q '/'` ]
+elif [ "${have_path}" = "true" ]
 then
     gitCommand="git clone $REP ${destinationDir}"
-    repbase=${basename $REP}
     clone_init_cmake $repbase ${destinationDir}
 else
     gitCommand="git clone ssh://p-$REP@cdcvs.fnal.gov/cvs/projects/$REP ${destinationDir}"
