@@ -17,6 +17,7 @@ function usage() {
 run_git_command() {
     echo "NOTICE: Running $gitCommand"
     # Run the git clone command
+    cd ${MRB_SOURCE}
     $gitCommand
 
     # Did it work?
@@ -29,8 +30,9 @@ run_git_command() {
 
 git_flow_init() {
     myrep=$1
-    cd $myrep
+    cd ${MRB_SOURCE}/$myrep
     # this is necessary for those packages where the default branch is not master
+    echo "ready to run git flow init for $myrep"
     git checkout master
     git flow init -d > /dev/null
 
@@ -56,6 +58,26 @@ add_to_cmake() {
     echo "NOTICE: Added $myrep to CMakeLists.txt file"
 }
 
+clone_init_cmake() {
+    if [ -z "${2}" ]
+    then
+      coderep=${1}
+    else
+      coderep=${2}
+    fi
+    echo "git clone: clone $coderep at ${MRB_SOURCE}"
+    cd ${MRB_SOURCE}
+    run_git_command
+    git_flow_init $coderep
+    # add to CMakeLists.txt
+    if grep -q \($coderep\) ${MRB_SOURCE}/CMakeLists.txt
+      then
+	echo "NOTICE: project is already in CMakeLists.txt file"
+      else
+	add_to_cmake $coderep
+    fi
+}
+
 # Determine command options (just -h for help)
 while getopts ":h" OPTION
 do
@@ -67,24 +89,16 @@ done
 
 # Did the user provide a product name?
 shift $((OPTIND - 1))
-if [ $# -ne 1 ]; then
+if [ $# -lt 1 ]; then
     echo "ERROR: No Git Repository Given"
     usage
     exit 1
 fi
 
-# Capture the product name
+# Capture the product name and optional destination
 REP=$1
+destinationDir=$2
 
-# Make sure MRB_SOURCE is defined
-if [ -z ${MRB_SOURCE} ]
-then
-    echo 'ERROR: MRB_SOURCE is not defined'
-    echo '       Please make sure you have sourced your localProducts*/setup file'
-    exit 1
-fi
-
-cd ${MRB_SOURCE}
 # Ensure that the current directory is @srcs/@
 if echo $PWD | egrep -q "/srcs$";
 then
@@ -94,56 +108,56 @@ else
     exit 1
 fi
 
-# Make sure this product isn't already checked out
-if ls -1 | egrep -q ^${REP}$;
+if [ -z "${MRB_SOURCE}" ]
 then
-    echo "ERROR: $REP directory already exists!"
+    echo 'ERROR: MRB_SOURCE must be defined'
+    echo '       source the appropriate localProductsXXX/setup'
     exit 1
 fi
 
 
+# Make sure this product isn't already checked out
+# You can only have one copy of a given repository in any given srcs directory
+if [ -d ${MRB_SOURCE}/${REP} ]
+then
+    echo "ERROR: $REP directory already exists!"
+    exit 1
+fi
+if [ "x${destinationDir}" != "x" ] && [ -d ${MRB_SOURCE}/${destinationDir} ]
+then
+    echo "ERROR: ${MRB_SOURCE}/${destinationDir} directory already exists!"
+    exit 1
+fi
+
 # Construct the git clone command
+# Special cases for larsoft
 larsoft_list="larcore  lardata larevt larsim larreco larana larexamples lareventdisplay"
 if [ "${REP}" = "larsoft" ]
 then
-    gitCommand="git clone ssh://p-$REP-alpha@cdcvs.fnal.gov/cvs/projects/$REP-alpha $REP"
-    run_git_command
+    if [ -z " ${destinationDir}" ]
+    then
+       gitCommand="git clone ssh://p-$REP-alpha@cdcvs.fnal.gov/cvs/projects/$REP-alpha $REP"
+    else
+       gitCommand="git clone ssh://p-$REP-alpha@cdcvs.fnal.gov/cvs/projects/$REP-alpha ${destinationDir}"
+    fi
+    clone_init_cmake larsoft ${destinationDir}
 elif [ "${REP}" = "larsoft_suite" ]
 then
     for code in ${larsoft_list}
     do
         gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
-	run_git_command
+	clone_init_cmake $code
     done
     gitCommand="git clone ssh://p-larsoft-alpha@cdcvs.fnal.gov/cvs/projects/larsoft-alpha larsoft"
-    run_git_command
-else
-    gitCommand="git clone ssh://p-$REP@cdcvs.fnal.gov/cvs/projects/$REP"
-    run_git_command
-fi
-
-# Turn on git flow (we will be left with the @develop@ branch selected)
-if [ "${REP}" = "larsoft_suite" ]
+    clone_init_cmake larsoft
+elif [ `echo ${REP} | grep -q '/'` ]
 then
-    for code in ${larsoft_list} larsoft
-    do 
-       git_flow_init $code
-    done
+    gitCommand="git clone $REP ${destinationDir}"
+    repbase=${basename $REP}
+    clone_init_cmake $repbase ${destinationDir}
 else
-  git_flow_init $REP
-fi
-
-# Add this product to the CMakeLists.txt file in srcs
-if [ "${REP}" = "larsoft_suite" ]
-then
-   echo "You must now run \"mrb updateDepsCM\""
-else
-   if grep -q \($REP\) ${MRB_SOURCE}/CMakeLists.txt
-     then
-       echo "NOTICE: project is already in CMakeLists.txt file"
-     else
-       add_to_cmake $REP
-   fi
+    gitCommand="git clone ssh://p-$REP@cdcvs.fnal.gov/cvs/projects/$REP ${destinationDir}"
+    clone_init_cmake $REP ${destinationDir}
 fi
 
 echo " "
