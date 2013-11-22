@@ -125,7 +125,7 @@ EOF
     ;;
 
 # Run buildtool 
-    "build" | "b" ) run_buildtool $*
+    "build" | "b" ) run_buildtool -I $MRB_INSTALL -b $*
         ;;
 
    # install into local product area
