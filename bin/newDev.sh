@@ -24,7 +24,7 @@ fullCom="${mrb_command} $thisCom"
 function usage() 
 {
   cat 1>&2 << EOF
-Usage: $fullCom [-n | -p] [-f] [-T dir] [-V project_version] [-Q qualifiers]
+Usage: $fullCom [-n | -p] [-f] [-T dir] [-v project_version] [-q qualifiers]
   Make a new development area by creating srcs, build, and products directories.
   Options:
 
@@ -40,9 +40,9 @@ Usage: $fullCom [-n | -p] [-f] [-T dir] [-V project_version] [-Q qualifiers]
 
      -T <dir>  = Where to put the build and localProducts directories (default is current directory next to srcs)
      
-     -V <version> = Build for this version instead of the default
+     -v <version> = Build for this version instead of the default
      
-     -Q <qualifiers> = Build for these qualifiers instead of the default
+     -q <qualifiers> = Build for these qualifiers instead of the default
 
      These options are not typically used:
             -n = do not make the products area
@@ -100,8 +100,7 @@ echo
 echo PRODUCTS=\$PRODUCTS
 echo
 
-##$setupLine
-##echo Executed $setupLine
+source \$MRB_INSTALL/setup_local
 
 test "$ss" = csh && unalias tnotnull nullout set_ vecho_ unsetenv_
 unset ss sts msg1 msg2 db me
@@ -118,6 +117,16 @@ IMPORTANT: You must type
     source $dirName/setup
 NOW and whenever you log in
 EOF
+    
+    # create setup_local for actual product setups
+    # --- Start of HERE document for localProducts.../setup_local ---
+    cat > $dirName/setup_local << EOF
+
+##$setupLine
+##echo Executed $setupLine
+
+EOF
+# --- End of HERE document for localProducts.../setup_local ---
 
 }
 
@@ -130,16 +139,16 @@ buildDirTop="."
 currentDir=${PWD}
 
 # Process options
-while getopts ":hnfpQ:T:V:" OPTION
+while getopts ":hnfpq:T:v:" OPTION
 do
     case $OPTION in
         h   ) usage ; exit 0 ;;
         n   ) echo 'NOTICE: Will not make local products area' ; doLP="" ;;
         p   ) echo 'NOTICE: Just make products area' ; justLP="yes" ;;
         f   ) doForce="yes";;
-        Q   ) echo "NOTICE: using $OPTARG qualifiers"; qualList=$OPTARG ;;
+        q   ) echo "NOTICE: using $OPTARG qualifiers"; qualList=$OPTARG ;;
         T   ) echo "NOTICE: localPproducts and build areas will go to $OPTARG" ; topDir=$OPTARG ;;
-        V   ) echo "NOTICE: building for $OPTARG"; thisVersion=$OPTARG ;;
+        v   ) echo "NOTICE: building for $OPTARG"; thisVersion=$OPTARG ;;
 	:   ) echo "ERROR: -$OPTARG requires an argument"; usage; exit 1 ;;
         ?   ) echo "ERROR: Unknown option -$OPTARG" ; usage ; exit 1 ;;
     esac
@@ -177,7 +186,7 @@ if [ -z ${prjdir} ] && [ -z ${qualList} ]
 then
     echo "ERROR: ${MRB_PROJECT} product is not setup."
     echo "       You must EITHER setup the desired version of ${MRB_PROJECT} OR specify the qualifiers"
-    echo "       e.g., mrb newDev -V ${prjver} -Q e2:debug"
+    echo "       e.g., mrb newDev -V ${prjver} -q e2:debug"
     echo "       Available versions of ${MRB_PROJECT}:"
     ups list -aK+ ${MRB_PROJECT}
     exit 2
