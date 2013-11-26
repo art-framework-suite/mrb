@@ -69,11 +69,6 @@ test -e "$CETPKG_BUILD/diag_report" && cat $CETPKG_BUILD/diag_report
 
 echo ----------------------------------------------------------------
 
-# set FHICL_FILE_PATH
-tnotnull MRB_BUILDDIR  && mkdir -p ${MRB_BUILDDIR}/fcl
-tnotnull MRB_BUILDDIR  && setenv FHICL_FILE_PATH ${MRB_BUILDDIR}/fcl:${FHICL_FILE_PATH}
-setenv FHICL_FILE_PATH `dropit -D -p "$FHICL_FILE_PATH"`
-
 # cleanup before exiting
 test "$ss" = csh && unalias tnotnull nullout set_ vecho_ return
 unset ss db me thisdir msg1 msg2 msg3 msg4 msg5 setup_fail
