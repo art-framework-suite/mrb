@@ -40,6 +40,12 @@ then
   mkdir -p ${pkgdir} || exit 2;
 fi
 
+# cleanup the old directory if necessary
+if [ -d ${pkgdir}/${pkgver} ]
+then
+   rm -rf ${pkgdir}/${pkgver} ${pkgdir}/${pkgver}.version ${pkgdir}/current.chain
+fi
+
 set -x
 # pull the tagged release from git
 git archive --prefix=${pkgver}/ \
