@@ -100,7 +100,7 @@ echo
 echo PRODUCTS=\$PRODUCTS
 echo
 
-source \$MRB_INSTALL/setup_local
+source \$MRB_INSTALL/source_for_local
 
 test "$ss" = csh && unalias tnotnull nullout set_ vecho_ unsetenv_
 unset ss sts msg1 msg2 db me
@@ -118,15 +118,15 @@ IMPORTANT: You must type
 NOW and whenever you log in
 EOF
     
-    # create setup_local for actual product setups
-    # --- Start of HERE document for localProducts.../setup_local ---
-    cat > $dirName/setup_local << EOF
+    # create source_for_local for actual product setups
+    # --- Start of HERE document for localProducts.../source_for_local ---
+    cat > $dirName/source_for_local << EOF
 
 ##$setupLine
 ##echo Executed $setupLine
 
 EOF
-# --- End of HERE document for localProducts.../setup_local ---
+# --- End of HERE document for localProducts.../source_for_local ---
 
 }
 
