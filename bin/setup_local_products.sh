@@ -49,6 +49,14 @@ then
   exit 5 
 fi
 
+# Make sure we have ups
+if [ -z ${UPS_DIR} ]
+then
+   echo "ERROR: please setup ups"
+   exit 1
+fi
+source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
+ 
 echo "checking $localP for products"
 
 ups list -aK+ -z $localP | while read line
@@ -67,7 +75,7 @@ do
       cmd="setup $product  $version -q $quals"
   fi
   echo $cmd
-  $cmd
+  source `${UPS_DIR}/bin/ups $cmd -z $localP:${PRODUCTS}`
 done
 
 return

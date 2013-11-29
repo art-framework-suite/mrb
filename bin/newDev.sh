@@ -87,7 +87,7 @@ function create_local_setup()
     # --- Comments below pertain to that file ---
     cat >> $dirName/setup << EOF
 setenv PRODUCTS "\$MRB_INSTALL":${PRODUCTS}
-setenv MRB_VERSION ${MRB_VERSION}
+setenv MRB_PROJECT_VERSION ${MRB_PROJECT_VERSION}
 setenv MRB_SOURCE ${MRB_SOURCE}
 setenv MRB_QUALS "${MRB_QUALS}"
 setenv MRB_PROJECT "${MRB_PROJECT}"
@@ -97,7 +97,7 @@ echo
 echo MRB_SOURCE=\$MRB_SOURCE
 echo MRB_BUILDDIR=\$MRB_BUILDDIR
 echo MRB_PROJECT=\$MRB_PROJECT
-echo MRB_VERSION=\$MRB_VERSION
+echo MRB_PROJECT_VERSION=\$MRB_PROJECT_VERSION
 echo MRB_QUALS=\$MRB_QUALS
 echo MRB_INSTALL=\$MRB_INSTALL
 echo
@@ -178,7 +178,7 @@ else
 fi
 prjdirname="${MRB_PROJECTUC}_DIR"
 prjdir="${!prjdirname}"
-MRB_VERSION=${prjver}
+MRB_PROJECT_VERSION=${prjver}
 if [ -z ${prjdir} ] && [ -z ${qualList} ]
 then
     echo "ERROR: ${MRB_PROJECT} product is not setup."

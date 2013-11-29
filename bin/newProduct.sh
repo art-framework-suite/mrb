@@ -7,7 +7,7 @@
 # * Initialize git flow
 
 # Some templates are specific to each project
-# look for $MRB_SOURCE/$MRB_PROJECT/$MRB_VERSION/templates
+# look for $MRB_SOURCE/$MRB_PROJECT/$MRB_PROJECT_VERSION/templates
 # if not found, look for $MRB_PROJECT_DIR/templates
 # if that fails, use our templates
 
@@ -78,7 +78,7 @@ function createFiles() {
   pkgdirnm=$(echo $MRB_PROJECT | tr 'a-z' 'A-Z')_DIR
   if [ -d ${MRB_SOURCE}/${MRB_PROJECT}/templates ]
   then
-    templateDir=${MRB_SOURCE}/${MRB_PROJECT}/${MRB_VERSION}/templates
+    templateDir=${MRB_SOURCE}/${MRB_PROJECT}/${MRB_PROJECT_VERSION}/templates
   elif [ -d $(eval echo \$${pkgdirnm}/templates ) ]
   then
     templateDir=$(eval echo \$${pkgdirnm}/templates )
