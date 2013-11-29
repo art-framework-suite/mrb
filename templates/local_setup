@@ -43,6 +43,5 @@ test -n $MRB_BUILDDIR && setenv OLD_MRB_BUILDDIR $MRB_BUILDDIR
 setup mrb
 
 setenv MRB_INSTALL $db
-setenv MRB_SOURCE $MRB_TOP/srcs
 setenv MRB_BUILDDIR $MRB_TOP/build
 
