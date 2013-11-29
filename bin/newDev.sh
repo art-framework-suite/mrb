@@ -24,7 +24,7 @@ fullCom="${mrb_command} $thisCom"
 function usage() 
 {
   cat 1>&2 << EOF
-Usage: $fullCom [-n | -p] [-f] [-T dir] [-v project_version] [-q qualifiers]
+Usage: $fullCom [-n | -p] [-f] [-T dir] [-S dir] [-v project_version] [-q qualifiers]
   Make a new development area by creating srcs, build, and products directories.
   Options:
 
@@ -38,6 +38,8 @@ Usage: $fullCom [-n | -p] [-f] [-T dir] [-v project_version] [-q qualifiers]
           current directory along with a set up script. You use the -T option (below) 
           to place the products and build areas elsewhere. 
 
+     -S <dir>  = Where to put the source code directory (default is srcs in current directory)
+     
      -T <dir>  = Where to put the build and localProducts directories (default is current directory next to srcs)
      
      -v <version> = Build for this version instead of the default
@@ -64,12 +66,13 @@ function get_mrb_bin()
 function copy_files_to_srcs()
 {
   # Make the main CMakeLists.txt file (note the use of a here documents)
-  cp ${mrb_bin}/../templates/CMakeLists.txt.master srcs/CMakeLists.txt || exit 1;
-  echo "# DO NOT DELETE cmake_include_dirs" > srcs/cmake_include_dirs
-  echo "# DO NOT DELETE cmake_add_subdir" > srcs/cmake_add_subdir
+  cp ${mrb_bin}/../templates/CMakeLists.txt.master ${MRB_SOURCE}/CMakeLists.txt || exit 1;
+  echo "# DO NOT DELETE cmake_include_dirs" > ${MRB_SOURCE}/cmake_include_dirs
+  echo "# DO NOT DELETE cmake_add_subdir" > ${MRB_SOURCE}/cmake_add_subdir
   # this is a hack....
-  cp ${mrb_bin}/../templates/dependency_list srcs/ || exit 1;
-  echo 'NOTICE: Created srcs/CMakeLists.txt'
+  cp ${mrb_bin}/../templates/dependency_list ${MRB_SOURCE}/ || exit 1;
+  # end hack
+  echo "NOTICE: Created ${MRB_SOURCE}/CMakeLists.txt"
 }
 
 function create_local_setup()
@@ -85,6 +88,7 @@ function create_local_setup()
     cat >> $dirName/setup << EOF
 setenv PRODUCTS "\$MRB_INSTALL":${PRODUCTS}
 setenv MRB_VERSION ${MRB_VERSION}
+setenv MRB_SOURCE ${MRB_SOURCE}
 setenv MRB_QUALS "${MRB_QUALS}"
 setenv MRB_PROJECT "${MRB_PROJECT}"
 
@@ -100,7 +104,8 @@ echo
 echo PRODUCTS=\$PRODUCTS
 echo
 
-source \$MRB_INSTALL/source_for_local
+##$setupLine
+##echo Executed $setupLine
 
 test "$ss" = csh && unalias tnotnull nullout set_ vecho_ unsetenv_
 unset ss sts msg1 msg2 db me
@@ -117,16 +122,6 @@ IMPORTANT: You must type
     source $dirName/setup
 NOW and whenever you log in
 EOF
-    
-    # create source_for_local for actual product setups
-    # --- Start of HERE document for localProducts.../source_for_local ---
-    cat > $dirName/source_for_local << EOF
-
-##$setupLine
-##echo Executed $setupLine
-
-EOF
-# --- End of HERE document for localProducts.../source_for_local ---
 
 }
 
@@ -136,10 +131,11 @@ justLP=""
 doForce=""
 topDir="."
 buildDirTop="."
+srcDir="."
 currentDir=${PWD}
 
 # Process options
-while getopts ":hnfpq:T:v:" OPTION
+while getopts ":hnfpq:S:T:v:" OPTION
 do
     case $OPTION in
         h   ) usage ; exit 0 ;;
@@ -147,6 +143,7 @@ do
         p   ) echo 'NOTICE: Just make products area' ; justLP="yes" ;;
         f   ) doForce="yes";;
         q   ) echo "NOTICE: using $OPTARG qualifiers"; qualList=$OPTARG ;;
+        S   ) echo "NOTICE: source code srcs will go into $OPTARG" ; srcDir=$OPTARG ;;
         T   ) echo "NOTICE: localPproducts and build areas will go to $OPTARG" ; topDir=$OPTARG ;;
         v   ) echo "NOTICE: building for $OPTARG"; thisVersion=$OPTARG ;;
 	:   ) echo "ERROR: -$OPTARG requires an argument"; usage; exit 1 ;;
@@ -218,37 +215,39 @@ echo "building development area for ${MRB_PROJECT} ${prjver}"
 # Get current directory with "/" at the end
 pwda="$(pwd)/"
 
+
 get_mrb_bin
 
 ##echo ${mrb_dir}
 ##echo ${mrb_bin}
 
 # Are we within srcs?
-if echo $pwda | grep -q '/srcs/';
+if echo $pwda | grep -q '/srcs[^/]*$';
     then echo 'ERROR: Cannot be within a srcs directory' ; exit 3
 fi
 
 # Are we within build?
-if echo $pwda | grep -q '/build/';
+if echo $pwda | grep -q '/build[^/]*$';
   then echo 'ERROR: Cannot be within a build directory' ; exit 4
 fi
 
 # If we need to make @srcs/@ and @build/@ directories, make sure they aren't there already
+# if both -T and -S are specified, we are not putting anything in this directory
 if [ ! $justLP ];
   then
-    # Make sure the current directory is empty (e.g. leave room for @srcs/@)
-    if [ "$(ls -A .)" ]; then
+    # Make sure the source directory is empty (e.g. leave room for @srcs/@)
+    if [ -d ${srcDir} ] && [ "$(ls -A ${srcDir})" ]; then
 
         # Directory has stuff in it, error unless force option is given.
         if [ ! $doForce ]; then
-            echo 'ERROR: Current directory has stuff in it!'
+            echo 'ERROR: source code directory has stuff in it!'
             echo '   You should make a new empty directory or add -f to use this one anyway'
             exit 5
         fi
     fi
 
     # Make sure the directory for build and local products is empty
-    if [ "$topDir" != "." ] && [ "$(ls -A $topDir)" ]; then
+    if [ "$topDir" != "$srcDir" ] && [ -d ${topDir} ] && [ "$(ls -A $topDir)" ]; then
 
       # Directory has stuff in it, error unless force option is given.
       if [ ! $doForce ]; then
@@ -272,29 +271,38 @@ fi
 if [ ! $justLP ];  then
 
   # Make directories
-  mkdir srcs
-  mkdir $topDir/build
-  MRB_BUILDDIR=${currentDir}/build
-  echo "MRB_BUILDDIR is ${currentDir}/build"
-  echo 'NOTICE: Created srcs and build directories'
+  mkdir -p ${srcDir}/srcs
+  mkdir -p ${topDir}/build
+  # get the full path to the new directories
+  cd ${topDir}/build
+  MRB_BUILDDIR=`pwd`
+  #MRB_BUILDDIR=${topDir}/build
+  cd ${currentDir}
+  cd ${srcDir}/srcs
+  MRB_SOURCE=`pwd`
+  #MRB_SOURCE=${srcDir}/srcs
+  cd ${currentDir}
+  echo "MRB_BUILDDIR is ${MRB_BUILDDIR}"
+  echo "MRB_SOURCE is ${MRB_SOURCE} "
+  echo "NOTICE: Created srcs and build directories"
 
   copy_files_to_srcs
 
   # Make the top setEnv script (this is more complicated, so we'll just copy it from
   # @templates@). See &l=templates/setEnv& for the template
-  cp ${mrb_dir}/../templates/setEnv srcs/setEnv
-  if [ -e srcs/setEnv ]
+  cp ${mrb_dir}/../templates/setEnv ${MRB_SOURCE}/setEnv
+  if [ -e ${MRB_SOURCE}/setEnv ]
   then
-    chmod a+x srcs/setEnv
-    echo 'NOTICE: Created srcs/setEnv'
-  else echo 'ERROR: failed to create srcs/setEnv'; exit 9
+    chmod a+x ${MRB_SOURCE}/setEnv
+    echo "NOTICE: Created ${MRB_SOURCE}/setEnv"
+  else echo "ERROR: failed to create ${MRB_SOURCE}/setEnv"; exit 9
   fi
 
   # If we're on MacOSX, then copy the xcodeBuild.sh file
   if ups flavor -1 | grep -q 'Darwin'; then
-    cp ${mrb_dir}/../templates/xcodeBuild.sh srcs/xcodeBuild.sh
-    chmod a+x srcs/xcodeBuild.sh
-    echo 'NOTICE: Created srcs/xcodeBuild.sh'
+    cp ${mrb_dir}/../templates/xcodeBuild.sh ${MRB_SOURCE}/xcodeBuild.sh
+    chmod a+x ${MRB_SOURCE}/xcodeBuild.sh
+    echo "NOTICE: Created ${MRB_SOURCE}/xcodeBuild.sh"
   fi
 
 fi
@@ -317,13 +325,12 @@ if [ $doLP ]; then
     qualdir=`echo ${MRB_QUALS} | sed s'/:/_/g'`
     dirVerQual="_${MRB_PROJECT}_${prjver}_${qualdir}"
     # Construct the name of the @local_products@ directory
-    dirName="$topDir/localProducts${dirVerQual}"
-
-    if [ "$topDir" != "." ]; then
-      MRB_INSTALL=${dirName}
-    else
-      MRB_INSTALL=${currentDir}/localProducts${dirVerQual}
-    fi
+    # First get the full path 
+    cd ${topDir}
+    fullTopDir=`pwd`
+    dirName="$fullTopDir/localProducts${dirVerQual}"
+    MRB_INSTALL=${dirName}
+    cd ${currentDir}
 
     #  Make sure the directory does not exist already
     if [ -e "$dirName" ]
@@ -333,7 +340,7 @@ if [ $doLP ]; then
     fi
 
     # Make the local products directory
-    mkdir $dirName
+    mkdir -p $dirName
     echo "NOTICE: Created local products directory $dirName"
 
 
