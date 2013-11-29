@@ -106,6 +106,12 @@ $dfile = $sourcedir."/dependency_list";
 $cmakefile=$sourcedir."/CMakeLists.txt";
 @package_list = get_package_list( $cmakefile, DIAG );
 ##print DIAG "DIAGNOSTICS: packages to check: $#package_list @package_list\n";
+if ( $#package_list < 0 ) {
+  print DIAG "DIAGNOSTICS: there are no packages in $sourcedir\n";
+  print DIAG "DIAGNOSTICS: nothing to build\n";
+  print "$tmpfl\n";
+  exit 0;
+}
 $use_cetbver="v0_00_00";
 for $i ( 0 .. $#package_list ) {
   $pkg=$package_list[$i];
