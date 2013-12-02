@@ -35,6 +35,7 @@ git_flow_init() {
     echo "ready to run git flow init for $myrep"
     git checkout master
     git flow init -d > /dev/null
+    git checkout develop
 
     # Display informational messages
     echo "NOTICE: You can now 'cd $myrep'"
@@ -140,25 +141,14 @@ fi
 
 # Construct the git clone command
 # Special cases for larsoft
-larsoft_list="larcore  lardata larevt larsim larreco larana larexamples lareventdisplay"
-if [ "${REP}" = "larsoft" ]
-then
-    if [ -z " ${destinationDir}" ]
-    then
-       gitCommand="git clone ssh://p-$REP-alpha@cdcvs.fnal.gov/cvs/projects/$REP-alpha $REP"
-    else
-       gitCommand="git clone ssh://p-$REP-alpha@cdcvs.fnal.gov/cvs/projects/$REP-alpha ${destinationDir}"
-    fi
-    clone_init_cmake larsoft ${destinationDir}
-elif [ "${REP}" = "larsoft_suite" ]
+larsoft_list="larcore larpandora lardata larevt larsim larreco larana larexamples lareventdisplay larsoft"
+if [ "${REP}" = "larsoft_suite" ]
 then
     for code in ${larsoft_list}
     do
         gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
 	clone_init_cmake $code
     done
-    gitCommand="git clone ssh://p-larsoft-alpha@cdcvs.fnal.gov/cvs/projects/larsoft-alpha larsoft"
-    clone_init_cmake larsoft
 elif [ "${have_path}" = "true" ]
 then
     gitCommand="git clone $REP ${destinationDir}"
