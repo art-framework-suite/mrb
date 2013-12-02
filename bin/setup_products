@@ -80,7 +80,7 @@ if ( $srcbase eq "ups" ) {
 require mrb_parse_deps;
 
 $mrb_project = $ENV{MRB_PROJECT};
-$mrb_version = $ENV{MRB_VERSION};
+$mrb_version = $ENV{MRB_PROJECT_VERSION};
 $mrb_quals = $ENV{MRB_QUALS};
 $tmpfl = $builddir."/".$mrb_project."-".$mrb_version;
 ##print DIAG "opening $tmpfl for $mrb_project $mrb_version\n";
@@ -106,6 +106,12 @@ $dfile = $sourcedir."/dependency_list";
 $cmakefile=$sourcedir."/CMakeLists.txt";
 @package_list = get_package_list( $cmakefile, DIAG );
 ##print DIAG "DIAGNOSTICS: packages to check: $#package_list @package_list\n";
+if ( $#package_list < 0 ) {
+  print DIAG "DIAGNOSTICS: there are no packages in $sourcedir\n";
+  print DIAG "DIAGNOSTICS: nothing to build\n";
+  print "$tmpfl\n";
+  exit 0;
+}
 $use_cetbver="v0_00_00";
 for $i ( 0 .. $#package_list ) {
   $pkg=$package_list[$i];
@@ -127,6 +133,13 @@ print TSET "setup -B cetbuildtools $use_cetbver\n";
 print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
 print TSET "setup -B cetpkgsupport \n";
 print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
+# now check for an old build directory 
+$old_build_dir=$ENV{OLD_MRB_BUILDDIR};
+if ( $old_build_dir ) {
+   ##print DIAG "DIAGNOSTICS: found old build directory $old_build_dir\n";
+  print TSET "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${old_build_dir}\'`\n";
+  print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${old_build_dir}\'\`\n";
+}
 ##print DIAG "DIAGNOSTICS: product name $#productnames @productnames\n";
 ##print DIAG "DIAGNOSTICS: product version $#productversn @productversn\n";
 @setup_list=( cetbuildtools, cetpkgsupport );
@@ -180,7 +193,7 @@ for $i ( 0 .. $#package_list ) {
       exit 0;
     }
   }
-  print DIAG "setup_products: using qualifier $qual for $product\n";
+  ##print DIAG "setup_products: using qualifier $qual for $product\n";
 
   (%ohash) = find_optional_products( $pfile );
   ($ecount, @ehash) = find_only_for_build_products( $pfile );
@@ -193,6 +206,7 @@ for $i ( 0 .. $#package_list ) {
       }
     }
     if ( $print_setup eq "true" ) {
+      print TSET "echo Configuring $product\n";
       print TSET "setup -B $ehash[$i][0] $ehash[$i][1]\n";
       print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
     }
@@ -277,9 +291,22 @@ for $i ( 0 .. $#package_list ) {
      }
   }
   $cetfl = cetpkg_info_file( $product, $version, $default_ver, $qual, $type, $sourcedir, $pkgdir );
+  $fcl_directory = get_fcl_directory( $pfile, $product );
   # pretend this is a product
   $product_uc = uc($product);
   print TSET "setenv  ${product_uc}_VERSION $version\n";
+  if ( $ENV{LD_LIBRARY_PATH} ne '' ) {
+    print TSET "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${product}/lib\'\`\n";
+    print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${product}/lib\'\`\n";
+  }
+  print TSET "setenv  LD_LIBRARY_PATH $ENV{MRB_BUILDDIR}/${product}/lib:\${LD_LIBRARY_PATH}\n";
+  print TSET "setenv  DYLD_LIBRARY_PATH $ENV{MRB_BUILDDIR}/${product}/lib:\${DYLD_LIBRARY_PATH}\n";
+  if ( $fcl_dirctory ne "none" ) {
+    if ( $ENV{FHICL_FILE_PATH} ne '' ) {
+      print TSET "setenv  FHICL_FILE_PATH \`dropit -p \${FHICL_FILE_PATH} \'${fcl_directory}\'\`\n";
+    }
+    print TSET "setenv  FHICL_FILE_PATH $ENV{MRB_BUILDDIR}/${fcl_directory}:\${FHICL_FILE_PATH}\n";
+  }
 
 }
 $cetfl = cetpkg_info_file( $mrb_project, $mrb_version, $mrb_version, $mrb_quals, $type, $sourcedir, $builddir );

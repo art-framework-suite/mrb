@@ -81,7 +81,7 @@ Usage ${mrb_command} $shortComList [-h for help]"
 
    newDev (n)            Start a new development area
    gitCheckout (g)       Clone a git repository
-   svnCheckout           Checkout from a svn repository
+   svnCheckout (svn)     Checkout from a svn repository
    newProduct (p)        Create a new product from scratch
    setEnv (s)            Setup a development enviornment
    build (b)             Run buildtool
@@ -103,7 +103,7 @@ EOF
         ;;
 
    # Checkout from a Redmine svn repository (calls &l=bin/svnCheckout.sh&)
-    "svnCheckout" ) ${mrb_dir}/svnCheckout.sh $*
+    "svnCheckout" | "svn" ) ${mrb_dir}/svnCheckout.sh $*
         ;;
 
    # Create a new product (calls &l=bin/newProduct.sh&)
@@ -125,7 +125,7 @@ EOF
     ;;
 
 # Run buildtool 
-    "build" | "b" ) run_buildtool $*
+    "build" | "b" ) run_buildtool -I $MRB_INSTALL -b $*
         ;;
 
    # install into local product area

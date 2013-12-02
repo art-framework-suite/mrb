@@ -7,7 +7,7 @@
 # * Initialize git flow
 
 # Some templates are specific to each project
-# look for $MRB_SOURCE/$MRB_PROJECT/$MRB_VERSION/templates
+# look for $MRB_SOURCE/$MRB_PROJECT/$MRB_PROJECT_VERSION/templates
 # if not found, look for $MRB_PROJECT_DIR/templates
 # if that fails, use our templates
 
@@ -78,7 +78,7 @@ function createFiles() {
   pkgdirnm=$(echo $MRB_PROJECT | tr 'a-z' 'A-Z')_DIR
   if [ -d ${MRB_SOURCE}/${MRB_PROJECT}/templates ]
   then
-    templateDir=${MRB_SOURCE}/${MRB_PROJECT}/${MRB_VERSION}/templates
+    templateDir=${MRB_SOURCE}/${MRB_PROJECT}/${MRB_PROJECT_VERSION}/templates
   elif [ -d $(eval echo \$${pkgdirnm}/templates ) ]
   then
     templateDir=$(eval echo \$${pkgdirnm}/templates )
@@ -109,11 +109,6 @@ function createFiles() {
 
   # ups files
 
-  # From &l=templates/product/pkg-config-version.cmake.in&
-  #sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/pkg-config-version.cmake.in > ${PD}-config-version.cmake.in
-
-  # From &l=templates/product/pkg-config.cmake.in&
-  #sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/pkg-config.cmake.in > ${PD}-config.cmake.in
   cp ${templateDir}/product-config.cmake.in.template product-config.cmake.in
 
   # From &l=templates/product/product_deps&
@@ -162,10 +157,10 @@ function createFiles() {
       # have to accumulate the include_directories command in one fragment
       # and the add_subdirectory commands in another fragment
       pkgname=`grep parent ${MRB_SOURCE}/${PRODNAME}/ups/product_deps  | grep -v \# | awk '{ printf $2; }'`
-      echo "# ${PRODNAME} package block" >> cmake_inlude_dirs
-      echo "set(${pkgname}_not_in_ups true)" >> cmake_inlude_dirs
-      echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${PRODNAME} )" >> cmake_inlude_dirs
-      cat cmake_inlude_dirs >> CMakeLists.txt
+      echo "# ${PRODNAME} package block" >> cmake_include_dirs
+      echo "set(${pkgname}_not_in_ups true)" >> cmake_include_dirs
+      echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${PRODNAME} )" >> cmake_include_dirs
+      cat cmake_include_dirs >> CMakeLists.txt
       echo ""  >> CMakeLists.txt
       echo "ADD_SUBDIRECTORY($PRODNAME)" >> cmake_add_subdir
       cat cmake_add_subdir >> CMakeLists.txt

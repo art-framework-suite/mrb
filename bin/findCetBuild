@@ -11,7 +11,7 @@ $builddir = $ENV{MRB_BUILDDIR};
 require mrb_parse_deps;
 
 $mrb_project = $ENV{MRB_PROJECT};
-$mrb_version = $ENV{MRB_VERSION};
+$mrb_version = $ENV{MRB_PROJECT_VERSION};
 $mrb_quals = $ENV{MRB_QUALS};
 $tmpfl = $builddir."/".$mrb_project."-".$mrb_version;
 ##print DIAG "opening $tmpfl for $mrb_project $mrb_version\n";

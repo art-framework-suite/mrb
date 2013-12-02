@@ -1,22 +1,25 @@
-# parse product_deps
+# parse product_deps and qualifier_deps
 
 # product_deps format:
 
-#   parent this_product this_version
+#   parent       this_product   this_version
 #   [incdir      product_dir	include]
-#   [libdir      fq_dir	lib]
-#   [bindir      fq_dir	bin]
+#   [fcldir      product_dir    fcl]
+#   [libdir      fq_dir	        lib]
+#   [bindir      fq_dir         bin]
+#
 #   product		version
 #   dependent_product	dependent_product_version [optional]
 #   dependent_product	dependent_product_version [optional]
+#
 #   qualifier dependent_product       dependent_product notes
 #   this_qual dependent_product_qual  dependent_product_qual
 #   this_qual dependent_product_qual  dependent_product_qual
 
-# The indir, libdir, and bindir lines are optional
+# The indir, fcldir, libdir, and bindir lines are optional
 # Use them only if your product does not conform to the defaults
 # Format: directory_type directory_path directory_name
-# The only recognized values of the first field are incdir, libdir, and bindir
+# The only recognized values of the first field are incdir, fcldir, libdir, and bindir
 # The only recognized values of the second field are product_dir and fq_dir
 # The third field is not constrained
 #
@@ -119,6 +122,9 @@ sub parse_product_list {
       } elsif( $words[0] eq "incdir" ) {
 	 $get_phash="";
          $get_quals="";
+      } elsif( $words[0] eq "fcldir" ) {
+	 $get_phash="";
+         $get_quals="";
       } elsif( $words[0] eq "libdir" ) {
 	 $get_phash="";
          $get_quals="";
@@ -155,7 +161,7 @@ sub parse_product_list {
       } elsif( $get_quals ) {
       } elsif( $get_fragment ) {
       } else {
-        print "parse_product_list: ignoring $line\n";
+        print $dfile "WARING: unrecognized line in $pdep: $line\n";
       }
     }
   }
@@ -187,6 +193,9 @@ sub parse_qualifier_list {
 	 $get_phash="";
          $get_quals="";
       } elsif( $words[0] eq "incdir" ) {
+	 $get_phash="";
+         $get_quals="";
+      } elsif( $words[0] eq "fcldir" ) {
 	 $get_phash="";
          $get_quals="";
       } elsif( $words[0] eq "libdir" ) {
@@ -252,7 +261,7 @@ sub parse_qualifier_list {
       } elsif( $get_fragment ) {
 	 print "$params[0] qualifier $words[0]\n";
       } else {
-        print "parse_qualifier_list: ignoring $line\n";
+        ##print "parse_qualifier_list: ignoring $line\n";
       }
     }
   }
@@ -280,6 +289,9 @@ sub find_optional_products {
 	 $get_phash="";
          $get_quals="";
       } elsif( $words[0] eq "incdir" ) {
+	 $get_phash="";
+         $get_quals="";
+      } elsif( $words[0] eq "fcldir" ) {
 	 $get_phash="";
          $get_quals="";
       } elsif( $words[0] eq "libdir" ) {
@@ -322,7 +334,7 @@ sub find_optional_products {
       } elsif( $get_fragment ) {
       } elsif( $get_quals ) {
       } else {
-        print "find_optional_products: ignoring $line\n";
+        ##print "find_optional_products: ignoring $line\n";
       }
     }
   }
@@ -551,6 +563,68 @@ sub compare_versions {
   }
   return $version;
 
+}
+
+sub get_lib_directory {
+  my @params = @_;
+  my $libdir = $params[1]."/lib";
+  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
+  while ( $line=<PIN> ) {
+    chop $line;
+    if ( index($line,"#") == 0 ) {
+    } elsif ( $line !~ /\w+/ ) {
+    } else {
+      @words = split(/\s+/,$line);
+      if( $words[0] eq "libdir" ) {
+         if( ! $words[2] ) { $words[2] = lib; }
+         if( $words[1] eq "product_dir" ) {
+	    $libdir = $params[1]."/".$words[2];
+         } elsif( $words[1] eq "fq_dir" ) {
+	    $libdir = $params[1]."/".$words[2];
+         } elsif( $words[1] eq "-" ) {
+	    $libdir = "none";
+	 } else {
+	    print "ERROR: $words[1] is an invalid directory path\n";
+	    print "ERROR: directory path must be specified as either \"product_dir\" or \"fq_dir\"\n";
+	    print "ERROR: using the default lib directory path\n";
+	 }
+      }
+    }
+  }
+  close(PIN);
+  ##print "defining library directory $libdir\n";
+  return ($libdir);
+}
+
+sub get_fcl_directory {
+  my @params = @_;
+  $fcldir = $params[1]."/fcl";
+  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
+  while ( $line=<PIN> ) {
+    chop $line;
+    if ( index($line,"#") == 0 ) {
+    } elsif ( $line !~ /\w+/ ) {
+    } else {
+      @words = split(/\s+/,$line);
+      if( $words[0] eq "fcldir" ) {
+         if( ! $words[2] ) { $words[2] = fcl; }
+         if( $words[1] eq "product_dir" ) {
+	    $fcldir = $params[1]."/".$words[2];
+         } elsif( $words[1] eq "fq_dir" ) {
+	    $fcldir = $params[1]."/".$words[2];
+         } elsif( $words[1] eq "-" ) {
+	    $fcldir = "none";
+	 } else {
+	    print "ERROR: $words[1] is an invalid directory path\n";
+	    print "ERROR: directory path must be specified as either \"product_dir\" or \"fq_dir\"\n";
+	    print "ERROR: using the default fcl directory path\n";
+	 }
+      }
+    }
+  }
+  close(PIN);
+  ##print "defining executable directory $fcldir\n";
+  return ($fcldir);
 }
 
 1;

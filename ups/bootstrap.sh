@@ -30,9 +30,30 @@ then
 fi
 
 package=mrb
-pkgver=v0_03_02
+pkgver=v0_04_00
 
 get_my_dir
+
+pkgdir=${product_dir}/${package}
+if [ ! -d ${pkgdir} ]
+then
+  mkdir -p ${pkgdir} || exit 2;
+fi
+
+# cleanup the old directory if necessary
+if [ -d ${pkgdir}/${pkgver} ]
+then
+   rm -rf ${pkgdir}/${pkgver} ${pkgdir}/${pkgver}.version ${pkgdir}/current.chain
+fi
+
+set -x
+# pull the tagged release from git
+git archive --prefix=${pkgver}/ \
+            --remote ssh://p-${package}@cdcvs.fnal.gov/cvs/projects/${package} \
+            -o ${mydir}/${package}-${pkgver}.tar ${pkgver}
+cd ${pkgdir}
+tar xf ${mydir}/${package}-${pkgver}.tar
+set +x
 
 # we will use ups declare
 if [ -z ${UPS_DIR} ]
@@ -41,19 +62,6 @@ then
    exit 1
 fi
 source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
-
-pkgdir=${product_dir}/${package}
-if [ ! -d ${pkgdir} ]
-then
-  mkdir -p ${pkgdir} || exit 2;
-fi
-
-# pull the tagged release from git
-git archive --prefix=${pkgver}/ \
-            --remote ssh://p-${package}@cdcvs.fnal.gov/cvs/projects/${package} \
-            -o ${mydir}/${package}-${pkgver}.tar ${pkgver}
-cd ${pkgdir}
-tar xf ${mydir}/${package}-${pkgver}.tar
 
 ups declare -c ${package} ${pkgver} -r ${package}/${pkgver} -0 -m ${package}.table  -z ${product_dir}
 

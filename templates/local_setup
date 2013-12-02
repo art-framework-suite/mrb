@@ -38,10 +38,10 @@ test -n "$db" && setenv MRB_TOP `dirname $db`
 #echo The local product directory is $db
 #echo The top directory is $MRB_TOP
 
+test -n $MRB_BUILDDIR && setenv OLD_MRB_BUILDDIR $MRB_BUILDDIR
+
 setup mrb
 
 setenv MRB_INSTALL $db
-setenv MRB_SOURCE $MRB_TOP/srcs
-setenv MRB_PROJECT larsoft
 setenv MRB_BUILDDIR $MRB_TOP/build
 
