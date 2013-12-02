@@ -33,15 +33,16 @@ do
 done
 
 # Some sanity checks -
-if [ ! -r $MRB_SOURCE/CMakeLists.txt ]; then
-    echo "$MRB_SOURCE/CMakeLists.txt not found"
+if [ -z "${MRB_SOURCE}" ]
+then
+    echo 'ERROR: MRB_SOURCE must be defined'
+    echo '       source the appropriate localProductsXXX/setup'
     exit 1
 fi
 
-if [ -z $MRB_SOURCE ]
-then
-  echo "ERROR: MRB_SOURCE is undefined."
-  exit 1
+if [ ! -r $MRB_SOURCE/CMakeLists.txt ]; then
+    echo "$MRB_SOURCE/CMakeLists.txt not found"
+    exit 1
 fi
 
 # Backup?
