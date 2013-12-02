@@ -35,6 +35,7 @@ git_flow_init() {
     echo "ready to run git flow init for $myrep"
     git checkout master
     git flow init -d > /dev/null
+    git checkout develop
 
     # Display informational messages
     echo "NOTICE: You can now 'cd $myrep'"
