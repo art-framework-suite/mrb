@@ -15,10 +15,23 @@ function usage() {
 }
 
 run_git_command() {
-    echo "NOTICE: Running $gitCommand"
+    # First check permissions
+    rbase=${1}
+    myGitCommand=$gitCommand
+    if [ "gitCommandRO" != "none" ]
+    then
+	larret=`ssh p-${rbase}@cdcvs.fnal.gov "echo Hi" 2>&1`
+	is_bad=`echo $larret | grep Permission | wc -l`
+	if [ $is_bad -gt 0 ]
+	then
+	  ##echo "you do not have read-write permissions for the repository"
+	  myGitCommand=$gitCommandRO
+	fi
+    fi
+    echo "NOTICE: Running $myGitCommand"
     # Run the git clone command
     cd ${MRB_SOURCE}
-    $gitCommand
+    $myGitCommand
 
     # Did it work?
     if [ $? -ne 0 ];
@@ -60,6 +73,7 @@ add_to_cmake() {
 }
 
 clone_init_cmake() {
+    codebase=${1}
     if [ -z "${2}" ]
     then
       coderep=${1}
@@ -68,7 +82,7 @@ clone_init_cmake() {
     fi
     echo "git clone: clone $coderep at ${MRB_SOURCE}"
     cd ${MRB_SOURCE}
-    run_git_command
+    run_git_command $codebase
     git_flow_init $coderep
     # add to CMakeLists.txt
     if grep -q \($coderep\) ${MRB_SOURCE}/CMakeLists.txt
@@ -147,14 +161,17 @@ then
     for code in ${larsoft_list}
     do
         gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
+	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
 	clone_init_cmake $code
     done
 elif [ "${have_path}" = "true" ]
 then
     gitCommand="git clone $REP ${destinationDir}"
+    gitCommandRO="none"
     clone_init_cmake $repbase ${destinationDir}
 else
     gitCommand="git clone ssh://p-$REP@cdcvs.fnal.gov/cvs/projects/$REP ${destinationDir}"
+    gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$REP ${destinationDir}"
     clone_init_cmake $REP ${destinationDir}
 fi
 
