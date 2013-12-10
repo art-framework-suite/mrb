@@ -20,6 +20,7 @@ function run_buildtool()
 }
 
 # setEnv must be sourced in order to affect your environment
+# setup_local_products must also be sourced
 # This is not necessary for the other mrb commands.
 # Did the user source this script?
 isSourced=""
@@ -37,7 +38,7 @@ thisCom=${thisComFull%.*}
 export mrb_command="$thisCom"
 
 # Define the short list of commands
-shortComList="(newDev | gitCheckout | svnCheckout | newProduct | setEnv | build | install | zapBuild | updateDepsCM )"
+shortComList="(newDev | gitCheckout | svnCheckout | setEnv | build | install | setup_local_products | zapBuild | newProduct | updateDepsCM )"
 
 # Simple help if no argumets
 if [ $# -lt 1 ]
@@ -79,16 +80,18 @@ Usage ${mrb_command} $shortComList [-h for help]"
   
   Tools ( for help on tool, do "${mrb_command} <tool> -h" )
 
-   newDev (n)            Start a new development area
-   gitCheckout (g)       Clone a git repository
-   svnCheckout (svn)     Checkout from a svn repository
-   newProduct (p)        Create a new product from scratch
-   setEnv (s)            Setup a development enviornment
-   build (b)             Run buildtool
-   install (i)           Run buildtool
+   newDev (n)                  Start a new development area
+   gitCheckout (g)             Clone a git repository
+   svnCheckout (svn)           Checkout from a svn repository
+   setEnv (s)                  Setup a development enviornment
+   build (b)                   Run buildtool
+   install (i)                 Run buildtool
+   setup_local_products (slp)  Setup all products installed in the working localProducts_XXX directory
+   tag                         Use git flow to start or finish a tag
 
-   zapBuild (z)          Delete everything in your build area
-   updateDepsCM (uc)     Update CMakeLists.txt file for latest dependencies
+   zapBuild (z)                Delete everything in your build area
+   newProduct (p)              Create a new product from scratch
+   updateDepsCM (uc)           Update CMakeLists.txt file for latest dependencies
 EOF
    ;;
 
@@ -124,6 +127,19 @@ EOF
       fi
     ;;
 
+  # Set up all products installed in the working localProducts_XXX
+    "setup_local_products" | "slp" )
+
+      # Check that the user sourced the script
+      if [ "$isSourced" = "yes" ]; then 
+        source ${mrb_dir}/setup_local_products
+      else
+        echo 'You must source to run setup_local_products'
+        echo ' '
+        exit 5 
+      fi
+    ;;
+
 # Run buildtool 
     "build" | "b" ) run_buildtool -I $MRB_INSTALL -b $*
         ;;
@@ -134,6 +150,10 @@ EOF
 
    # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)
     "zapBuild" | "z" ) ${mrb_dir}/zapBuild.sh $*
+        ;;
+
+   # tag with git flow
+    "tag" ) ${mrb_dir}/tag.sh $*
         ;;
 
    # Update CMakeLists.txt for latest dependencies (calls &l=bin/updateDepsCM.sh&)
