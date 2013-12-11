@@ -183,7 +183,7 @@ if [ -z ${prjdir} ] && [ -z ${qualList} ]
 then
     echo "ERROR: ${MRB_PROJECT} product is not setup."
     echo "       You must EITHER setup the desired version of ${MRB_PROJECT} OR specify the qualifiers"
-    echo "       e.g., mrb newDev -V ${prjver} -q e2:debug"
+    echo "       e.g., mrb newDev -v vX_YY_ZZ -q e2:debug"
     echo "       Available versions of ${MRB_PROJECT}:"
     ups list -aK+ ${MRB_PROJECT}
     exit 2
