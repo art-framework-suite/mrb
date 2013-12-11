@@ -87,8 +87,6 @@ Usage ${mrb_command} $shortComList [-h for help]"
    build (b)                   Run buildtool
    install (i)                 Run buildtool
    setup_local_products (slp)  Setup all products installed in the working localProducts_XXX directory
-   tag                         Use git flow to start or finish a tag
-
    zapBuild (z)                Delete everything in your build area
    newProduct (p)              Create a new product from scratch
    updateDepsCM (uc)           Update CMakeLists.txt file for latest dependencies
@@ -150,10 +148,6 @@ EOF
 
    # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)
     "zapBuild" | "z" ) ${mrb_dir}/zapBuild.sh $*
-        ;;
-
-   # tag with git flow
-    "tag" ) ${mrb_dir}/tag.sh $*
         ;;
 
    # Update CMakeLists.txt for latest dependencies (calls &l=bin/updateDepsCM.sh&)
