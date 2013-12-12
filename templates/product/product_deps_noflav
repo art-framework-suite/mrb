@@ -16,6 +16,6 @@ bindir  product_dir bin
 # Since this is a no-flavor product, the next line must be no_fq_dir
 no_fq_dir
 
-only_for_build  cetbuildtools   v3_07_00
+only_for_build  cetbuildtools   v3_07_03
 
 
