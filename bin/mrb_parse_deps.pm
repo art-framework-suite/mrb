@@ -627,4 +627,157 @@ sub get_fcl_directory {
   return ($fcldir);
 }
 
+
+sub product_setup_loop {
+  my @params = @_;
+  my $loopfile = $params[0];
+  my $pkgdir = $params[1];
+  my $qual = $params[2];
+  my $dfile = $params[3];
+  my $tfile = $params[4];
+
+  ($product, $version, $default_ver, $default_qual, %phash) = parse_product_list( $pfile, $dfile );
+  ##print $dfile "product_setup_loop: found $product $version $default_ver $default_qual\n";
+  
+  # continue parsing for this package
+  ($ndeps, @qlist) = parse_qualifier_list( $loopfile, $tfile );
+
+  if ( $incoming_qual ) {
+    $qual = $incoming_qual.$dop;
+    $qdir = $incoming_qdir.$dop;
+  } else {
+    $dq = find_default_qual( $pfile );
+    if ( $dq ) {
+      $qual = $dq.":";
+      $qdir = $dq."-";
+      $qual = $qual.$dop;
+      $qdir = $qdir.$dop;
+    } elsif ( $simple ) {
+      $qual = "-nq-";
+    } else {
+      $errfl2 = $builddir."/error-".$product."-".$version;
+      open(ERR2, "> $errfl2") or die "Couldn't open $errfl2";
+      print ERR2 "\n";
+      print ERR2 "unsetenv_ CETPKG_NAME\n";
+      print ERR2 "unsetenv_ CETPKG_VERSION\n";
+      print ERR2 "unsetenv_ CETPKG_QUAL\n";
+      print ERR2 "unsetenv_ CETPKG_TYPE\n";
+      print ERR2 "echo \"ERROR: no qualifiers specified\"\n";
+      print ERR2 "echo \"ERROR: add a defaultqual line to $pfile\"\n";
+      print ERR2 "echo \"ERROR: or specify the qualifier(s) on the command line\"\n";
+      print ERR2 "echo \"USAGE: setup_products <input-directory> <-d|-o|-p> <qualifiers>\"\n";
+      print ERR2 "return 1\n";
+      close(ERR2);
+      print "$errfl2\n";
+      exit 0;
+    }
+  }
+  ##print $dfile "product_setup_loop: using qualifier $qual for $product\n";
+  $cetfl = cetpkg_info_file( $product, $version, $default_ver, $qual, $type, $sourcedir, $pkgdir );
+
+  (%ohash) = find_optional_products( $pfile );
+  ($ecount, @ehash) = find_only_for_build_products( $pfile );
+
+  @setup_list=( cetbuildtools, cetpkgsupport );
+  foreach $i ( 1 .. $ecount ) {
+    $print_setup=true;
+    foreach $j ( 0 .. $#setup_list ) {
+      if( $ehash[$i][0] eq $setup_list[$j] ) {
+        $print_setup=false;
+      }
+    }
+    if ( $print_setup eq "true" ) {
+      print $tfile "echo Configuring $product\n";
+      print $tfile "setup -B $ehash[$i][0] $ehash[$i][1]\n";
+      print $tfile "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
+    }
+  }
+
+
+  # are there products without listed qualifiers?
+  @pkeys = keys %phash;
+  foreach $i ( 1 .. $#pkeys ) {
+    ##print $dfile "searching for $pkeys[$i] qualifiers in $product\n";
+    $p_has_qual = 0;
+    foreach $k ( 0 .. $#setup_list ) {
+      if( $pkeys[$i] eq $setup_list[$k] ) {
+	     $p_has_qual++;
+      } else {
+	foreach $j ( 1 .. $ndeps ) {
+	  if ( $pkeys[$i] eq $qlist[0][$j] ) {
+	     $p_has_qual++;
+	  }
+	}
+      }
+    }
+    if ( $p_has_qual == 0 ) {
+      print_setup_noqual( $pkeys[$i], $phash{$pkeys[$i]}, $ohash{$pkeys[$i]}, "", $tfile );
+    }
+  }
+
+  # now loop over the qualifier list
+  $match = 0;
+  foreach $i ( 1 .. $#qlist ) {
+    if ( compare_qual( $qlist[$i][0], $qual ) ) {
+      $match++;
+      foreach $j ( 1 .. $ndeps ) {
+	$print_setup=true;
+	# are we building this product?
+	for $k ( 0 .. $#productnames ) {
+	  if ( $productnames[$k] eq $qlist[0][$j] ) {
+	     $print_setup=false;
+	  }
+	}
+	# is this product already in the setup list?
+	foreach $k ( 0 .. $#setup_list ) {
+	  if( $setup_list[$k] eq $qlist[0][$j] ) {
+	    $print_setup=false;
+	  }
+	}
+	##print $dfile "should I setup $qlist[0][$j]? ${print_setup}\n";
+        if ( $print_setup eq "true" ) {
+	  push( @setup_list, $qlist[0][$j] );
+	  # is this part of my extended package list?
+	  # if it is in the middle of the build list, use setup -j
+	  # if we are not building anything it depends on, use regular setup
+	  $usej = check_product_dependencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
+	  ##print $dfile "check_product_dependencies returned $usej\n";
+	  if ( $qlist[$i][$j] eq "-" ) {
+	  } elsif ( $qlist[$i][$j] eq "-nq-" ) {
+            print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, $usej, $tfile );
+	  } elsif ( $qlist[$i][$j] eq "-b-" ) {
+            print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, $usej, $tfile );
+	  } else {
+	    @qwords = split(/:/,$qlist[$i][$j]);
+	    $ql="+".$qwords[0];
+	    foreach $j ( 1 .. $#qwords ) {
+	      $ql = $ql.":+".$qwords[$j];
+	    }
+            print_setup_qual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ql, $ohash{$qlist[0][$j]}, $usej, $tfile );
+	  }
+	}
+      }
+    }
+  }
+
+  # allow for the case where there are no dependencies
+  if ( $match == 0 ) {
+     if( $phash{none} eq "none" ) {
+       #print "this package has no dependencies\n";
+     } else {
+       print $tfile "\n";
+       print $tfile "echo \"ERROR: failed to find any dependent products for $product $version -q $qual\"\n";
+       print $tfile "echo \"       The following qualifier combinations are recognized:\"\n";
+       foreach $i ( 1 .. $#qlist ) {
+	   print $tfile "echo \"         $qlist[$i][0] \"\n";
+       }
+       print $tfile "return 1\n";
+       print $tfile "\n";
+     }
+  }
+
+  return ($product, $version);
+
+}
+
 1;
