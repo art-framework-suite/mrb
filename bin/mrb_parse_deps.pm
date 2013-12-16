@@ -38,8 +38,7 @@
 
 sub get_package_list {
   my @params = @_;
-  my $srcdir = $params[1];
-  my $dfile = $params[2];
+  my $dfile = $params[1];
   my $plist;
   my $pdep;
   my $pnames;
@@ -60,10 +59,12 @@ sub get_package_list {
     }
   }
   close(CIN);
+
 ##  print $dfile "get_package_list: found $i packages\n";
 ##  for $ii ( 0 .. $#plist ) {
 ##    print $dfile "get_package_list: product $ii $plist[$ii]\n";
 ##  }
+
   return (@plist);
 }
 
