@@ -9,8 +9,11 @@ fullCom="${mrb_command} $thisCom"
 
 # Usage function
 function usage() {
-    echo "Usage: $fullCom <gitRepositoryName> [destination_name]"
+    ##echo "Usage: $fullCom <gitRepositoryName> [destination_name]"
+    echo "Usage: $fullCom [-d destination_name] <svnRepositoryName> [version]"
     echo "   Clone a Git Repository to your development area. You should be in the srcs directory"
+    echo "   If the version is not specified, you will be on the head"
+    echo "   If you provide a full path, version is ignored"
 
 }
 
@@ -94,10 +97,11 @@ clone_init_cmake() {
 }
 
 # Determine command options (just -h for help)
-while getopts ":h" OPTION
+while getopts ":hd:" OPTION
 do
     case $OPTION in
         h   ) usage ; exit 0 ;;
+        d   ) echo "NOTICE: svn checkout will use  $OPTARG" ; destinationDir=$OPTARG ;;
         *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
     esac
 done
@@ -110,9 +114,16 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-# Capture the product name and optional destination
+# Capture the product name
 REP=$1
-destinationDir=$2
+
+# check for version
+if [ $# -lt 2 ]; then
+    echo "NOTICE: No version specified, using the head"
+    VER="head"
+else
+    VER=$2
+fi
 
 # Ensure that the current directory is @srcs/@
 if echo $PWD | egrep -q "/srcs$";

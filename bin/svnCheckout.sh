@@ -66,7 +66,7 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-# Capture the product name and optional destination
+# Capture the product name
 REP=$1
 
 # check for version
