@@ -16,7 +16,7 @@ defaultqual e4
 # Add the dependent product and version
 
 product          version
-lareventdisplay	v0_02_00
+lareventdisplay	v0_02_01
 larexamples	v0_02_00
 larana		v0_02_00
 larreco		v0_02_00
