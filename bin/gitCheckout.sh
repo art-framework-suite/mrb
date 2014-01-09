@@ -51,7 +51,11 @@ git_flow_init() {
     echo "ready to run git flow init for $myrep"
     git checkout master
     git flow init -d > /dev/null
+    # make sure we are on the develop branch
     git checkout develop
+    # just in case we are using an older git flow
+    git branch --set-upstream-to=origin/develop
+    git pull
 
     # Display informational messages
     echo "NOTICE: You can now 'cd $myrep'"
