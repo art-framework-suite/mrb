@@ -741,7 +741,8 @@ sub product_setup_loop {
 	  # is this part of my extended package list?
 	  # if it is in the middle of the build list, use setup -j
 	  # if we are not building anything it depends on, use regular setup
-	  $usej = check_product_dependencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
+	 ## $usej = check_product_dependencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
+          my $usej = "";
 	  ##print $dfile "check_product_dependencies returned $usej\n";
 	  if ( $qlist[$i][$j] eq "-" ) {
 	  } elsif ( $qlist[$i][$j] eq "-nq-" ) {
