@@ -468,6 +468,33 @@ sub print_setup_qual {
   return 0;
 }
 
+sub unsetup_product_dependencies {
+  my $prd = $_[0];
+  my $unsetlist = $_[1];
+  my $dfl = $_[2];
+  my $efl = $_[3];
+  @dwords = split(/,/,$unsetlist);
+  foreach $i ( 0 .. $#dwords ) {
+    ##print $dfl "unsetup_product_dependencies: unsetup $dwords[$i]\n";
+    # call unsetup if the product has been setup
+    my $pck = "SETUP_".uc($dwords[$i]);
+    my $p_is_setup=$ENV{$pck};
+    ##print $dfl "DIAGNOSTICS: $pck is $p_is_setup\n";
+    if ( $p_is_setup ) {
+      print $efl "unsetup -j $dwords[$i]\n";
+    }
+  } 
+  ##print $dfl "unsetup_product_dependencies: unsetup $prd\n";
+  # call unsetup if the product has been setup
+  my $pck = "SETUP_".uc($prd);
+  my $p_is_setup=$ENV{$pck};
+  ##print $dfl "DIAGNOSTICS: $pck is $p_is_setup\n";
+  if ( $p_is_setup ) {
+    print $efl "unsetup -j $prd\n";
+  }
+  return 0;
+}
+
 sub compare_qual {
   my @params = @_;
   my @ql1 = split(/:/,$params[0]);
@@ -493,6 +520,7 @@ sub get_dependency_list {
   my %dhash = ();
   my @dlist;
   # read the dependency list and make a hash file keyed on product name
+  ##print $dfl "DIAGNOSTIC: parse dependency list\n";
   open(DIN, "< $depfile") or die "Couldn't open $depfile";
   while ( $line=<DIN> ) {
     chop $line;
@@ -545,6 +573,25 @@ sub check_product_dependencies {
   }
   if ( $found_match eq "true" ) { $usej = "-j"; }
   return $usej;
+}
+
+sub get_product_depenencies {
+  my $prd = $_[0];
+  my $dhash_ref = $_[1];
+  my $plist = $_[2];
+  my $dfl = $_[3];
+  my $pdeps = "";
+  my $found_match = false;
+  ##print $dfl "get_product_depenencies: checking product $prd\n";
+  ##print $dfl "get_product_depenencies: $prd depends on $dhash_ref->{$prd}\n";
+  if ( $dhash_ref->{$prd} eq "" ) {
+    $found_match = false;
+  } else {
+     $found_match = true;
+     $pdeps = $dhash_ref->{$prd};
+  }
+  ##print $dfl "get_product_depenencies: set pdeps to $pdeps\n";
+  return ($found_match, $pdeps);
 }
 
 sub compare_versions {
@@ -741,9 +788,15 @@ sub product_setup_loop {
 	  # is this part of my extended package list?
 	  # if it is in the middle of the build list, use setup -j
 	  # if we are not building anything it depends on, use regular setup
-	 ## $usej = check_product_dependencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
+	  ##print $dfile "DIAGNOSTIC: checking product dependencies for $qlist[0][$j]\n";
+	  #$usejj = check_product_dependencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
+	  ($has_deps, $pdeplist) = get_product_depenencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
           my $usej = "";
-	  ##print $dfile "check_product_dependencies returned $usej\n";
+	  ##print $dfile "get_product_depenencies returned $has_deps, @pdeplist\n";
+	  if ( $has_deps eq "true" ) {
+	    ##print $dfile "DIAGNOSTIC: calling unsetup_product_dependencies with $pdeplist\n";
+	    unsetup_product_dependencies( $qlist[0][$j], $pdeplist, $dfile, $tfile );
+	  }
 	  if ( $qlist[$i][$j] eq "-" ) {
 	  } elsif ( $qlist[$i][$j] eq "-nq-" ) {
             print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, $usej, $tfile );
