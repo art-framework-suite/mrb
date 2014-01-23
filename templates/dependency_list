@@ -3,7 +3,7 @@
 # product	dependencies
 uboonecode	larsoft larana  larcore lardata  lareventdisplay  larevt  larexamples  larreco  larsim larpandora larsoft_data
 larsoft		larana  larcore lardata  lareventdisplay  larevt  larexamples  larreco  larsim larpandora larsoft_data
-larana		larcore lardata larevt larsim
+larana		larcore lardata larevt larsim larreco
 larcore		-
 lardata		larcore
 lareventdisplay	larcore lardata larevt larsim
