@@ -5,7 +5,7 @@
 
 usage()
 {
-   echo "USAGE: `basename ${0}` <product_dir>"
+   echo "USAGE: `basename ${0}` <product_dir> tag/branch"
    echo "       `basename ${0}` installs mrb as a relocatable ups product"
 }
 
@@ -30,7 +30,18 @@ then
 fi
 
 package=mrb
-pkgver=v0_05_05
+fullpkgver=${2}
+
+if [ -z ${fullpkgver} ]
+then 
+   echo "ERROR: Please specify a tag or branch of mrb to install"
+   usage
+   exit 1
+fi
+
+# Replace / with + (e.g. in feature/)
+pkgver=${fullpkgver//\//\+}
+
 pkgdotver=`echo ${pkgver} | sed -e 's/_/./g' | sed -e 's/^v//'`
 
 get_my_dir
@@ -53,7 +64,7 @@ set -x
 # pull the tagged release from git
 git archive --prefix=${pkgver}/ \
             --remote ssh://p-${package}@cdcvs.fnal.gov/cvs/projects/${package} \
-            -o ${mydir}/${package}-${pkgver}.tar ${pkgver}
+            -o ${mydir}/${package}-${pkgver}.tar ${fullpkgver}
 cd ${pkgdir}
 tar xf ${mydir}/${package}-${pkgver}.tar
 set +x
