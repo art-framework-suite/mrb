@@ -21,7 +21,7 @@ run_git_command() {
     # First check permissions
     rbase=${1}
     myGitCommand=$gitCommand
-    if [ "gitCommandRO" != "none" ]
+    if [ "$gitCommandRO" != "none" ]
     then
 	larret=`ssh p-${rbase}@cdcvs.fnal.gov "echo Hi" 2>&1`
 	is_bad=`echo $larret | grep Permission | wc -l`
