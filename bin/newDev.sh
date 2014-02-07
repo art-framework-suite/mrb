@@ -86,7 +86,7 @@ function create_local_setup()
 
     # --- Comments below pertain to that file ---
     cat >> $dirName/setup << EOF
-setenv PRODUCTS "\$MRB_INSTALL":${PRODUCTS}
+setenv PRODUCTS "\$MRB_INSTALL":"\${PRODUCTS}"
 setenv MRB_PROJECT_VERSION ${MRB_PROJECT_VERSION}
 setenv MRB_SOURCE ${MRB_SOURCE}
 setenv MRB_QUALS "${MRB_QUALS}"
