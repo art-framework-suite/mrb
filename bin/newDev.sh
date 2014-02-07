@@ -67,10 +67,10 @@ function copy_files_to_srcs()
 {
   # Make the main CMakeLists.txt file (note the use of a here documents)
   cp ${mrb_bin}/../templates/CMakeLists.txt.master ${MRB_SOURCE}/CMakeLists.txt || exit 1;
-  echo "# DO NOT DELETE cmake_include_dirs" > ${MRB_SOURCE}/cmake_include_dirs
-  echo "# DO NOT DELETE cmake_add_subdir" > ${MRB_SOURCE}/cmake_add_subdir
+  echo "# DO NOT DELETE .cmake_include_dirs" > ${MRB_SOURCE}/.cmake_include_dirs
+  echo "# DO NOT DELETE .cmake_add_subdir" > ${MRB_SOURCE}/.cmake_add_subdir
   # this is a hack....
-  cp ${mrb_bin}/../templates/dependency_list ${MRB_SOURCE}/ || exit 1;
+  cp ${mrb_bin}/../templates/dependency_list ${MRB_SOURCE}/.dependency_list || exit 1;
   # end hack
   echo "NOTICE: Created ${MRB_SOURCE}/CMakeLists.txt"
 }

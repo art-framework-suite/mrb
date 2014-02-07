@@ -68,13 +68,13 @@ add_to_cmake() {
     # have to accumulate the include_directories command in one fragment
     # and the add_subdirectory commands in another fragment
     pkgname=`grep parent ${MRB_SOURCE}/${myrep}/ups/product_deps  | grep -v \# | awk '{ printf $2; }'`
-    echo "# ${myrep} package block" >> cmake_include_dirs
-    echo "set(${pkgname}_not_in_ups true)" >> cmake_include_dirs
-    echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${myrep} )" >> cmake_include_dirs
-    cat cmake_include_dirs >> CMakeLists.txt
+    echo "# ${myrep} package block" >> .cmake_include_dirs
+    echo "set(${pkgname}_not_in_ups true)" >> .cmake_include_dirs
+    echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${myrep} )" >> .cmake_include_dirs
+    cat .cmake_include_dirs >> CMakeLists.txt
     echo ""  >> CMakeLists.txt
-    echo "ADD_SUBDIRECTORY($myrep)" >> cmake_add_subdir
-    cat cmake_add_subdir >> CMakeLists.txt
+    echo "ADD_SUBDIRECTORY($myrep)" >> .cmake_add_subdir
+    cat .cmake_add_subdir >> CMakeLists.txt
     echo ""  >> CMakeLists.txt
     echo "NOTICE: Added $myrep to CMakeLists.txt file"
 }

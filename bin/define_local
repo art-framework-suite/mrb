@@ -65,7 +65,7 @@ open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
 ##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
 
 # parse a list of dependencies
-$dfile = $sourcedir."/dependency_list";
+$dfile = $sourcedir."/.dependency_list";
 %deplist = get_dependency_list( $dfile, DIAG );
 
 # have to find the list of packages to traverse
