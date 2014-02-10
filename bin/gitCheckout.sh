@@ -12,7 +12,7 @@ function usage() {
     ##echo "Usage: $fullCom <gitRepositoryName> [destination_name]"
     echo "Usage: $fullCom [-d destination_name] <svnRepositoryName> [version]"
     echo "   Clone a Git Repository to your development area. You should be in the srcs directory"
-    echo "   If the version is not specified, you will be on the head"
+    echo "   If the version is not specified, you will be on the HEAD"
     echo "   If you provide a full path, version is ignored"
 
 }
@@ -56,9 +56,6 @@ git_flow_init() {
     # just in case we are using an older git flow
     git branch --set-upstream-to=origin/develop
     git pull
-
-    # Display informational messages
-    echo "NOTICE: You can now 'cd $myrep'"
 }
 
 add_to_cmake() {
@@ -91,6 +88,12 @@ clone_init_cmake() {
     cd ${MRB_SOURCE}
     run_git_command $codebase
     git_flow_init $coderep
+    if [ "${VER}" != "head" ]
+    then
+       # change to the requested branch or tag
+       cd ${MRB_SOURCE}/$coderep
+       git checkout ${VER}
+    fi
     # add to CMakeLists.txt
     if grep -q \($coderep\) ${MRB_SOURCE}/CMakeLists.txt
       then
@@ -98,6 +101,9 @@ clone_init_cmake() {
       else
 	add_to_cmake $coderep
     fi
+
+    # Display informational messages
+    echo "NOTICE: You can now 'cd $myrep'"
 }
 
 # Determine command options (just -h for help)
@@ -123,7 +129,6 @@ REP=$1
 
 # check for version
 if [ $# -lt 2 ]; then
-    echo "NOTICE: No version specified, using the head"
     VER="head"
 else
     VER=$2
@@ -179,7 +184,7 @@ then
 	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
 	clone_init_cmake $code
     done
-elif [ "${have_path}" = "true" ]
+elif [ "${have_path}" == "true" ]
 then
     gitCommand="git clone $REP ${destinationDir}"
     gitCommandRO="none"
@@ -191,5 +196,11 @@ else
 fi
 
 echo " "
-echo "You are now on the develop branch (check with 'git branch')"
-echo "To make a new feature, do 'git flow feature start <featureName>'"
+
+if [ "${VER}" != "head" ]
+then
+    echo "You are now on ${VER}"
+else
+    echo "You are now on the develop branch (check with 'git branch')"
+    echo "To make a new feature, do 'git flow feature start <featureName>'"
+fi
