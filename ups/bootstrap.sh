@@ -30,7 +30,7 @@ then
 fi
 
 package=mrb
-pkgver=v0_05_06
+pkgver=v0_05_07
 pkgdotver=`echo ${pkgver} | sed -e 's/_/./g' | sed -e 's/^v//'`
 
 get_my_dir
