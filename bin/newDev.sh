@@ -41,7 +41,7 @@ Usage: $fullCom [-n | -p] [-f] [-T dir] [-S dir] [-v project_version] [-q qualif
      -S <dir>  = Where to put the source code directory (default is srcs in current directory)
      
      -T <dir>  = Where to put the build and localProducts directories (default is current directory next to srcs)
-     
+    
      -v <version> = Build for this version instead of the default
      
      -q <qualifiers> = Build for these qualifiers instead of the default
@@ -50,6 +50,7 @@ Usage: $fullCom [-n | -p] [-f] [-T dir] [-S dir] [-v project_version] [-q qualif
             -n = do not make the products area
             -p = just make the products area (checks that src, build are already there)
             -f = use a non-empty directory anyway
+	    -d = print debugging info
 EOF
 }
 
@@ -61,6 +62,49 @@ function get_mrb_bin()
     fi
     reldir=`dirname ${0}`
     mrb_bin=`cd ${reldir} && /bin/pwd ${pwd_P_arg}`
+}
+
+function find_local_srcs()
+{
+    have_mrb_source="none"
+    if ls -1 $srcTopDir | egrep -q '^srcs$';
+      then 
+	have_mrb_source=`cd $srcTopDir/srcs; pwd`
+	if [ ${printDebug} ]; then echo "DEBUG: using srcTopDir/srcs"; fi
+    fi
+    if [ ${printDebug} ]; then echo "DEBUG: found local srcs directory ${have_mrb_source}"; fi
+}
+
+function make_srcs_directory()
+{
+  # Make directory
+  cd ${currentDir}
+  mkdir -p ${srcTopDir}/srcs
+  # get the full path to the new directory
+  cd ${srcTopDir}/srcs
+  MRB_SOURCE=`pwd`
+  cd ${currentDir}
+  echo "MRB_SOURCE is ${MRB_SOURCE} "
+  echo "NOTICE: Created srcs directory"
+
+  copy_files_to_srcs
+
+  # Make the top setEnv script (this is more complicated, so we'll just copy it from
+  # @templates@). See &l=templates/setEnv& for the template
+  cp ${mrb_bin}/../templates/setEnv ${MRB_SOURCE}/setEnv
+  if [ -e ${MRB_SOURCE}/setEnv ]
+  then
+    chmod a+x ${MRB_SOURCE}/setEnv
+    echo "NOTICE: Created ${MRB_SOURCE}/setEnv"
+  else echo "ERROR: failed to create ${MRB_SOURCE}/setEnv"; exit 9
+  fi
+
+  # If we're on MacOSX, then copy the xcodeBuild.sh file
+  if ups flavor -1 | grep -q 'Darwin'; then
+    cp ${mrb_bin}/../templates/xcodeBuild.sh ${MRB_SOURCE}/xcodeBuild.sh
+    chmod a+x ${MRB_SOURCE}/xcodeBuild.sh
+    echo "NOTICE: Created ${MRB_SOURCE}/xcodeBuild.sh"
+  fi
 }
 
 function copy_files_to_srcs()
@@ -126,28 +170,64 @@ EOF
 }
 
 # Set up configuration
-doLP="yes"
-justLP=""
 doForce=""
 topDir="."
-buildDirTop="."
-srcDir="."
+srcTopDir="."
 currentDir=${PWD}
+makeLP="yes"
+makeBuild="yes"
+makeSrcs="yes"
+printDebug=""
 
 # Process options
-while getopts ":hnfpq:S:T:v:" OPTION
+while getopts ":hdnfpq:S:T:v:" OPTION
 do
     case $OPTION in
-        h   ) usage ; exit 0 ;;
-        n   ) echo 'NOTICE: Will not make local products area' ; doLP="" ;;
-        p   ) echo 'NOTICE: Just make products area' ; justLP="yes" ;;
-        f   ) doForce="yes";;
-        q   ) echo "NOTICE: using $OPTARG qualifiers"; qualList=$OPTARG ;;
-        S   ) echo "NOTICE: source code srcs will go into $OPTARG" ; srcDir=$OPTARG ;;
-        T   ) echo "NOTICE: localPproducts and build areas will go to $OPTARG" ; topDir=$OPTARG ;;
-        v   ) echo "NOTICE: building for $OPTARG"; thisVersion=$OPTARG ;;
-	:   ) echo "ERROR: -$OPTARG requires an argument"; usage; exit 1 ;;
-        ?   ) echo "ERROR: Unknown option -$OPTARG" ; usage ; exit 1 ;;
+        h   ) 
+	    usage 
+	    exit 0 
+	    ;;
+        d )
+	    printDebug="yes"
+	    ;;
+        n   ) 
+	    echo 'NOTICE: Will not make local products area' 
+            makeLP=""
+	    ;;
+        p   ) 
+	    echo 'NOTICE: Just make products area' 
+	    makeBuild=""
+	    makeSrcs=""
+	    ;;
+        f   ) 
+	    doForce="yes"
+	    ;;
+        S   ) 
+	    echo "NOTICE: source code srcs will go into $OPTARG" 
+	    srcTopDir=$OPTARG 
+	    ;;
+        T   ) 
+	    echo "NOTICE: localPproducts and build areas will go to $OPTARG" 
+	    topDir=$OPTARG 
+	    ;;
+        v   ) 
+	    echo "NOTICE: building for $OPTARG"
+	    thisVersion=$OPTARG 
+	    ;;
+        q   ) 
+	    echo "NOTICE: using $OPTARG qualifiers"
+	    qualList=$OPTARG 
+	    ;;
+	:   ) 
+	    echo "ERROR: -$OPTARG requires an argument"
+	    usage
+	    exit 1 
+	    ;;
+        ?   ) 
+	    echo "ERROR: Unknown option -$OPTARG" 
+	    usage 
+	    exit 1 
+	    ;;
     esac
 done
 
@@ -159,6 +239,28 @@ then
    echo "ERROR: please setup ups"
    exit 1
 fi
+
+
+# report current set of flags
+if [ ${printDebug} ]
+then
+    echo "DEBUG: doForce     is ${doForce}"
+    echo "DEBUG: topDir      is ${topDir}"
+    echo "DEBUG: srcTopDir   is ${srcTopDir}"
+    echo "DEBUG: currentDir  is ${currentDir}"
+    echo "DEBUG: makeLP      is ${makeLP}"
+    echo "DEBUG: makeBuild   is ${makeBuild}"
+    echo "DEBUG: makeSrcs    is ${makeSrcs}"
+fi
+
+get_mrb_bin
+
+if [ ${printDebug} ]
+then
+    echo "DEBUG: mrb_dir: ${mrb_dir}"
+    echo "DEBUG: mrb_bin: ${mrb_bin}"
+fi
+
 
 # Make sure the @MRB_PROJECT@ product is setup
 if [ -z ${MRB_PROJECT} ]
@@ -214,12 +316,7 @@ echo "building development area for ${MRB_PROJECT} ${prjver}"
 
 # Get current directory with "/" at the end
 pwda="$(pwd)/"
-
-
-get_mrb_bin
-
-##echo ${mrb_dir}
-##echo ${mrb_bin}
+if [ ${printDebug} ]; then echo "DEBUG: pwda is ${pwda}"; fi
 
 # Are we within srcs?
 if echo $pwda | grep -q '/srcs[^/]*$';
@@ -231,12 +328,12 @@ if echo $pwda | grep -q '/build[^/]*$';
   then echo 'ERROR: Cannot be within a build directory' ; exit 4
 fi
 
-# If we need to make @srcs/@ and @build/@ directories, make sure they aren't there already
-# if both -T and -S are specified, we are not putting anything in this directory
-if [ ! $justLP ];
-  then
+# make sure the directories we are about to create are empty
+
+if [ ${makeSrcs} ]
+then
     # Make sure the source directory is empty (e.g. leave room for @srcs/@)
-    if [ -d ${srcDir} ] && [ "$(ls -A ${srcDir})" ]; then
+    if [ -d ${srcTopDir} ] && [ "$(ls -A ${srcTopDir})" ]; then
 
         # Directory has stuff in it, error unless force option is given.
         if [ ! $doForce ]; then
@@ -245,9 +342,12 @@ if [ ! $justLP ];
             exit 5
         fi
     fi
+fi
 
-    # Make sure the directory for build and local products is empty
-    if [ "$topDir" != "$srcDir" ] && [ -d ${topDir} ] && [ "$(ls -A $topDir)" ]; then
+if [ ${makeBuild} ]
+then
+     # Make sure the directory for build and local products is empty
+    if [ "$topDir" != "$srcTopDir" ] && [ -d ${topDir} ] && [ "$(ls -A $topDir)" ]; then
 
       # Directory has stuff in it, error unless force option is given.
       if [ ! $doForce ]; then
@@ -256,60 +356,81 @@ if [ ! $justLP ];
         exit 6
       fi
     fi
-  else
+fi
 
-    # If we're just making the localProducts area, then we MUST to be where build lives
+# If we're just making the localProducts area, then we MUST be where build lives
+if [ ${makeLP} ] && [ ! ${makeBuild} ]
+then
     if ls -1 $topDir | egrep -q '^build$';
       then ok=1
       else echo 'ERROR: No build directory. Must be in a development area with build to make localProducts' ; exit 7
     fi
-
 fi
 
-# h3. Srcs and Build areas
-# If we are supposed to, then set up the @srcs/@ and @build/@ directories
-if [ ! $justLP ];  then
-
+# h3. Build area
+#  Do we need to make the @build/@ directory?
+if [ ${makeBuild} ]
+then
   # Make directories
-  mkdir -p ${srcDir}/srcs
+  cd ${currentDir}
   mkdir -p ${topDir}/build
-  # get the full path to the new directories
+  # get the full path to the new directory
   cd ${topDir}/build
   MRB_BUILDDIR=`pwd`
-  #MRB_BUILDDIR=${topDir}/build
-  cd ${currentDir}
-  cd ${srcDir}/srcs
-  MRB_SOURCE=`pwd`
-  #MRB_SOURCE=${srcDir}/srcs
   cd ${currentDir}
   echo "MRB_BUILDDIR is ${MRB_BUILDDIR}"
-  echo "MRB_SOURCE is ${MRB_SOURCE} "
-  echo "NOTICE: Created srcs and build directories"
+  echo "NOTICE: Created build directory"
+else
+    # If we are not making the build area, then we MUST know where build lives
+    if ls -1 $topDir | egrep -q '^build$';
+      then ok=1
+      else echo 'ERROR: No build directory. Must be in a development area with build to make localProducts' ; exit 7
+    fi
+    echo "use existing build directory $topDir/build"
+fi
 
-  copy_files_to_srcs
-
-  # Make the top setEnv script (this is more complicated, so we'll just copy it from
-  # @templates@). See &l=templates/setEnv& for the template
-  cp ${mrb_dir}/../templates/setEnv ${MRB_SOURCE}/setEnv
-  if [ -e ${MRB_SOURCE}/setEnv ]
+# h3. Srcs area
+#  Do we need to make the @srcs/@ directory?
+if [ ${makeSrcs} ]
+then
+  # Do we already have a srcs directory?
+  find_local_srcs
+  if [ "${have_mrb_source}" = "none" ]
   then
-    chmod a+x ${MRB_SOURCE}/setEnv
-    echo "NOTICE: Created ${MRB_SOURCE}/setEnv"
-  else echo "ERROR: failed to create ${MRB_SOURCE}/setEnv"; exit 9
+      make_srcs_directory
+  elif [ ${doForce} ]
+  then
+      MRB_SOURCE=${have_mrb_source}
+  else
+      echo "ERROR: unable to create srcs directory"
+      exit 6
   fi
-
-  # If we're on MacOSX, then copy the xcodeBuild.sh file
-  if ups flavor -1 | grep -q 'Darwin'; then
-    cp ${mrb_dir}/../templates/xcodeBuild.sh ${MRB_SOURCE}/xcodeBuild.sh
-    chmod a+x ${MRB_SOURCE}/xcodeBuild.sh
-    echo "NOTICE: Created ${MRB_SOURCE}/xcodeBuild.sh"
-  fi
-
+else
+    # If we are not making the srcs area, then we MUST know where srcs lives
+    if ls -1 $topDir | egrep -q '^srcs$';
+      then 
+        ok=1
+	MRB_SOURCE=`cd $topDir/srcs; pwd`
+	if [ ${printDebug} ]; then echo "DEBUG: using topDir/srcs"; fi
+    elif ls -1 $srcTopDir | egrep -q '^srcs$';
+      then 
+        ok=1
+	MRB_SOURCE=`cd $srcTopDir/srcs; pwd`
+	if [ ${printDebug} ]; then echo "DEBUG: using srcTopDir/srcs"; fi
+    elif [ ${MRB_SOURCE} ];
+      then 
+        ok=1
+	if [ ${printDebug} ]; then echo "DEBUG: using MRB_SOURCE"; fi
+    else
+        echo 'ERROR: Cannot find existing srcs directory. '
+	exit 7
+    fi
+    echo "use existing srcs directory ${MRB_SOURCE}"
 fi
 
 # h3. Local Products area
 # Create local products area if necessary
-if [ $doLP ]; then
+if [ ${makeLP} ]; then
     # Prepare the setup script in @local_products@
 
     # Construct the call for the setup
@@ -351,3 +472,5 @@ if [ $doLP ]; then
     create_local_setup
 
 fi
+
+exit 0
