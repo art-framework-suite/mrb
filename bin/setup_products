@@ -155,46 +155,6 @@ for $i ( 0 .. $#package_list ) {
   }
 }
 
-# unsetup if necessary
-print TSET "# unsetup proucts we are building\n";
-for $i ( 0 .. $#package_list ) {
-  # call unsetup if the $productnames[$i] has been setup
-  $psetup = "SETUP_".uc($productnames[$i]);
-  $is_setup=$ENV{$psetup};
-  ##print DIAG "$psetup for $productnames[$i] is $is_setup\n";
-  if ( $is_setup ) {
-    print TSET "unsetup -j $productnames[$i]\n";
-  }
-}
-
-# loop again and define package variables
-print TSET "# set package variables\n";
-for $i ( 0 .. $#package_list ) {
-  $pkg=$package_list[$i];
-  $pkgdir = $builddir."/".$pkg;
-  $pfile=$sourcedir."/".$pkg."/ups/product_deps";
-  #print DIAG "checking $pfile for $pkg \n";
-  $product = $productnames[$i];
-  $version = $productversn[$i];
-
-  $fcl_directory = get_fcl_directory( $pfile, $product );
-  # pretend this is a product
-  $product_uc = uc($product);
-  print TSET "setenv  ${product_uc}_VERSION $version\n";
-  if ( $ENV{LD_LIBRARY_PATH} ne '' ) {
-    print TSET "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${product}/lib\'\`\n";
-    print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${product}/lib\'\`\n";
-  }
-  print TSET "setenv  LD_LIBRARY_PATH $ENV{MRB_BUILDDIR}/${product}/lib:\${LD_LIBRARY_PATH}\n";
-  print TSET "setenv  DYLD_LIBRARY_PATH $ENV{MRB_BUILDDIR}/${product}/lib:\${DYLD_LIBRARY_PATH}\n";
-  if ( $fcl_dirctory ne "none" ) {
-    if ( $ENV{FHICL_FILE_PATH} ne '' ) {
-      print TSET "setenv  FHICL_FILE_PATH \`dropit -p \${FHICL_FILE_PATH} \'${fcl_directory}\'\`\n";
-    }
-    print TSET "setenv  FHICL_FILE_PATH $ENV{MRB_BUILDDIR}/${fcl_directory}:\${FHICL_FILE_PATH}\n";
-  }
-
-}
 $cetfl = cetpkg_info_file( $mrb_project, $mrb_version, $mrb_version, $mrb_quals, $type, $sourcedir, $builddir );
 
 # cleanup

@@ -9,8 +9,11 @@ fullCom="${mrb_command} $thisCom"
 
 # Usage function
 function usage() {
-    echo "Usage: $fullCom <gitRepositoryName> [destination_name]"
+    ##echo "Usage: $fullCom <gitRepositoryName> [destination_name]"
+    echo "Usage: $fullCom [-d destination_name] <svnRepositoryName> [version]"
     echo "   Clone a Git Repository to your development area. You should be in the srcs directory"
+    echo "   If the version is not specified, you will be on the HEAD"
+    echo "   If you provide a full path, version is ignored"
 
 }
 
@@ -18,7 +21,7 @@ run_git_command() {
     # First check permissions
     rbase=${1}
     myGitCommand=$gitCommand
-    if [ "gitCommandRO" != "none" ]
+    if [ "$gitCommandRO" != "none" ]
     then
 	larret=`ssh p-${rbase}@cdcvs.fnal.gov "echo Hi" 2>&1`
 	is_bad=`echo $larret | grep Permission | wc -l`
@@ -48,10 +51,11 @@ git_flow_init() {
     echo "ready to run git flow init for $myrep"
     git checkout master
     git flow init -d > /dev/null
+    # make sure we are on the develop branch
     git checkout develop
-
-    # Display informational messages
-    echo "NOTICE: You can now 'cd $myrep'"
+    # just in case we are using an older git flow
+    git branch --set-upstream-to=origin/develop
+    git pull
 }
 
 add_to_cmake() {
@@ -84,6 +88,12 @@ clone_init_cmake() {
     cd ${MRB_SOURCE}
     run_git_command $codebase
     git_flow_init $coderep
+    if [ "${VER}" != "head" ]
+    then
+       # change to the requested branch or tag
+       cd ${MRB_SOURCE}/$coderep
+       git checkout ${VER}
+    fi
     # add to CMakeLists.txt
     if grep -q \($coderep\) ${MRB_SOURCE}/CMakeLists.txt
       then
@@ -91,13 +101,17 @@ clone_init_cmake() {
       else
 	add_to_cmake $coderep
     fi
+
+    # Display informational messages
+    echo "NOTICE: You can now 'cd $myrep'"
 }
 
 # Determine command options (just -h for help)
-while getopts ":h" OPTION
+while getopts ":hd:" OPTION
 do
     case $OPTION in
         h   ) usage ; exit 0 ;;
+        d   ) echo "NOTICE: svn checkout will use  $OPTARG" ; destinationDir=$OPTARG ;;
         *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
     esac
 done
@@ -110,9 +124,15 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-# Capture the product name and optional destination
+# Capture the product name
 REP=$1
-destinationDir=$2
+
+# check for version
+if [ $# -lt 2 ]; then
+    VER="head"
+else
+    VER=$2
+fi
 
 # Ensure that the current directory is @srcs/@
 if echo $PWD | egrep -q "/srcs$";
@@ -164,7 +184,7 @@ then
 	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
 	clone_init_cmake $code
     done
-elif [ "${have_path}" = "true" ]
+elif [ "${have_path}" == "true" ]
 then
     gitCommand="git clone $REP ${destinationDir}"
     gitCommandRO="none"
@@ -176,5 +196,11 @@ else
 fi
 
 echo " "
-echo "You are now on the develop branch (check with 'git branch')"
-echo "To make a new feature, do 'git flow feature start <featureName>'"
+
+if [ "${VER}" != "head" ]
+then
+    echo "You are now on ${VER}"
+else
+    echo "You are now on the develop branch (check with 'git branch')"
+    echo "To make a new feature, do 'git flow feature start <featureName>'"
+fi

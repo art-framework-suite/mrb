@@ -43,7 +43,9 @@ fi
 # cleanup the old directory if necessary
 if [ -d ${pkgdir}/${pkgver} ]
 then
+   set -x
    rm -rf ${pkgdir}/${pkgver} ${pkgdir}/${pkgver}.version ${pkgdir}/current.chain
+   set +x
 fi
 
 set -x
@@ -66,6 +68,12 @@ source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
 ups declare -c ${package} ${pkgver} -r ${package}/${pkgver} -0 -m ${package}.table  -z ${product_dir}
 
 ups list -aK+ ${package} ${pkgver}   -z ${product_dir}
+
+# now make the tar ball
+set -x
+cd ${product_dir}
+tar cjf ${package}-${pkgdotver}-noarch.tar.bz2 ${package}/${pkgver} ${package}/${pkgver}.version ${package}/current.chain
+set +x
 
 exit 0
 

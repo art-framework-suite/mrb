@@ -16,20 +16,20 @@ defaultqual e4
 # Add the dependent product and version
 
 product          version
-lareventdisplay	v0_02_00
-larexamples	v0_02_00
-larana		v0_02_00
-larreco		v0_02_00
+lareventdisplay	v1_00_00
+larexamples	v1_00_00
+larana		v1_00_00
+larpandora	v1_00_00
 gcc		v4_8_1
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
-only_for_build  cetbuildtools   v3_07_03
+only_for_build  cetbuildtools   v3_07_04
 
 # We now define allowed qualifiers and the corresponding qualifiers for the depdencies.
 # Make a table by adding columns before "notes". 
 # e4  - with gcc 4.7.1 and -std=c++0x
-qualifier	lareventdisplay	larexamples	larreco		larana	 	gcc	notes
+qualifier	lareventdisplay	larexamples	larpandora	larana	 	gcc	notes
 e4:debug	e4:debug	e4:debug	e4:debug	e4:debug	-nq-
 e4:opt		e4:opt		e4:opt		e4:opt		e4:opt		-nq-
 e4:prof		e4:prof		e4:prof		e4:prof		e4:prof		-nq-
