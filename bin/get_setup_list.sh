@@ -51,7 +51,14 @@ do
   product=$(echo ${words[0]} | tr "\"" " ")
   version=$(echo ${words[1]} | tr "\"" " ")
   quals=$(echo ${words[3]} | tr "\"" " ")
-  ##if [ ${words[3]} = \"\" ]
+  product_uc=$(echo ${product} | tr '[a-z]' '[A-z]')
+  product_setup=$(printenv | grep SETUP_${product_uc} | cut -f2 -d"=")
+  if [ -z "${product_setup}" ]
+  then
+     echo "# $product is not setup"  >> $tmpfl
+  else
+     echo "unsetup -j $product"  >> $tmpfl
+  fi
   if [ -z $quals ]
   then
       cmd="setup -B $product  $version"
