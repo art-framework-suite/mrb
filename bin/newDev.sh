@@ -148,8 +148,8 @@ echo
 echo PRODUCTS=\$PRODUCTS
 echo
 
-##$setupLine
-##echo Executed $setupLine
+$setupLine
+echo Executed $setupLine
 
 test "$ss" = csh && unalias tnotnull nullout set_ vecho_ unsetenv_
 unset ss sts msg1 msg2 db me
