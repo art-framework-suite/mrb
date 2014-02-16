@@ -76,6 +76,9 @@ test -e "$CETPKG_BUILD/diag_report" && cat $CETPKG_BUILD/diag_report
 
 echo ----------------------------------------------------------------
 
+# Set up FHICL_FILE_PATH
+setenv FHICL_FILE_PATH $MRB_BUILDDIR/fcl
+
 # cleanup before exiting
 test "$ss" = csh && unalias tnotnull nullout set_ vecho_ return
 unset ss db me thisdir msg1 msg2 msg3 msg4 msg5 setup_fail
