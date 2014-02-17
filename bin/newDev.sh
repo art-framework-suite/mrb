@@ -328,6 +328,9 @@ if echo $pwda | grep -q '/build[^/]*$';
   then echo 'ERROR: Cannot be within a build directory' ; exit 4
 fi
 
+# Record the mrb version
+ups active | grep ^mrb > .mrbversion
+
 # make sure the directories we are about to create are empty
 
 if [ ${makeSrcs} ]
