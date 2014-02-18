@@ -328,9 +328,6 @@ if echo $pwda | grep -q '/build[^/]*$';
   then echo 'ERROR: Cannot be within a build directory' ; exit 4
 fi
 
-# Record the mrb version
-ups active | grep ^mrb > .mrbversion
-
 # make sure the directories we are about to create are empty
 
 if [ ${makeSrcs} ]
@@ -369,6 +366,9 @@ then
       else echo 'ERROR: No build directory. Must be in a development area with build to make localProducts' ; exit 7
     fi
 fi
+
+# Record the mrb version
+ups active | grep ^mrb > .mrbversion
 
 # h3. Build area
 #  Do we need to make the @build/@ directory?
