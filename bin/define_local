@@ -111,7 +111,7 @@ for $i ( 0 .. $#package_list ) {
   # pretend this is a product
   $product_uc = uc($product);
   print TSET "setenv  ${product_uc}_VERSION $version\n";
-  print TEST "setenv  ${product_uc}_LIB $ENV{MRB_BUILDDIR}/${product}/lib\n";
+  print TSET "setenv  ${product_uc}_LIB $ENV{MRB_BUILDDIR}/${product}/lib\n";
   if ( $ENV{LD_LIBRARY_PATH} ne '' ) {
     print TSET "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${product}/lib\'\`\n";
     print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${product}/lib\'\`\n";
