@@ -62,6 +62,13 @@ echo local product directory is $MRB_INSTALL
 set_ msg5='ERROR: setup of required products has failed'
 set_ msg3='ERROR: $MRB_DIR/bin/get_setup_list.sh has failed'
 
+# Remove build directory from FHICL_FILE_PATH
+tnotnull FHICL_FILE_PATH && setenv FHICL_FILE_PATH `dropit -p $FHICL_FILE_PATH $MRB_BUILDDIR`
+
+# Remove build area LIBRARY_PATH
+tnotnull LD_LIBRARY_PATH   && setenv LD_LIBRARY_PATH   `dropit -p $LD_LIBRARY_PATH   $MRB_BUILDDIR`
+tnotnull DYLD_LIBRARY_PATH && setenv DYLD_LIBRARY_PATH `dropit -p $DYLD_LIBRARY_PATH $MRB_BUILDDIR`
+
 echo ----------- check this block for errors -----------------------
 source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
 setenv UPS_OVERRIDE -B
