@@ -24,7 +24,7 @@ fullCom="${mrb_command} $thisCom"
 function usage() 
 {
   cat 1>&2 << EOF
-Usage: $fullCom [-n | -p] [-f] [-T dir] [-S dir] [-v project_version] [-q qualifiers]
+Usage: $fullCom [-n | -p] [-f] [-b] [-T dir] [-S dir] [-v project_version] [-q qualifiers]
   Make a new development area by creating srcs, build, and products directories.
   Options:
 
@@ -45,6 +45,8 @@ Usage: $fullCom [-n | -p] [-f] [-T dir] [-S dir] [-v project_version] [-q qualif
      -v <version> = Build for this version instead of the default
      
      -q <qualifiers> = Build for these qualifiers instead of the default
+
+     -b = Make a new build area corresponding to your machine flavor (development area already exists)
 
      These options are not typically used:
             -n = do not make the products area
@@ -101,9 +103,9 @@ function make_srcs_directory()
 
   # If we're on MacOSX, then copy the xcodeBuild.sh file
   if ups flavor -1 | grep -q 'Darwin'; then
-    cp ${mrb_bin}/../templates/xcodeBuild.sh ${MRB_SOURCE}/xcodeBuild.sh
-    chmod a+x ${MRB_SOURCE}/xcodeBuild.sh
-    echo "NOTICE: Created ${MRB_SOURCE}/xcodeBuild.sh"
+#    cp ${mrb_bin}/../templates/xcodeBuild.sh ${MRB_SOURCE}/xcodeBuild.sh
+#    chmod a+x ${MRB_SOURCE}/xcodeBuild.sh
+    echo "NOTICE: Created ${MRB_SOURCE}/xcodeBuild.sh - NO - FOR FUTURE"
   fi
 }
 
@@ -199,6 +201,13 @@ do
 	    makeBuild=""
 	    makeSrcs=""
 	    ;;
+        b   )
+            echo 'NOTICE: Just make build directory corresponding to this machine flavor'
+            makeBuild="yes"
+            makeLP=""
+            makeSrcs=""
+            doForce="yes"
+            ;;
         f   ) 
 	    doForce="yes"
 	    ;;
@@ -350,7 +359,7 @@ then
     if [ "$topDir" != "$srcTopDir" ] && [ -d ${topDir} ] && [ "$(ls -A $topDir)" ]; then
 
       # Directory has stuff in it, error unless force option is given.
-      if [ ! $doForce ]; then
+      if [ ! $doForce  ]; then
         echo 'ERROR: Directory for build and localProducts has stuff in it!'
         echo '   You should make a new empty directory there or add -f to use that directory anyway'
         exit 6
@@ -361,7 +370,7 @@ fi
 # If we're just making the localProducts area, then we MUST be where build lives
 if [ ${makeLP} ] && [ ! ${makeBuild} ]
 then
-    if ls -1 $topDir | egrep -q '^build$';
+    if ls -1 $topDir | egrep -q '/build[^/]*$';
       then ok=1
       else echo 'ERROR: No build directory. Must be in a development area with build to make localProducts' ; exit 7
     fi
@@ -376,20 +385,30 @@ if [ ${makeBuild} ]
 then
   # Make directories
   cd ${currentDir}
-  mkdir -p ${topDir}/build
+
+  # Determine the flavor
+  flav = `${mrb_bin}/get_os_platform`
+  buildDirName="build_${flav}"
+
+  # Make sure we don't already have the build directory
+  if [ -d ${topDir}/${buildDirName} ]; then
+     echo "Build directory ${buildDirName} already exists"
+  else
+    mkdir -p ${topDir}/${buildDirName}
+    echo "Created build directory"
+  fi
   # get the full path to the new directory
-  cd ${topDir}/build
+  cd ${topDir}/${buildDirName}
   MRB_BUILDDIR=`pwd`
   cd ${currentDir}
   echo "MRB_BUILDDIR is ${MRB_BUILDDIR}"
-  echo "NOTICE: Created build directory"
 else
     # If we are not making the build area, then we MUST know where build lives
-    if ls -1 $topDir | egrep -q '^build$';
+    if ls -1 $topDir | egrep -q '/build[^/]*$';
       then ok=1
       else echo 'ERROR: No build directory. Must be in a development area with build to make localProducts' ; exit 7
     fi
-    echo "use existing build directory $topDir/build"
+    echo "use existing build directory in $topDir"
 fi
 
 # h3. Srcs area

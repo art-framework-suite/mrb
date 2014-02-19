@@ -43,5 +43,9 @@ test -n $MRB_BUILDDIR && setenv OLD_MRB_BUILDDIR $MRB_BUILDDIR
 setup mrb
 
 setenv MRB_INSTALL $db
-setenv MRB_BUILDDIR $MRB_TOP/build
+
+# Determine default build directory
+set_ flav=`${MRB_DIR}/bin/get_os_platform`
+set_ buildDirName="build_${flav}"
+setenv MRB_BUILDDIR $MRB_TOP/${buildDirName}
 

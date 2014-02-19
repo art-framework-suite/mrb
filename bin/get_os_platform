@@ -1,0 +1,137 @@
+#!/bin/bash
+
+check_with_lsb_release ()
+{
+   plat=`uname -p`
+   if [ `lsb_release -d | cut -f2 | cut  -f1 -d" "` = "Ubuntu" ]
+   then
+      OS1=ub
+      OSnum=`lsb_release -r | cut -f2 | cut -f1 -d"."`
+      OS=${OS1}${OSnum}
+      plat=`uname -m`
+   elif [ ${OS1} = "Linux" ]
+   then
+      OSnum=`lsb_release -r | cut -f2 | cut -f1 -d"."`
+      OS=${OS1}${OSnum}
+      # Scientific Linux - slf should work
+      if [ `lsb_release -d | cut  -f3 -d" "` = "SL" ]
+      then
+	 OS=slf${OSnum}
+      # Scientific Linux Fermi
+      elif [ `lsb_release -d | cut  -f3 -d" "` = "SLF" ]
+      then
+	 OS=slf${OSnum}
+      #
+      elif [ `lsb_release -i | cut -f2` = "ScientificFermi" ]
+      then
+	 OS=slf${OSnum}
+      # pretend that SL6 is the same as SLF6
+      elif [ `lsb_release -i | cut -f2` = "Scientific" ]
+      then
+	 OS=slf${OSnum}
+      # pretend that CentOS is SLF
+      elif [ `lsb_release -i | cut -f2` = "CentOS" ]
+      then
+	 OS=slf${OSnum}
+      # pretend that RedHatEnterpriseServer is SLF
+      elif [ `lsb_release -i | cut -f2` = "RedHatEnterpriseServer" ]
+      then
+	 OS=slf${OSnum}
+      # Scientific Linux CERN
+      elif [ `lsb_release -d | cut  -f4 -d" "` = "SLC" ]
+      then
+	 OS=slc${OSnum}
+      elif [ `lsb_release -d | cut  -f4 -d" "` = "LTS" ]
+      then
+	 OS=slf${OSnum}
+      # unrecognized - pretend that this is SLF
+      else
+	 OS=slf${OSnum}
+      fi
+   fi
+}
+
+default_names ()
+{
+      OSnum1=`uname -r | cut -f1 -d"."`
+      OSnum2=`uname -r | cut -f2 -d"."`
+      OS=${OS1}${OSnum1}${OSnum2}
+      plat=`uname -p`
+}
+
+check_linux ()
+{
+   plat=`uname -p`
+   if [ -e /etc/system-release-cpe ]
+   then
+      OSnum=`cat /etc/system-release-cpe | cut -f5 -d":" |  cut -f1 -d"."`
+      if [ `cat /etc/redhat-release | cut  -f4 -d" "` = "SLC" ]
+      then
+         OS=slc${OSnum}
+      else
+         OS=slf${OSnum}
+      fi
+   elif [ -e /etc/redhat-release ]
+   then
+      if [ `cat /etc/redhat-release | cut  -f4 -d" "` = "SLC" ]
+      then
+         OS=slc${OSnum}
+         OSnum=`cat /etc/redhat-release | cut -f6 -d" " |  cut -f1 -d"."`
+      elif [ `cat /etc/redhat-release | cut  -f3 -d" "` = "Fermi" ]
+      then
+         OS=slf${OSnum}
+         OSnum=`cat /etc/redhat-release | cut -f5 -d" " |  cut -f1 -d"."`
+      elif [ `cat /etc/redhat-release | cut  -f3 -d" "` = "SLF" ]
+      then
+         OS=slf${OSnum}
+         OSnum=`cat /etc/redhat-release | cut -f5 -d" " |  cut -f1 -d"."`
+      else
+         OS=slf${OSnum}
+         OSnum=`cat /etc/redhat-release | cut -f5 -d" " |  cut -f1 -d"."`
+      fi
+   else
+      default_names
+   fi
+}
+
+# return type
+return_type=${1}
+
+if [ -z ${return_type} ]
+then
+  return_type="osname"
+fi
+
+# generate the os platform name
+OS1=`uname`
+if [ ${OS1} = "Darwin" ]
+then
+    plat=`uname -m`
+    OSnum=`uname -r | cut -f1 -d"."`
+    macos1=`sw_vers -productVersion | cut -d'.' -f1`
+    macos2=`sw_vers -productVersion | cut -d'.' -f2`
+    macos=${macos1}.${macos2}
+    OS=osx${macos1}${macos2}
+elif [ "${flvr0}" = "Linuxppc" ]
+then
+   OS=slf5
+   plat=`uname -p`
+elif [ -e /usr/bin/lsb_release ]
+then
+   check_with_lsb_release
+elif [ ${OS1} = "Linux" ]
+then
+   check_linux
+else
+   default_names
+fi
+
+if [ ${return_type} = "osname" ]
+then
+   echo ${OS}-${plat}
+elif [ ${return_type} = "osplat" ]
+then
+   echo ${plat}
+fi
+exit 0
+
