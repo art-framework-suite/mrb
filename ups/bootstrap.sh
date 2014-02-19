@@ -5,7 +5,7 @@
 
 usage()
 {
-   echo "USAGE: `basename ${0}` <product_dir>"
+   echo "USAGE: `basename ${0}` <product_dir> <tag>"
    echo "       `basename ${0}` installs mrb as a relocatable ups product"
 }
 
@@ -21,6 +21,7 @@ get_my_dir()
 
 
 product_dir=${1}
+pkgver=${2}
 
 if [ -z ${product_dir} ]
 then
@@ -30,7 +31,7 @@ then
 fi
 
 package=mrb
-pkgver=v0_05_07
+#pkgver=v0_05_07
 pkgdotver=`echo ${pkgver} | sed -e 's/_/./g' | sed -e 's/^v//'`
 
 get_my_dir
