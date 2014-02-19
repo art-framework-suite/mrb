@@ -173,6 +173,7 @@ EOF
 
 # Set up configuration
 doForce=""
+doNewBuildDir=""
 topDir="."
 srcTopDir="."
 currentDir=${PWD}
@@ -182,7 +183,7 @@ makeSrcs="yes"
 printDebug=""
 
 # Process options
-while getopts ":hdnfpq:S:T:v:" OPTION
+while getopts ":hdnfbpq:S:T:v:" OPTION
 do
     case $OPTION in
         h   ) 
@@ -203,6 +204,7 @@ do
 	    ;;
         b   )
             echo 'NOTICE: Just make build directory corresponding to this machine flavor'
+            doNewBuildDir="yes"
             makeBuild="yes"
             makeLP=""
             makeSrcs=""
@@ -386,8 +388,16 @@ then
   # Make directories
   cd ${currentDir}
 
+  # If we are just making a new build directory, we need to be were local products sits
+  if [ ${doNewBuildDir} ]; then
+    if ls -1 $topDir | egrep -q '^localProducts';
+      then ok=1
+      else echo 'ERROR: Your current directory must be where localProducts lives' ; exit 8
+    fi 
+  fi
+
   # Determine the flavor
-  flav = `${mrb_bin}/get_os_platform`
+  flav=`${mrb_bin}/get_os_platform`
   buildDirName="build_${flav}"
 
   # Make sure we don't already have the build directory

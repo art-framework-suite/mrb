@@ -18,6 +18,13 @@ set_ msg1='ERROR: You MUST setup ups'
 tnotnull UPS_DIR || ( echo ""; echo "$msg1"; echo "" )
 tnotnull UPS_DIR || return
 
+# Try to setup mrb
+setup mrb
+
+tnotnull MRB_DIR || ( echo ""; echo "ERROR: You must first run the setup script for a standard release area" )
+tnotnull MRB_DIR || ( echo "   e.g. On gm2gpvm first do 'source /cvmfs/gm2cfs.fnal.gov/prod/g-2/setup'"; echo "";)
+tnotnull MRB_DIR || return
+
 # make sure we know where this script lives
 # now if we were passed a path or if not, we can figure it out (maybe if we are interactive)
 #   bash, zsh, ksh and tcsh pass params to a source file, csh does not. but someone will be writing csh scripts
@@ -39,8 +46,6 @@ test -n "$db" && setenv MRB_TOP `dirname $db`
 #echo The top directory is $MRB_TOP
 
 test -n $MRB_BUILDDIR && setenv OLD_MRB_BUILDDIR $MRB_BUILDDIR
-
-setup mrb
 
 setenv MRB_INSTALL $db
 
