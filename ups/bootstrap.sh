@@ -29,6 +29,12 @@ then
    usage
    exit 1
 fi
+if [ -z ${pkgver} ]
+then
+   echo "ERROR: please specify a tag"
+   usage
+   exit 1
+fi
 
 package=mrb
 pkgdotver=`echo ${pkgver} | sed -e 's/_/./g' | sed -e 's/^v//'`
