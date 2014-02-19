@@ -130,7 +130,7 @@ function create_local_setup()
 
     # --- Comments below pertain to that file ---
     cat >> $dirName/setup << EOF
-setenv PRODUCTS "\$MRB_INSTALL":${PRODUCTS}
+setenv PRODUCTS "\$MRB_INSTALL:\${PRODUCTS}"
 setenv MRB_PROJECT_VERSION ${MRB_PROJECT_VERSION}
 setenv MRB_SOURCE ${MRB_SOURCE}
 setenv MRB_QUALS "${MRB_QUALS}"
@@ -366,6 +366,10 @@ then
       else echo 'ERROR: No build directory. Must be in a development area with build to make localProducts' ; exit 7
     fi
 fi
+
+# Record the mrb version
+# But we might create more here later, so should this be in the localProducts and srcs areas?
+ups active | grep ^mrb >  ${currentDir}/.mrbversion
 
 # h3. Build area
 #  Do we need to make the @build/@ directory?
