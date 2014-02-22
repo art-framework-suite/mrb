@@ -108,6 +108,7 @@ for $i ( 0 .. $#package_list ) {
   $version = $productversn[$i];
 
   $fcl_directory = get_fcl_directory( $pfile, $product );
+  $gdml_directory = get_gdml_directory( $pfile, $product );
   # pretend this is a product
   $product_uc = uc($product);
   print TSET "setenv  ${product_uc}_VERSION $version\n";
@@ -122,6 +123,12 @@ for $i ( 0 .. $#package_list ) {
       print TSET "setenv  FHICL_FILE_PATH \`dropit -p \${FHICL_FILE_PATH} \'${fcl_directory}\'\`\n";
     }
     print TSET "setenv  FHICL_FILE_PATH $ENV{MRB_BUILDDIR}/${fcl_directory}:\${FHICL_FILE_PATH}\n";
+  }
+  if ( "${gdml_directory}" ne "none" ) {
+    if ( $ENV{FW_SEARCH_PATH} ne '' ) {
+      print TSET "setenv  FW_SEARCH_PATH \`dropit -p \${FW_SEARCH_PATH} \'${gdml_directory}\'\`\n";
+    }
+    print TSET "setenv  FW_SEARCH_PATH $ENV{MRB_BUILDDIR}/${gdml_directory}:\${FW_SEARCH_PATH}\n";
   }
 
 }
