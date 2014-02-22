@@ -86,6 +86,7 @@ Usage ${mrb_command} $shortComList [-h for help]"
    setEnv (s)                  Setup a development enviornment
    build (b)                   Run buildtool
    install (i)                 Run buildtool
+   test (t)                    Run buildtool and test
    setup_local_products (slp)  Setup all products installed in the working localProducts_XXX directory
    zapBuild (z)                Delete everything in your build area
    newProduct (p)              Create a new product from scratch
@@ -144,6 +145,10 @@ EOF
 
    # install into local product area
     "install" | "i" ) run_buildtool -I $MRB_INSTALL -i $*
+        ;;
+
+   # install into local product area
+    "test" | "t" ) run_buildtool -I $MRB_INSTALL -b -t $*
         ;;
 
    # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)
