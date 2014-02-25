@@ -27,7 +27,8 @@ run_git_command() {
 	is_bad=`echo $larret | grep Permission | wc -l`
 	if [ $is_bad -gt 0 ]
 	then
-	  ##echo "you do not have read-write permissions for the repository"
+          echo ""
+          echo "NOTICE: You do not have read-write permissions for this repository"
 	  myGitCommand=$gitCommandRO
 	fi
     fi
