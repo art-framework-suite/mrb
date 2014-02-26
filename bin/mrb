@@ -38,7 +38,7 @@ thisCom=${thisComFull%.*}
 export mrb_command="$thisCom"
 
 # Define the short list of commands
-shortComList="(newDev | gitCheckout | svnCheckout | setEnv | build | install | test | setup_local_products | zapBuild | newProduct | bumpVersion | updateDepsPD | updateDepsCM  )"
+shortComList="(newDev | gitCheckout | svnCheckout | setEnv | build | install | test | setup_local_products | zapBuild | newProduct | bumpVersion | updateDeps  )"
 
 # Simple help if no argumets
 if [ $# -lt 1 ]
@@ -91,8 +91,7 @@ Usage ${mrb_command} $shortComList [-h for help]"
    zapBuild (z)                Delete everything in your build area
    newProduct (p)              Create a new product from scratch
    bumpVersion (bv)            Bump the verison number for a package
-   updateDepsPD (pd)           Update products_deps for latest dependencies
-   updateDepsCM (uc)           Update CMakeLists.txt file for latest dependencies
+   updateDeps (ud)             Update dependencies in product_deps and CMakeLists.txt
 EOF
    ;;
 
@@ -141,7 +140,7 @@ EOF
       fi
     ;;
 
-# Run buildtool 
+   # Run buildtool 
     "build" | "b" ) run_buildtool -I $MRB_INSTALL -b $*
         ;;
 
@@ -161,12 +160,8 @@ EOF
     "bumpVersion" | "bv" ) ${mrb_dir}/bumpVersion.sh $*
         ;;
 
-   # Update product_deps for latest dependencies (calls &l=bin/updateDepsPD.sh&)
-    "updateDepsPD" | "pd" ) ${mrb_dir}/updateDepsPD.sh $*
-        ;;
-
-   # Update CMakeLists.txt for latest dependencies (calls &l=bin/updateDepsCM.sh&)
-    "updateDepsCM" | "uc" ) ${mrb_dir}/updateDepsCM.sh $*
+   # Update product_deps and CMakeLists.txt to latest dependencies (calls &l=bin/updateDeps.sh&)
+    "updateDeps" | "ud" ) ${mrb_dir}/updateDeps.sh $*
         ;;
 
    # Dump some debug information
