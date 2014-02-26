@@ -38,7 +38,7 @@ thisCom=${thisComFull%.*}
 export mrb_command="$thisCom"
 
 # Define the short list of commands
-shortComList="(newDev | gitCheckout | svnCheckout | setEnv | build | install | test | setup_local_products | zapBuild | newProduct | updateDepsPD | updateDepsCM )"
+shortComList="(newDev | gitCheckout | svnCheckout | setEnv | build | install | test | setup_local_products | zapBuild | newProduct | bumpVersion | updateDepsPD | updateDepsCM  )"
 
 # Simple help if no argumets
 if [ $# -lt 1 ]
@@ -90,6 +90,7 @@ Usage ${mrb_command} $shortComList [-h for help]"
    setup_local_products (slp)  Setup all products installed in the working localProducts_XXX directory
    zapBuild (z)                Delete everything in your build area
    newProduct (p)              Create a new product from scratch
+   bumpVersion (bv)            Bump the verison number for a package
    updateDepsPD (pd)           Update products_deps for latest dependencies
    updateDepsCM (uc)           Update CMakeLists.txt file for latest dependencies
 EOF
@@ -154,6 +155,10 @@ EOF
 
    # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)
     "zapBuild" | "z" ) ${mrb_dir}/zapBuild.sh $*
+        ;;
+
+   # Bump the version number for package (calls &l=bin/bumpVersion.sh&)
+    "bumpVersion" | "bv" ) ${mrb_dir}/bumpVersion.sh $*
         ;;
 
    # Update product_deps for latest dependencies (calls &l=bin/updateDepsPD.sh&)
