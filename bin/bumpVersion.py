@@ -19,8 +19,11 @@ def incrementVersion(old, whichNumber, text):
         numbers[2] += 1
     elif whichNumber == "--middle--":
         numbers[1] += 1
+        numbers[2] = 0
     elif whichNumber == "--first--":
         numbers[0] += 1
+        numbers[1] = 0
+        numbers[2] = 0
 
     # Put this back together
     newVersion = 'v{}_{:=02}_{:=02}'.format(numbers[0], numbers[1], numbers[2])

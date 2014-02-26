@@ -27,7 +27,7 @@ Usage: $fullCom package [options]
      -b = Copy product_deps to product_deps.bak first (backup)
      -f = Specify the file (default is product_deps)
 
-     You may specify only one of -L, -M, -F, and -S
+     You must specify one of -L, -M, -F, and -S
 EOF
 }
 
