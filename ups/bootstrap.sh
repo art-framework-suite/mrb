@@ -77,7 +77,7 @@ then
 fi
 source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
 
-ups declare -c ${package} ${pkgver} -r ${package}/${pkgver} -0 -m ${package}.table  -z ${product_dir}
+ups declare ${package} ${pkgver} -r ${package}/${pkgver} -0 -m ${package}.table  -z ${product_dir}
 
 ups list -aK+ ${package} ${pkgver}   -z ${product_dir}
 
