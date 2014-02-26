@@ -15,7 +15,7 @@ fullCom="$umbCom $thisCom"
 function usage() {
   cat 1>&2 << EOF
 Usage: $fullCom package [options]
-  Update the product_deps file of a package with a new version. 
+  Update the product_deps file of a package with a new version number (changes the "parent" line).
 
   Options:
      -L = Increment the last number; e.g. v0_0_1 -> v0_0_2
@@ -27,39 +27,48 @@ Usage: $fullCom package [options]
      -b = Copy product_deps to product_deps.bak first (backup)
      -f = Specify the file (default is product_deps)
 
-     You must specify one of -L, -M, -F, and -S
+     You must specify one of -L, -M, -F, -S or -t (-t may be combined with others)
 EOF
 }
 
 f="product_deps"
 doBak=""
-number=""
+number="--none--"
 doText="--none--"
 doQual="--none--"
 
 # Determine command options (just -h for help)
-while getopts ":hbf:LMFt:q:" OPTION
+while getopts ":hbLMFS:f:t:q:" OPTION
 do
     case $OPTION in
         h   ) usage ; exit 0 ;;
         b   ) doBak="yes" ;;
         f   ) f=$OPTARG ;;
-        L   ) if [-z $number]; then number="--last--"; else usage; exit 0; fi ;;
-        M   ) if [-z $number]; then number="--middle--"; else usage; exit 0; fi ;;
-        F   ) if [-z $number]; then number="--first--"; else usage; exit 0; fi ;;
-        S   ) if [-z $number]; then number=$OPTARG; else usage; exit 0; fi ;;
+        L   ) if [ $number == "--none--" ]; then number="--last--"; else usage; exit 0; fi ;;
+        M   ) if [ $number == "--none--" ]; then number="--middle--"; else usage; exit 0; fi ;;
+        F   ) if [ $number == "--none--" ]; then number="--first--"; else usage; exit 0; fi ;;
+        S   ) if [ $number == "--none--" ]; then number=$OPTARG; else usage; exit 0; fi ;;
         t   ) doText=$OPTARG ;;
         q   ) doQual=$OPTARG ;;
-        *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
+        :   )
+            echo "ERROR: -$OPTARG requires an argument"
+            usage
+            exit 1
+            ;;
+        ?   )
+            echo "ERROR: Unknown option -$OPTARG"
+            usage
+            exit 1
+            ;;
     esac
 done
 
-if [-z $number]; then usage; exit 0
+if [ "$number" == "--none--" ] && [ "$doText" == "--none--" ]; then usage; exit 0; fi
 
 shift $((OPTIND - 1))
 
-if [ $# -ne 2 ]; then
-    echo 'ERROR: No arguments given'
+if [ $# -ne 1 ]; then
+    echo 'ERROR: No package name given or you forgot an argument to an option'
     usage
     exit 1
 fi
@@ -77,6 +86,6 @@ if [ $doBak ]; then
   cp $pdfile ${pdfile}.bak 
 fi
 
-python $thisDirA/bumpVersion.py $1 $pdfile $number $doText $doQual
+python $MRB_DIR/bin/bumpVersion.py $1 $pdfile $number $doText $doQual
 
 exit 0

@@ -7,13 +7,14 @@ import sys
 import string
 
 def incrementVersion(old, whichNumber, text):
-    if not whichNumber in ("--last--", "--middle--", "--first--"):
-        if text != '--none--':
-            whichNumber = whichNumber + "_" + text
-        return 'v'+whichNumber
 
     words = old[1:].split("_")
-    numbers = [ int(x) for x in words ]
+
+    oldText = '--none--'
+    if len(words) > 3:
+        oldText = words[3]
+    
+    numbers = [ int(x) for x in words[:3] ]
 
     if whichNumber == "--last--":
         numbers[2] += 1
@@ -29,23 +30,26 @@ def incrementVersion(old, whichNumber, text):
     newVersion = 'v{}_{:=02}_{:=02}'.format(numbers[0], numbers[1], numbers[2])
 
     # Add text if necessary
-    if text != '--none--'
+    if text != '--none--' and text != '--blank--':
         newVersion = newVersion + "_" + text
+    elif oldText != '--none--' and text != '--blank--':
+        newVersion = newVersion + "_" + oldText
     
     return newVersion
       
 
-def bumpVersion(pkg, pdfile, whichNumber, text, newQual)
+def bumpVersion(pkg, pdfile, whichNumber, text, newQual):
     out = ''
 
     inPV = False
     inPQ = False
     quals = []
+    oldQual = ""
     products = []
     sepspace = 8
 
     # Read the lines of the file
-    for line in open(f):
+    for line in open(pdfile):
 
         sline = line.strip()
 
@@ -70,7 +74,7 @@ def bumpVersion(pkg, pdfile, whichNumber, text, newQual)
             continue
 
         if inPQ:
-            # Find the mode (debug, prof, opt
+            # Find the mode (debug, prof, opt)
             if words[0] == '-nq-':
                 mode = ''
             else:
@@ -95,17 +99,17 @@ def bumpVersion(pkg, pdfile, whichNumber, text, newQual)
 
         # Look for the parent line
         if words[0] == "parent":
-            newVersion = incrementVersion(words[2], whichNumber)
-            print 'Updating this product %s from version %s to %s' % \
+            newVersion = incrementVersion(words[2], whichNumber, text)
+            print 'Updating product %s from version %s to %s' % \
                 (words[1], words[2], newVersion)
             line = 'parent %s %s\n' % (words[1], newVersion)
             out += line
 
         # Look for defaultqual
         elif words[0] == 'defaultqual':
+            oldQual = words[1]
             if newQual != '--none--':
-                print 'Updating default qualifier from %s to %s' % (words[1],
-                    newQual)
+                print 'Updating default qualifier from %s to %s' % (words[1], newQual)
                 line = 'defaultqual %s\n' % (newQual)
             out += line
 
@@ -122,13 +126,16 @@ def bumpVersion(pkg, pdfile, whichNumber, text, newQual)
         elif words[0] == 'qualifier':
             inPQ = True
 
-            # Get the list of porducts
+            # Get the list of products
             products = words
 
             # Determine the qualifiers
             for aProduct in products:
                 if aProduct == 'qualifier':
-                    quals.append(newQual)
+                    if newQual != '--none--':
+                        quals.append(newQual)
+                    else:
+                        quals.append(oldQual)
                     continue
                 if aProduct == 'notes':
                     continue
@@ -166,7 +173,7 @@ def bumpVersion(pkg, pdfile, whichNumber, text, newQual)
 
 if __name__ == '__main__':
 
-    blah, pkg, pdfile, number, text, qual = sys.argv
+    blah, pkg, pdfile, whichNumber, text, qual = sys.argv
 
     out = bumpVersion(pkg, pdfile, whichNumber, text, qual)
     open(pdfile, 'w').write(out)
