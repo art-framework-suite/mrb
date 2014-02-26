@@ -19,12 +19,13 @@ def getNewVersion(product):
     return newVersion
 
 
-def updateProductDeps(f, newVersion, newQual):
+def updateProductDeps(f):
     out = ''
 
     inPV = False
     inPQ = False
     quals = []
+    oldQual = ""
     products = []
     sepspace = 8
 
@@ -55,14 +56,18 @@ def updateProductDeps(f, newVersion, newQual):
 
             newVersion = getNewVersion(product)
 
-            print 'For %s replacing version %s with %s' % (product,
-                version, newVersion)
+            if version != newVersion:
+                print 'product_deps: For %s REPLACING version %s with %s' % (product,
+                    version, newVersion)
+                out += line.replace(version, newVersion)
+            else:
+                print 'product_deps: No change for %s %s' % (product, version)
+                out += line
 
-            out += line.replace(version, newVersion)
             continue
 
         if inPQ:
-            # Find the mode (debug, prof, opt
+            # Find the mode (debug, prof, opt)
             if words[0] == '-nq-':
                 mode = ''
             else:
@@ -87,16 +92,11 @@ def updateProductDeps(f, newVersion, newQual):
 
         # Look for the parent line
         if words[0] == "parent":
-            print 'Updating this product %s from version %s to %s' % \
-                (words[1], words[2], newVersion)
-            line = 'parent %s %s\n' % (words[1], newVersion)
             out += line
 
         # Look for defaultqual
         elif words[0] == 'defaultqual':
-            print 'Updating default qualifier from %s to %s' % (words[1],
-                newQual)
-            line = 'defaultqual %s\n' % (newQual)
+            oldQual = words[1]
             out += line
 
         # Look for the product version table
@@ -107,9 +107,13 @@ def updateProductDeps(f, newVersion, newQual):
         # Look for only_for_build
         elif words[0] == 'only_for_build':
             newVersion = getNewVersion(words[1])
-            print 'For %s replacing version %s with %s (only for build)' % \
-                (words[1], words[2], newVersion)
-            out += line.replace(words[2], newVersion)
+            if words[2] != newVersion:
+                print 'product_deps: For %s REPLACING version %s with %s' % (words[1],
+                    words[2], newVersion)
+                out += line.replace(words[2], newVersion)
+            else:
+                print 'product_deps: No change for %s %s' % (words[1], words[2])
+                out += line
 
         # Look for the qualifier table
         elif words[0] == 'qualifier':
@@ -121,7 +125,7 @@ def updateProductDeps(f, newVersion, newQual):
             # Determine the qualifiers
             for aProduct in products:
                 if aProduct == 'qualifier':
-                    quals.append(newQual)
+                    quals.append(oldQual)
                     continue
                 if aProduct == 'notes':
                     continue
@@ -146,8 +150,8 @@ def updateProductDeps(f, newVersion, newQual):
 
                 quals.append(prodQual)
 
-            print 'Products: ' + string.join(products, ', ')
-            print 'New Qual: ' + string.join(quals, ', ')
+            print 'product_deps: Products- ' + string.join(products, ', ')
+            print 'product_deps: New Qual- ' + string.join(quals, ', ')
 
             out += string.join(products, ' ' * sepspace) + '\n'
 
@@ -158,5 +162,8 @@ def updateProductDeps(f, newVersion, newQual):
 
 
 if __name__ == '__main__':
-    out = updateProductDeps(sys.argv[1], sys.argv[2], sys.argv[3])
-    open(sys.argv[1], 'w').write(out)
+
+    blah, pdfile, dryRun = sys.argv
+    out = updateProductDeps(pdfile)
+    if dryRun != "yes":
+        open(pdfile, 'w').write(out)

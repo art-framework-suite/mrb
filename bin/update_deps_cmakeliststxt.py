@@ -43,9 +43,9 @@ def update_CMakeListsTxt(f):
             newVersion = os.environ[varName]
 
             if newVersion == version:
-                print 'No update for %s %s' % (product, version)
+                print 'CMakeLists.txt: No change for %s %s' % (product, version)
             else:
-                print 'For %s replacing version %s with %s' % (product,
+                print 'CMakeLists.txt: For %s REPLACING version %s with %s' % (product,
                  version, newVersion)
                 line = line.replace(version, newVersion)
 
@@ -55,7 +55,9 @@ def update_CMakeListsTxt(f):
 
 if __name__ == '__main__':
 
-    f = sys.argv[1]
+    blah, f, dryRun = sys.argv
 
     out = update_CMakeListsTxt(f)
-    open(f, 'w').write(out)
+
+    if not dryRun == "yes":
+        open(f, 'w').write(out)
