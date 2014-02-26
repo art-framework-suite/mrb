@@ -6,6 +6,9 @@ CMAKE_MINIMUM_REQUIRED (VERSION 2.8)
 # Add top level include
 include_directories ( ${PROJECT_SOURCE_DIR} )
 
+# Enable testing
+enable_testing()
+
 # add_subdirectory and other commands will be added below by @mrb gitCheckout@ for each package
 
 # If you add a package by hand, you MUST also add the appropriate package block below
