@@ -6,6 +6,7 @@
 import os
 import sys
 import string
+import sys
 
 
 def getNewVersion(product):
@@ -14,7 +15,16 @@ def getNewVersion(product):
         newVersion = os.environ['GIT_UPS_DIR'].split('/')[-2]
     else:
         # Other products
-        newVersion = os.environ["%s_VERSION" % product.upper()]
+            newVersion = os.environ.get("%s_VERSION" % product.upper())
+            if not newVersion:
+                pdir=os.environ.get("%s_DIR" % product.upper())
+                if not pdir:
+                    print "******ERROR: Product %s is not set up -- Aborting" % product
+                    sys.exit(1)
+                words = pdir.split("/")
+                newVersion = words[-1]
+                if newVersion[0] != "v":
+                    newVersion = words[-2]
 
     return newVersion
 
@@ -135,8 +145,10 @@ def updateProductDeps(f):
                 if fq:
                     fq = fq.split('/')[-1]
                 else:
-                    quals.append('-nq-')
-                    continue
+                    fq = os.environ.get("%s_FQ" % aProduct.upper())
+                    if not fq:
+                        quals.append('-nq-')
+                        continue
 
                 # We have FQ, try to break it up
                 parts = fq.split('.')
