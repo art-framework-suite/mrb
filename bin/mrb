@@ -159,7 +159,7 @@ EOF
         ;;
 
   # Display a changelog
-    "changelog" | "c" ) git log --decorate --pretty=format:"%ad %h%d %s" --date=short ;;  
+    "changelog" | "c" ) git log --decorate --pretty=format:"%ad %ae %h%d %s" --date=short ;;  
 
    # Bump the version number for package (calls &l=bin/bumpVersion.sh&)
     "bumpVersion" | "bv" ) ${mrb_dir}/bumpVersion.sh $*
