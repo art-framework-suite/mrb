@@ -18,8 +18,8 @@ set_ msg1='ERROR: You MUST setup ups'
 tnotnull UPS_DIR || ( echo ""; echo "$msg1"; echo "" )
 tnotnull UPS_DIR || return
 
-# Try to setup mrb
-setup mrb
+# Try to setup mrb (a bootstrap one that has get_os_platform - may be overriden by setup gm2)
+setup mrb v0_07_00_gm2
 
 tnotnull MRB_DIR || ( echo ""; echo "ERROR: You must first run the setup script for a standard release area" )
 tnotnull MRB_DIR || ( echo "   e.g. On gm2gpvm first do 'source /cvmfs/gm2cfs.fnal.gov/prod/g-2/setup'"; echo "";)
