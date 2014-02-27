@@ -56,7 +56,7 @@ fi
 if [ -d ${pkgdir}/${pkgver} ]
 then
    set -x
-   rm -rf ${pkgdir}/${pkgver} ${pkgdir}/${pkgver}.version ${pkgdir}/current.chain
+   rm -rf ${pkgdir}/${pkgver} ${pkgdir}/${pkgver}.version
    set +x
 fi
 
@@ -84,7 +84,7 @@ ups list -aK+ ${package} ${pkgver}   -z ${product_dir}
 # now make the tar ball
 set -x
 cd ${product_dir}
-tar cjf ${package}-${pkgdotver}-noarch.tar.bz2 ${package}/${pkgver} ${package}/${pkgver}.version ${package}/current.chain
+tar cjf ${package}-${pkgdotver}-noarch.tar.bz2 ${package}/${pkgver} ${package}/${pkgver}.version 
 set +x
 
 exit 0
