@@ -116,8 +116,11 @@ for $i ( 0 .. $#package_list ) {
   print TSET "setenv  ${product_uc}_VERSION $version\n";
   print TSET "setenv  ${product_uc}_FQ $qual\n";
   if ( $ENV{LD_LIBRARY_PATH} ne '' ) {
-    print TSET "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${product}\'\`\n";
-    print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${product}\'\`\n";
+    # Below we want to remove the local products lib from the library path. The path is hard to find, since it is
+    # product/version/lib and version is hard to predict. So we'll drop "$product/"  -- the final slash is important
+    # as without it, dropit artg4 would also drop artg4examples and we don't want that.
+    print TSET "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${product}/\'\`\n";
+    print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${product}/\'\`\n";
   }
   print TSET "setenv  LD_LIBRARY_PATH $ENV{MRB_BUILDDIR}/${product}/lib:\${LD_LIBRARY_PATH}\n";
   print TSET "setenv  DYLD_LIBRARY_PATH $ENV{MRB_BUILDDIR}/${product}/lib:\${DYLD_LIBRARY_PATH}\n";
