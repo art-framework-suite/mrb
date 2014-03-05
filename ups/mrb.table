@@ -11,5 +11,6 @@ Common:
     proddir()
     # add the bin directory to the path
     pathPrepend(PATH, ${UPS_PROD_DIR}/bin )
+    setupRequired(cetpkgsupport)
 
 END:
