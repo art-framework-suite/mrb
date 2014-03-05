@@ -2,7 +2,7 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version must be of the form vxx_yy_zz (e.g. v01_02_03)
-parent %%PD%% v0_00_01
+parent %%PD%% v1_00_00
 defaultqual e4
 
 # These optional lines define where headers, libraries, and executables go and should
@@ -24,7 +24,7 @@ gcc		v4_8_1
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
-only_for_build  cetbuildtools   v3_07_04
+only_for_build  cetbuildtools   v3_07_11
 
 # We now define allowed qualifiers and the corresponding qualifiers for the depdencies.
 # Make a table by adding columns before "notes". 

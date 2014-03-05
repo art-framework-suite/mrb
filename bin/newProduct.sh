@@ -153,19 +153,7 @@ function createFiles() {
       echo "-- NOTICE: project is already in CMakeLists.txt file"
     else
       # No - add it
-      cp ${MRB_DIR}/templates/CMakeLists.txt.master CMakeLists.txt || exit 1;
-      # have to accumulate the include_directories command in one fragment
-      # and the add_subdirectory commands in another fragment
-      pkgname=`grep parent ${MRB_SOURCE}/${PRODNAME}/ups/product_deps  | grep -v \# | awk '{ printf $2; }'`
-      echo "# ${PRODNAME} package block" >> cmake_include_dirs
-      echo "set(${pkgname}_not_in_ups true)" >> cmake_include_dirs
-      echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${PRODNAME} )" >> cmake_include_dirs
-      cat cmake_include_dirs >> CMakeLists.txt
-      echo ""  >> CMakeLists.txt
-      echo "ADD_SUBDIRECTORY($PRODNAME)" >> cmake_add_subdir
-      cat cmake_add_subdir >> CMakeLists.txt
-      echo ""  >> CMakeLists.txt
-      echo "NOTICE: Added $PRODNAME to CMakeLists.txt file"
+      ${MRB_DIR}/bin/add_to_cmake.sh ${MRB_SOURCE} ${PRODNAME} || exit 1;
   fi
 
   echo "Complete - Product $PRODNAME is set for the develop branch"

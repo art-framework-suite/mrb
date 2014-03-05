@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Update the CMakeLists.txt file with the latest versions of dependencies
+# Update the master CMakeLists.txt file with whatever is found in $MRB_SOURCE
 
 # No arguments
 
@@ -48,51 +48,30 @@ fi
 # Backup?
 if [ $doBak ]; then
   cp $MRB_SOURCE/CMakeLists.txt $MRB_SOURCE/CMakeLists.txt.bak
-  cp $MRB_SOURCE/cmake_add_subdir $MRB_SOURCE/cmake_add_subdir.bak
-  cp $MRB_SOURCE/cmake_include_dirs $MRB_SOURCE/cmake_include_dirs.bak
+  cp $MRB_SOURCE/.cmake_add_subdir $MRB_SOURCE/.cmake_add_subdir.bak
+  cp $MRB_SOURCE/.cmake_include_dirs $MRB_SOURCE/.cmake_include_dirs.bak
 fi
 
 # find the directories
 # ignore any directory that does not contain ups/product_deps
-list=`ls $MRB_SOURCE -1`
+list=$(ls -d $MRB_SOURCE/*/)
 for file in $list
 do
-   if [ -d $file ]
-   then
-     if [ -r $file/ups/product_deps ]
-     then
-       pkglist="$file $pkglist"
-     fi
-   fi
+  if [ -r ${file}ups/product_deps ]
+  then
+    pkglist="$(basename $file) $pkglist"
+  fi
 done
 
 echo ""
-echo "updateDepsCM: rewrite $MRB_SOURCE/CMakeLists.txt for these packages:"
+echo "updateDepsCM: rewrite $MRB_SOURCE/CMakeLists.txt"
+echo "              for these packages:"
 echo "        $pkglist"
 echo ""
 
 # Construct a new CMakeLists.txt file in srcs
-cp ${MRB_DIR}/templates/CMakeLists.txt.master $MRB_SOURCE/CMakeLists.txt || exit 1;
-rm -f $MRB_SOURCE/cmake_add_subdir
-echo "# DO NOT DELETE cmake_add_subdir" > $MRB_SOURCE/cmake_add_subdir
-rm -f $MRB_SOURCE/cmake_include_dirs
-echo "# DO NOT DELETE cmake_include_dirs" > $MRB_SOURCE/cmake_include_dirs
-
-# have to accumulate the include_directories command in one fragment
-# and the add_subdirectory commands in another fragment
-for REP in $pkglist
-do
-   pkgname=`grep parent ${MRB_SOURCE}/${REP}/ups/product_deps  | grep -v \# | awk '{ printf $2; }'`
-   echo "# ${REP} package block" >> $MRB_SOURCE/cmake_include_dirs
-   echo "set(${pkgname}_not_in_ups true)" >> $MRB_SOURCE/cmake_include_dirs
-   echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${REP} )" >> $MRB_SOURCE/cmake_include_dirs
-   echo "ADD_SUBDIRECTORY(${REP})" >> $MRB_SOURCE/cmake_add_subdir
-   echo "NOTICE: Adding ${REP} to CMakeLists.txt file"
-done
-
-cat $MRB_SOURCE/cmake_include_dirs >> $MRB_SOURCE/CMakeLists.txt
-echo ""  >> $MRB_SOURCE/CMakeLists.txt
-cat $MRB_SOURCE/cmake_add_subdir >> $MRB_SOURCE/CMakeLists.txt
-echo ""  >> $MRB_SOURCE/CMakeLists.txt
+${MRB_DIR}/bin/copy_files_to_srcs.sh ${MRB_SOURCE} || exit 1
+# add back the packages   
+${MRB_DIR}/bin/add_to_cmake.sh ${MRB_SOURCE} "${pkglist}" || exit 1;
 
 exit 0

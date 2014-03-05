@@ -24,7 +24,7 @@ fullCom="${mrb_command} $thisCom"
 function usage() 
 {
   cat 1>&2 << EOF
-Usage: $fullCom [-n | -p] [-f] [-T dir] [-S dir] [-v project_version] [-q qualifiers]
+Usage: $fullCom [-n | -p] [-f] [-b] [-T dir] [-S dir] [-v project_version] [-q qualifiers]
   Make a new development area by creating srcs, build, and products directories.
   Options:
 
@@ -45,6 +45,8 @@ Usage: $fullCom [-n | -p] [-f] [-T dir] [-S dir] [-v project_version] [-q qualif
      -v <version> = Build for this version instead of the default
      
      -q <qualifiers> = Build for these qualifiers instead of the default
+
+     -b = Make a new build area corresponding to your machine flavor (development area already exists)
 
      These options are not typically used:
             -n = do not make the products area
@@ -87,7 +89,11 @@ function make_srcs_directory()
   echo "MRB_SOURCE is ${MRB_SOURCE} "
   echo "NOTICE: Created srcs directory"
 
-  copy_files_to_srcs
+  # Make the main CMakeLists.txt file
+  ${mrb_bin}/copy_files_to_srcs.sh ${MRB_SOURCE} || exit 1
+  # this is a hack....
+  cp ${mrb_bin}/../templates/dependency_list ${MRB_SOURCE}/ || exit 1;
+  # end hack
 
   # Make the top setEnv script (this is more complicated, so we'll just copy it from
   # @templates@). See &l=templates/setEnv& for the template
@@ -105,18 +111,6 @@ function make_srcs_directory()
     chmod a+x ${MRB_SOURCE}/xcodeBuild.sh
     echo "NOTICE: Created ${MRB_SOURCE}/xcodeBuild.sh"
   fi
-}
-
-function copy_files_to_srcs()
-{
-  # Make the main CMakeLists.txt file (note the use of a here documents)
-  cp ${mrb_bin}/../templates/CMakeLists.txt.master ${MRB_SOURCE}/CMakeLists.txt || exit 1;
-  echo "# DO NOT DELETE cmake_include_dirs" > ${MRB_SOURCE}/cmake_include_dirs
-  echo "# DO NOT DELETE cmake_add_subdir" > ${MRB_SOURCE}/cmake_add_subdir
-  # this is a hack....
-  cp ${mrb_bin}/../templates/dependency_list ${MRB_SOURCE}/ || exit 1;
-  # end hack
-  echo "NOTICE: Created ${MRB_SOURCE}/CMakeLists.txt"
 }
 
 function create_local_setup()
@@ -171,6 +165,7 @@ EOF
 
 # Set up configuration
 doForce=""
+doNewBuildDir=""
 topDir="."
 srcTopDir="."
 currentDir=${PWD}
@@ -180,7 +175,7 @@ makeSrcs="yes"
 printDebug=""
 
 # Process options
-while getopts ":hdnfpq:S:T:v:" OPTION
+while getopts ":hdnfbpq:S:T:v:" OPTION
 do
     case $OPTION in
         h   ) 
@@ -199,6 +194,14 @@ do
 	    makeBuild=""
 	    makeSrcs=""
 	    ;;
+        b   )
+            echo 'NOTICE: Just make build directory corresponding to this machine flavor'
+            doNewBuildDir="yes"
+            makeBuild="yes"
+            makeLP=""
+            makeSrcs=""
+            doForce="yes"
+            ;;
         f   ) 
 	    doForce="yes"
 	    ;;
@@ -361,7 +364,7 @@ fi
 # If we're just making the localProducts area, then we MUST be where build lives
 if [ ${makeLP} ] && [ ! ${makeBuild} ]
 then
-    if ls -1 $topDir | egrep -q '^build$';
+    if ls -1 $topDir | egrep -q '/build[^/]*$';
       then ok=1
       else echo 'ERROR: No build directory. Must be in a development area with build to make localProducts' ; exit 7
     fi
@@ -377,20 +380,39 @@ if [ ${makeBuild} ]
 then
   # Make directories
   cd ${currentDir}
-  mkdir -p ${topDir}/build
+
+  # If we are just making a new build directory, we need to be were local products sits
+  if [ ${doNewBuildDir} ]; then
+    if ls -1 $topDir | egrep -q '^localProducts';
+      then ok=1
+      else echo 'ERROR: Your current directory must be where localProducts lives' ; exit 8
+    fi 
+  fi
+
+  # Determine the subdirectory 
+  # Using the function supplied by cetpkgsupport
+  flav=`get-directory-name subdir`
+  buildDirName="build_${flav}"
+
+  # Make sure we don't already have the build directory
+  if [ -d ${topDir}/${buildDirName} ]; then
+     echo "Build directory ${buildDirName} already exists"
+  else
+    mkdir -p ${topDir}/${buildDirName}
+    echo "Created build directory"
+  fi
   # get the full path to the new directory
-  cd ${topDir}/build
+  cd ${topDir}/${buildDirName}
   MRB_BUILDDIR=`pwd`
   cd ${currentDir}
   echo "MRB_BUILDDIR is ${MRB_BUILDDIR}"
-  echo "NOTICE: Created build directory"
 else
     # If we are not making the build area, then we MUST know where build lives
-    if ls -1 $topDir | egrep -q '^build$';
+    if ls -1 $topDir | egrep -q '/build[^/]*$';
       then ok=1
       else echo 'ERROR: No build directory. Must be in a development area with build to make localProducts' ; exit 7
     fi
-    echo "use existing build directory $topDir/build"
+    echo "use existing build directory in $topDir"
 fi
 
 # h3. Srcs area

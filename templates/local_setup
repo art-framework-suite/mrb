@@ -40,8 +40,15 @@ test -n "$db" && setenv MRB_TOP `dirname $db`
 
 test -n $MRB_BUILDDIR && setenv OLD_MRB_BUILDDIR $MRB_BUILDDIR
 
-setup mrb
+setup mrb v0_07_00
+
+tnotnull MRB_DIR || ( echo ""; echo "ERROR: You must first setup mrb" )
+tnotnull MRB_DIR || return
 
 setenv MRB_INSTALL $db
-setenv MRB_BUILDDIR $MRB_TOP/build
+
+# Determine default build directory
+set_ flav=`get-directory-name subdir`
+set_ buildDirName="build_${flav}"
+setenv MRB_BUILDDIR $MRB_TOP/${buildDirName}
 
