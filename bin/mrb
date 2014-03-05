@@ -38,7 +38,9 @@ thisCom=${thisComFull%.*}
 export mrb_command="$thisCom"
 
 # Define the short list of commands
-shortComList="(newDev | gitCheckout | svnCheckout | setEnv | build | install | setup_local_products | zapBuild | newProduct | updateDepsCM )"
+shortComList="(newDev | gitCheckout | svnCheckout | setEnv | build | install | test | setup_local_products | 
+           zapBuild | newProduct | changelog | updateDepsCM )"
+#  Adams's list:  zapBuild | newProduct | changelog | bumpVersion | updateDeps)"
 
 # Simple help if no argumets
 if [ $# -lt 1 ]
@@ -85,11 +87,12 @@ Usage ${mrb_command} $shortComList [-h for help]"
    svnCheckout (svn)           Checkout from a svn repository
    setEnv (s)                  Setup a development enviornment
    build (b)                   Run buildtool
-   install (i)                 Run buildtool
-   test (t)                    Run buildtool and test
+   install (i)                 Run buildtool with install
+   test (t)                    Run buildtool with tests
    setup_local_products (slp)  Setup all products installed in the working localProducts_XXX directory
    zapBuild (z)                Delete everything in your build area
    newProduct (p)              Create a new product from scratch
+   changelog (c)               Display a changelog for a package
    updateDepsCM (uc)           Update CMakeLists.txt file for latest dependencies
 EOF
    ;;
@@ -139,7 +142,7 @@ EOF
       fi
     ;;
 
-# Run buildtool 
+   # Run buildtool 
     "build" | "b" ) run_buildtool -I $MRB_INSTALL -b $*
         ;;
 
@@ -147,13 +150,23 @@ EOF
     "install" | "i" ) run_buildtool -I $MRB_INSTALL -i $*
         ;;
 
-   # install into local product area
+   # Run tests
     "test" | "t" ) run_buildtool -I $MRB_INSTALL -b -t $*
         ;;
 
    # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)
     "zapBuild" | "z" ) ${mrb_dir}/zapBuild.sh $*
         ;;
+
+   # Display a git log
+    "changelog" | "c" ) 
+      if [ -d .git ]
+      then
+        git log --decorate --pretty=format:"%ad %ae %h%d %s" --date=short
+      else
+        echo "changelog: this is not a git repository"
+      fi
+       ;;  
 
    # Update CMakeLists.txt for latest dependencies (calls &l=bin/updateDepsCM.sh&)
     "updateDepsCM" | "uc" ) ${mrb_dir}/updateDepsCM.sh $*
