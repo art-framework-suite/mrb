@@ -57,9 +57,9 @@ fi
 list=$(ls -d $MRB_SOURCE/*/)
 for file in $list
 do
-  if [ -r $file/ups/product_deps ]
+  if [ -r ${file}ups/product_deps ]
   then
-    pkglist="$file $pkglist"
+    pkglist="$(basename $file) $pkglist"
   fi
 done
 

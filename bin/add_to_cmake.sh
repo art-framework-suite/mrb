@@ -60,6 +60,9 @@ cp ${MRB_DIR}/templates/CMakeLists.txt.master CMakeLists.txt || exit 1;
 # and the add_subdirectory commands in another fragment
 for REP in $pkglist
 do
+   # Sanity checks
+   if [ ! -r $REP/CMakeLists.txt ]; then echo "Cannot find CMakeLists.txt in $REP"; break; fi
+   if [ ! -r $REP/ups/product_deps ]; then echo "Cannot find ups/product_deps in $REP"; break; fi
    pkgname=`grep parent ${MRB_SOURCE}/${REP}/ups/product_deps  | grep -v \# | awk '{ printf $2; }'`
    echo "# ${REP} package block" >> ${cmake_include_fragment}
    echo "set(${pkgname}_not_in_ups true)" >> ${cmake_include_fragment}
