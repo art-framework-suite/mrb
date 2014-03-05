@@ -1,0 +1,19 @@
+File    = table
+Product = @product@
+#*************************************************
+# Starting Group definition
+Group:
+Flavor     = ANY
+Qualifiers = ""
+
+Common:
+  Action = setup
+    prodDir()
+    setupEnv()
+    # add the bin directory to the path
+    pathPrepend(PATH, ${UPS_PROD_DIR}/bin )
+    setupRequired(cetpkgsupport)
+
+End:
+# End Group definition
+#*************************************************

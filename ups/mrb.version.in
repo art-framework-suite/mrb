@@ -1,0 +1,13 @@
+FILE = version
+PRODUCT = @product@
+VERSION = @version@
+
+FLAVOR = @UPSFLAVOR@
+QUALIFIERS = ""
+  DECLARER = CET
+  DECLARED = @datime@
+  MODIFIER = CET
+  MODIFIED = @datime@
+  PROD_DIR = @product@/@version@
+  UPS_DIR = ups
+  TABLE_FILE = @product@.table
