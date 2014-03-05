@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Update the CMakeLists.txt file with the latest versions of dependencies
+# Update the master CMakeLists.txt file with whatever is found in $MRB_SOURCE
 
 # No arguments
 
@@ -54,16 +54,13 @@ fi
 
 # find the directories
 # ignore any directory that does not contain ups/product_deps
-list=`ls $MRB_SOURCE -1`
+list=$(ls -d $MRB_SOURCE/*/)
 for file in $list
 do
-   if [ -d $file ]
-   then
-     if [ -r $file/ups/product_deps ]
-     then
-       pkglist="$file $pkglist"
-     fi
-   fi
+  if [ -r $file/ups/product_deps ]
+  then
+    pkglist="$file $pkglist"
+  fi
 done
 
 echo ""

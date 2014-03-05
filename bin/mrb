@@ -93,7 +93,8 @@ Usage ${mrb_command} $shortComList [-h for help]"
    zapBuild (z)                Delete everything in your build area
    newProduct (p)              Create a new product from scratch
    changelog (c)               Display a changelog for a package
-   updateDepsCM (uc)           Update CMakeLists.txt file for latest dependencies
+   updateDepsCM (uc)           Update the master CMakeLists.txt file
+   updateDepsPD (ud)           Update dependencies in product_deps and CMakeLists.txt
 EOF
    ;;
 
@@ -170,6 +171,10 @@ EOF
 
    # Update CMakeLists.txt for latest dependencies (calls &l=bin/updateDepsCM.sh&)
     "updateDepsCM" | "uc" ) ${mrb_dir}/updateDepsCM.sh $*
+        ;;
+
+   # Update product_deps and CMakeLists.txt to latest dependencies (calls &l=bin/updateDeps.sh&)
+    "updateDepsPD" | "ud" ) ${mrb_dir}/updateDepsPD.sh $*
         ;;
 
    # Dump some debug information
