@@ -83,6 +83,8 @@ for $i ( 0 .. $#package_list ) {
   $pfile=$sourcedir."/".$pkg."/ups/product_deps";
   ##print DIAG "checking $pfile for $pkg \n";
   ($productnames[$i], $productversn[$i]) = get_product_name( $pfile, DIAG );
+  $productdefaultquals[$i] = find_default_qual( $pfile );
+  ##print DIAG "DIAGNOSTICS: $productdefaultquals[$i] for $productnames[$i]\n";
 }
 
 # unsetup if necessary
@@ -106,15 +108,21 @@ for $i ( 0 .. $#package_list ) {
   ##print DIAG "checking $pfile for $pkg \n";
   $product = $productnames[$i];
   $version = $productversn[$i];
+  $qual    = $productdefaultquals[$i]; 
 
   $fcl_directory = get_fcl_directory( $pfile, $product );
   $gdml_directory = get_gdml_directory( $pfile, $product );
   # pretend this is a product
   $product_uc = uc($product);
   print TSET "setenv  ${product_uc}_VERSION $version\n";
+  # this is wrong - ${product_uc}_FQ should look something like slf6.x86_64.e4.prof or slf6.x86_64.nu.e4.prof
+  #print TSET "setenv  ${product_uc}_FQ $qual\n";
   if ( $ENV{LD_LIBRARY_PATH} ne '' ) {
-    print TSET "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${product}/lib\'\`\n";
-    print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${product}/lib\'\`\n";
+    # Below we want to remove the local products lib from the library path. The path is hard to find, since it is
+    # product/version/lib and version is hard to predict. So we'll drop "$product/"  -- the final slash is important
+    # as without it, dropit artg4 would also drop artg4examples and we don't want that.
+    print TSET "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${product}/\'\`\n";
+    print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${product}/\'\`\n";
   }
   print TSET "setenv  LD_LIBRARY_PATH $ENV{MRB_BUILDDIR}/${product}/lib:\${LD_LIBRARY_PATH}\n";
   print TSET "setenv  DYLD_LIBRARY_PATH $ENV{MRB_BUILDDIR}/${product}/lib:\${DYLD_LIBRARY_PATH}\n";
