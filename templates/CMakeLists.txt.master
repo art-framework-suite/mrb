@@ -13,4 +13,5 @@ enable_testing()
 
 # If you add a package by hand, you MUST also add the appropriate package block below
 # Remove the appropriate package block below if you delete a product from your srcs area
+# Or, use mrb uc to update this file safely
 

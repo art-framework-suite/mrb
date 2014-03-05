@@ -87,7 +87,11 @@ function make_srcs_directory()
   echo "MRB_SOURCE is ${MRB_SOURCE} "
   echo "NOTICE: Created srcs directory"
 
-  copy_files_to_srcs
+  # Make the main CMakeLists.txt file
+  ${mrb_bin}/copy_files_to_srcs.sh ${MRB_SOURCE} || exit 1
+  # this is a hack....
+  cp ${mrb_bin}/../templates/dependency_list ${MRB_SOURCE}/ || exit 1;
+  # end hack
 
   # Make the top setEnv script (this is more complicated, so we'll just copy it from
   # @templates@). See &l=templates/setEnv& for the template
@@ -105,18 +109,6 @@ function make_srcs_directory()
     chmod a+x ${MRB_SOURCE}/xcodeBuild.sh
     echo "NOTICE: Created ${MRB_SOURCE}/xcodeBuild.sh"
   fi
-}
-
-function copy_files_to_srcs()
-{
-  # Make the main CMakeLists.txt file (note the use of a here documents)
-  cp ${mrb_bin}/../templates/CMakeLists.txt.master ${MRB_SOURCE}/CMakeLists.txt || exit 1;
-  echo "# DO NOT DELETE cmake_include_dirs" > ${MRB_SOURCE}/cmake_include_dirs
-  echo "# DO NOT DELETE cmake_add_subdir" > ${MRB_SOURCE}/cmake_add_subdir
-  # this is a hack....
-  cp ${mrb_bin}/../templates/dependency_list ${MRB_SOURCE}/ || exit 1;
-  # end hack
-  echo "NOTICE: Created ${MRB_SOURCE}/CMakeLists.txt"
 }
 
 function create_local_setup()
