@@ -27,8 +27,12 @@ isSourced=""
 [[ ${BASH_SOURCE[0]} != "${0}" ]] && isSourced="yes"
 
 # Get the directory where this script resides
-thisDirAB=$(cd ${BASH_SOURCE[0]%/*} && echo $PWD/${BASH_SOURCE[0]##*/} )
-export mrb_dir=`dirname $thisDirAB`
+if [ -z ${MRB_DIR} ]; then
+   echo "ERROR: MRB_DIR is undefined"
+   echo "       Please setup mrb"
+   exit 1
+fi 
+export mrb_dir=${MRB_DIR}/bin
 
 # Determine the name of this command
 thisComFull=$(basename ${BASH_SOURCE[0]})
