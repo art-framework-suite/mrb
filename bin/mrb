@@ -34,17 +34,13 @@ if [ -z ${MRB_DIR} ]; then
 fi 
 export mrb_dir=${MRB_DIR}/bin
 
-# Determine the name of this command
-thisComFull=$(basename ${BASH_SOURCE[0]})
-thisCom=${thisComFull%.*}
-
 # Export this umbrella command name to subshells (should be mrb)
-export mrb_command="$thisCom"
+export mrb_command=${mrb_dir}/mrb
 
 # Define the short list of commands
 shortComList="(newDev | gitCheckout | svnCheckout | setEnv | build | install | test | setup_local_products | 
            zapBuild | newProduct | changelog | updateDepsCM )"
-#  Adams's list:  zapBuild | newProduct | changelog | bumpVersion | updateDeps)"
+#  Adams's list:  | bumpVersion | updateDeps)"
 
 # Simple help if no argumets
 if [ $# -lt 1 ]
