@@ -30,12 +30,12 @@ srcDir=$MRB_SOURCE
 
 if [ $# -gt 0 ]; then
 
-  if [ "$1" == "-H" ];then
+  if [ "$1" = "-H" ];then
     usage
     exit 0  # Must not be sourced
   fi
 
-  if [ "$1" == "-h" ]; then
+  if [ "$1" = "-h" ]; then
     usage
     return 
   fi
@@ -52,13 +52,13 @@ qlist=`echo ${MRB_QUALS} | sed -e 's/:/ /g' | tr " " "\n"| sort |tr "\n" " "`
 myq=""
 for qual in ${qlist}
 do
-  if [ ${qual} == "debug" ]
+  if [ ${qual} = "debug" ]
   then
     dop="-d"
-  elif [ ${qual} == "opt" ]
+  elif [ ${qual} = "opt" ]
   then
     dop="-o"
-  elif [ ${qual} == "prof" ]
+  elif [ ${qual} = "prof" ]
   then
     dop="-p"
   else
