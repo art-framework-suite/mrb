@@ -57,14 +57,14 @@ fi
 
 set -x
 # pull the tagged release from git
-git archive --prefix=${pkgver}/ \
+git archive --prefix=mrb-${pkgver}/ \
             --remote ssh://p-${package}@cdcvs.fnal.gov/cvs/projects/${package} \
             -o ${mydir}/${package}-${pkgver}.tar ${pkgver}
-cd ${pkgdir}
+mkdir -p ${pkgdir}/${pkgver}/source
+cd ${pkgdir}/${pkgver}/source
 tar xf ${mydir}/${package}-${pkgver}.tar
 set +x
 
-# we will use ups declare
 if [ -z ${UPS_DIR} ]
 then
    echo "ERROR: please setup ups"
@@ -72,15 +72,25 @@ then
 fi
 source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
 
-ups declare -c ${package} ${pkgver} -r ${package}/${pkgver} -0 -m ${package}.table  -z ${product_dir}
+# now run cmake
+mkdir -p ${pkgdir}/${pkgver}/build
+cd ${pkgdir}/${pkgver}/build
+setup cmake
+cmake -DCMAKE_INSTALL_PREFIX=${product_dir} ${pkgdir}/${pkgver}/source/mrb-${pkgver}
+make install
+
+##ups declare -c ${package} ${pkgver} -r ${package}/${pkgver} -0 -m ${package}.table  -z ${product_dir}:${PRODUCTS}
 
 ups list -aK+ ${package} ${pkgver}   -z ${product_dir}
 
 # now make the tar ball
 set -x
 cd ${product_dir}
-tar cjf ${package}-${pkgdotver}-noarch.tar.bz2 ${package}/${pkgver} ${package}/${pkgver}.version ${package}/current.chain
-set +x
+##tar cjf ${package}-${pkgdotver}-noarch.tar.bz2 ${package}/${pkgver}/bin  ${package}/${pkgver}.version ${package}/current.chain
+tar cjf ${package}-${pkgdotver}-noarch.tar.bz2 ${package}/${pkgver}/bin  \
+                                               ${package}/${pkgver}/templates  \
+                                               ${package}/${pkgver}/ups  \
+                                               ${package}/${pkgver}.version
 
 exit 0
 
