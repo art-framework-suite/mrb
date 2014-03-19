@@ -15,7 +15,7 @@ EOF
 exit 1
 }
 
-localP=$MRB_INSTALL
+localP="${MRB_INSTALL}"
 
 if [ $# -gt 0 ]; then
 

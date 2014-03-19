@@ -144,15 +144,15 @@ EOF
     ;;
 
    # Run buildtool 
-    "build" | "b" ) run_buildtool -I $MRB_INSTALL -b $*
+    "build" | "b" ) run_buildtool -I "${MRB_INSTALL}" -b $*
         ;;
 
    # install into local product area
-    "install" | "i" ) run_buildtool -I $MRB_INSTALL -i $*
+    "install" | "i" ) run_buildtool -I "${MRB_INSTALL}" -i $*
         ;;
 
    # Run tests
-    "test" | "t" ) run_buildtool -I $MRB_INSTALL -b -t $*
+    "test" | "t" ) run_buildtool -I "${MRB_INSTALL}" -b -t $*
         ;;
 
    # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)

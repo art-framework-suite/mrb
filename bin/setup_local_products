@@ -55,7 +55,7 @@ test -z "$CETPKG_SOURCE" && setenv CETPKG_SOURCE `pwd`
 #echo The working build directory is $CETPKG_BUILD
 #echo The source code directory is $CETPKG_SOURCE
 
-# make sure we know the local product directory
+# make sure we know the local products directory
 set_ msg6='ERROR: MRB_INSTALL is not defined - please source localProducts_XXX/setup'
 test -z "$MRB_INSTALL" && ( echo ""; echo "$msg6"; echo "" ) && return
 echo local product directory is $MRB_INSTALL

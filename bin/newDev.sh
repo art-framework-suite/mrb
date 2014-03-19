@@ -56,111 +56,43 @@ Usage: $fullCom [-n | -p] [-f] [-b] [-T dir] [-S dir] [-v project_version] [-q q
 EOF
 }
 
-function get_mrb_bin()
-{
-    ( cd / ; /bin/pwd -P ) >/dev/null 2>&1
-    if (( $? == 0 )); then
-      pwd_P_arg="-P"
-    fi
-    reldir=`dirname ${0}`
-    mrb_bin=`cd ${reldir} && /bin/pwd ${pwd_P_arg}`
-}
-
-function find_local_srcs()
-{
-    have_mrb_source="none"
-    if ls -1 $srcTopDir | egrep -q '^srcs$';
-      then 
-	have_mrb_source=`cd $srcTopDir/srcs; pwd`
-	if [ ${printDebug} ]; then echo "DEBUG: using srcTopDir/srcs"; fi
-    fi
-    if [ ${printDebug} ]; then echo "DEBUG: found local srcs directory ${have_mrb_source}"; fi
-}
-
 function make_srcs_directory()
 {
   # Make directory
-  cd ${currentDir}
-  mkdir -p ${srcTopDir}/srcs
+  cd "${currentDir}"
+  mkdir -p "${srcTopDir}/srcs"
   # get the full path to the new directory
-  cd ${srcTopDir}/srcs
-  MRB_SOURCE=`pwd`
-  cd ${currentDir}
+  cd "${srcTopDir}/srcs"
+  MRB_SOURCE="`/bin/pwd`"
+  cd "${currentDir}"
   echo "MRB_SOURCE is ${MRB_SOURCE} "
   echo "NOTICE: Created srcs directory"
 
   # Make the main CMakeLists.txt file
-  ${mrb_bin}/copy_files_to_srcs.sh ${MRB_SOURCE} || exit 1
+  ${mrb_bin}/copy_files_to_srcs.sh "${MRB_SOURCE}" || exit 1
   # this is a hack....
-  cp ${mrb_bin}/../templates/dependency_list ${MRB_SOURCE}/ || exit 1;
+  cp "${mrb_bin}/../templates/dependency_list" "${MRB_SOURCE}/" || exit 1;
   # end hack
 
   # Make the top setEnv script (this is more complicated, so we'll just copy it from
   # @templates@). See &l=templates/setEnv& for the template
-  cp ${mrb_bin}/../templates/setEnv ${MRB_SOURCE}/setEnv
-  if [ -e ${MRB_SOURCE}/setEnv ]
+  cp "${mrb_bin}/../templates/setEnv" "${MRB_SOURCE}/setEnv"
+  if [ -e "${MRB_SOURCE}/setEnv" ]
   then
-    chmod a+x ${MRB_SOURCE}/setEnv
+    chmod a+x "${MRB_SOURCE}/setEnv"
     echo "NOTICE: Created ${MRB_SOURCE}/setEnv"
-  else echo "ERROR: failed to create ${MRB_SOURCE}/setEnv"; exit 9
+  else
+    echo "ERROR: failed to create ${MRB_SOURCE}/setEnv"
+    exit 9
   fi
 
   # If we're on MacOSX, then copy the xcodeBuild.sh file
-  if ups flavor -1 | grep -q 'Darwin'; then
-    cp ${mrb_bin}/../templates/xcodeBuild.sh ${MRB_SOURCE}/xcodeBuild.sh
-    chmod a+x ${MRB_SOURCE}/xcodeBuild.sh
+  if ups flavor -1 | grep -q 'Darwin'
+  then
+    cp "${mrb_bin}/../templates/xcodeBuild.sh" "${MRB_SOURCE}/xcodeBuild.sh"
+    chmod a+x "${MRB_SOURCE}/xcodeBuild.sh"
     echo "NOTICE: Created ${MRB_SOURCE}/xcodeBuild.sh"
   fi
-}
-
-function create_local_setup()
-{
-    # copy the setup script
-    cp ${mrb_bin}/../templates/local_setup  $dirName/setup
-    
-    # Write mrb_definitions
-
-    # --- Start of HERE document for localProducts.../setup ---
-
-    # --- Comments below pertain to that file ---
-    cat >> $dirName/setup << EOF
-setenv PRODUCTS "\$MRB_INSTALL:\${PRODUCTS}"
-setenv MRB_PROJECT_VERSION ${MRB_PROJECT_VERSION}
-setenv MRB_SOURCE ${MRB_SOURCE}
-setenv MRB_QUALS "${MRB_QUALS}"
-setenv MRB_PROJECT "${MRB_PROJECT}"
-
-# report the environment
-echo
-echo MRB_SOURCE=\$MRB_SOURCE
-echo MRB_BUILDDIR=\$MRB_BUILDDIR
-echo MRB_PROJECT=\$MRB_PROJECT
-echo MRB_PROJECT_VERSION=\$MRB_PROJECT_VERSION
-echo MRB_QUALS=\$MRB_QUALS
-echo MRB_INSTALL=\$MRB_INSTALL
-echo
-echo PRODUCTS=\$PRODUCTS
-echo
-
-##$setupLine
-##echo Executed $setupLine
-
-test "$ss" = csh && unalias tnotnull nullout set_ vecho_ unsetenv_
-unset ss sts msg1 msg2 db me
-unset set_ setenv unsetenv_ tnotnull source nullout ovexe ov vecho_
-
-EOF
-# --- End of HERE document for localProducts.../setup ---
-
-    # Display what we did (note the short HERE document)
-    cat << EOF
-NOTICE: Created $dirName/setup
-
-IMPORTANT: You must type
-    source $dirName/setup
-NOW and whenever you log in
-EOF
-
 }
 
 # Set up configuration
@@ -256,7 +188,13 @@ then
     echo "DEBUG: makeSrcs    is ${makeSrcs}"
 fi
 
-get_mrb_bin
+#get_mrb_bin
+( cd / ; /bin/pwd -P ) >/dev/null 2>&1
+if (( $? == 0 )); then
+    pwd_P_arg="-P"
+fi
+reldir=`dirname ${0}`
+mrb_bin=`cd ${reldir} && /bin/pwd ${pwd_P_arg}`
 
 if [ ${printDebug} ]
 then
@@ -372,20 +310,23 @@ fi
 
 # Record the mrb version
 # But we might create more here later, so should this be in the localProducts and srcs areas?
-ups active | grep ^mrb >  ${currentDir}/.mrbversion
+ups active | grep '^mrb' > "${currentDir}/.mrbversion"
 
 # h3. Build area
 #  Do we need to make the @build/@ directory?
 if [ ${makeBuild} ]
 then
   # Make directories
-  cd ${currentDir}
+  cd "${currentDir}"
 
   # If we are just making a new build directory, we need to be were local products sits
   if [ ${doNewBuildDir} ]; then
-    if ls -1 $topDir | egrep -q '^localProducts';
-      then ok=1
-      else echo 'ERROR: Your current directory must be where localProducts lives' ; exit 8
+    if ls -1 "${topDir}" | egrep -q '^localProducts'
+    then
+      ok=1
+    else
+      echo 'ERROR: Your current directory must be where localProducts lives'
+      exit 8
     fi 
   fi
 
@@ -395,58 +336,90 @@ then
   buildDirName="build_${flav}"
 
   # Make sure we don't already have the build directory
-  if [ -d ${topDir}/${buildDirName} ]; then
+  if [ -d "${topDir}/${buildDirName}" ]
+  then
      echo "Build directory ${buildDirName} already exists"
   else
-    mkdir -p ${topDir}/${buildDirName}
+    mkdir -p "${topDir}/${buildDirName}"
     echo "Created build directory"
   fi
   # get the full path to the new directory
-  cd ${topDir}/${buildDirName}
-  MRB_BUILDDIR=`pwd`
-  cd ${currentDir}
+  cd "${topDir}/${buildDirName}"
+  MRB_BUILDDIR="`/bin/pwd`"
+  cd "${currentDir}"
   echo "MRB_BUILDDIR is ${MRB_BUILDDIR}"
 else
-    # If we are not making the build area, then we MUST know where build lives
-    if ls -1 $topDir | egrep -q '/build[^/]*$';
-      then ok=1
-      else echo 'ERROR: No build directory. Must be in a development area with build to make localProducts' ; exit 7
-    fi
-    echo "use existing build directory in $topDir"
+  # Determine the subdirectory 
+  # Using the function supplied by cetpkgsupport
+  flav=`get-directory-name subdir`
+  buildDirName="build_${flav}"
+
+  # If we are not making the build area, then we MUST know where build lives
+  if ls -1 "${topDir}" | egrep -q "/${buildDirName}\$";
+    then ok=1
+    else echo 'ERROR: No build directory. Must be in a development area with build to make localProducts' ; exit 7
+  fi
+  # get the full path to the new directory
+  cd "${topDir}/${buildDirName}"
+  MRB_BUILDDIR="`/bin/pwd`"
+  cd "${currentDir}"
+  echo "MRB_BUILDDIR is ${MRB_BUILDDIR}"
+  echo "use existing build directory in $topDir"
 fi
 
 # h3. Srcs area
 #  Do we need to make the @srcs/@ directory?
 if [ ${makeSrcs} ]
 then
-  # Do we already have a srcs directory?
-  find_local_srcs
-  if [ "${have_mrb_source}" = "none" ]
-  then
-      make_srcs_directory
-  elif [ ${doForce} ]
-  then
-      MRB_SOURCE=${have_mrb_source}
-  else
-      echo "ERROR: unable to create srcs directory"
-      exit 6
-  fi
+    # Do we already have a srcs directory?
+    have_mrb_source="none"
+    if ls -1 "${srcTopDir}" | egrep -q '^srcs$';
+    then 
+        have_mrb_source=`cd "${srcTopDir}/srcs"; /bin/pwd`
+	if [ ${printDebug} ]
+        then
+            echo "DEBUG: using ${srcTopDir}/srcs"
+        fi
+    fi
+    if [ ${printDebug} ]
+    then
+        echo "DEBUG: found local srcs directory ${have_mrb_source}"
+    fi
+    if [ "${have_mrb_source}" = "none" ]
+    then
+        make_srcs_directory
+    elif [ ${doForce} ]
+    then
+        MRB_SOURCE="${have_mrb_source}"
+    else
+        echo "ERROR: unable to create srcs directory"
+        exit 6
+    fi
 else
     # If we are not making the srcs area, then we MUST know where srcs lives
-    if ls -1 $topDir | egrep -q '^srcs$';
-      then 
+    if ls -1 "${topDir}" | egrep -q '^srcs$'
+    then 
         ok=1
-	MRB_SOURCE=`cd $topDir/srcs; pwd`
-	if [ ${printDebug} ]; then echo "DEBUG: using topDir/srcs"; fi
-    elif ls -1 $srcTopDir | egrep -q '^srcs$';
-      then 
+	MRB_SOURCE=`cd "${topDir}/srcs"; /bin/pwd`
+	if [ ${printDebug} ]
+        then
+            echo "DEBUG: using ${topDir}/srcs"
+        fi
+    elif ls -1 "${srcTopDir}" | egrep -q '^srcs$'
+    then 
         ok=1
-	MRB_SOURCE=`cd $srcTopDir/srcs; pwd`
-	if [ ${printDebug} ]; then echo "DEBUG: using srcTopDir/srcs"; fi
-    elif [ ${MRB_SOURCE} ];
-      then 
+	MRB_SOURCE=`cd "${srcTopDir}/srcs"; /bin/pwd`
+	if [ ${printDebug} ]
+        then
+            echo "DEBUG: using ${srcTopDir}/srcs"
+        fi
+    elif [ ${MRB_SOURCE} ]
+    then 
         ok=1
-	if [ ${printDebug} ]; then echo "DEBUG: using MRB_SOURCE"; fi
+	if [ ${printDebug} ]
+        then
+            echo "DEBUG: using MRB_SOURCE: ${MRB_SOURCE}"
+        fi
     else
         echo 'ERROR: Cannot find existing srcs directory. '
 	exit 7
@@ -460,43 +433,88 @@ if [ ${makeLP} ]; then
     # Prepare the setup script in @local_products@
 
     # Construct the call for the setup
-    if [ `ups exist ${MRB_PROJECT} ${prjver} -q ${MRB_QUALS}` ]
+    if [ `ups exist "${MRB_PROJECT}" "${prjver}" -q "${MRB_QUALS}"` ]
     then
-        setupLine="setup ${MRB_PROJECT} ${prjver} -q \"${MRB_QUALS}\""
+        setupLine="setup \"${MRB_PROJECT}\" \"${prjver}\" -q \"${MRB_QUALS}\""
     else
-        setupLine="setup ${MRB_PROJECT} ${oldprjver} -q \"${MRB_QUALS}\""
+        setupLine="setup \"${MRB_PROJECT}\" \"${oldprjver}\" -q \"${MRB_QUALS}\""
     fi
-    MRB_QUALS=${MRB_QUALS}
 
     # Construct the version and qualifier string
-    qualdir=`echo ${MRB_QUALS} | sed s'/:/_/g'`
-    dirVerQual="_${MRB_PROJECT}_${prjver}_${qualdir}"
+    qualdir=`echo "${MRB_QUALS}" | sed s'/:/_/g'`
+    dirVerQual="${MRB_PROJECT}_${prjver}_${qualdir}"
     # Construct the name of the @local_products@ directory
     # First get the full path 
-    cd ${topDir}
-    fullTopDir=`pwd`
-    dirName="$fullTopDir/localProducts${dirVerQual}"
-    MRB_INSTALL=${dirName}
-    cd ${currentDir}
+    cd "${topDir}"
+    fullTopDir="`/bin/pwd`"
+    cd "${currentDir}"
+    MRB_INSTALL="${fullTopDir}/localProducts_${dirVerQual}"
 
     #  Make sure the directory does not exist already
-    if [ -e "$dirName" ]
+    if [ -e "${MRB_INSTALL}" ]
     then
-        echo "ERROR: $dirName already exists. Delete it first"
+        echo "ERROR: ${MRB_INSTALL} already exists. Delete it first"
         exit 8
     fi
 
     # Make the local products directory
-    mkdir -p $dirName
-    echo "NOTICE: Created local products directory $dirName"
+    mkdir -p "${MRB_INSTALL}"
+    echo "NOTICE: Created local products directory ${MRB_INSTALL}"
 
 
     # Copy the @.upsfiles@ directory to local products
-    cp -R $project_dir/.upsfiles $dirName
-    echo "NOTICE: Copied .upsfiles to $dirName"
+    cp -R ${project_dir}/.upsfiles "${MRB_INSTALL}"
+    echo "NOTICE: Copied .upsfiles to ${MRB_INSTALL}"
 
-    create_local_setup
+    # copy the setup script
+    cp "${mrb_bin}/../templates/local_setup" "${MRB_INSTALL}/setup"
+    
+    # Write mrb_definitions
 
+    # --- Start of HERE document for localProducts.../setup ---
+
+    # --- Comments below pertain to that file ---
+    cat >> "${MRB_INSTALL}/setup" << EOF
+setenv MRB_SOURCE "${MRB_SOURCE}"
+setenv MRB_BUILDDIR "${MRB_BUILDDIR}"
+setenv MRB_INSTALL "${MRB_INSTALL}"
+setenv MRB_PROJECT "${MRB_PROJECT}"
+setenv MRB_PROJECT_VERSION ${MRB_PROJECT_VERSION}
+setenv MRB_QUALS "${MRB_QUALS}"
+setenv PRODUCTS "${MRB_INSTALL}:\${PRODUCTS}"
+
+# report the environment
+echo
+echo MRB_SOURCE=\$MRB_SOURCE
+echo MRB_BUILDDIR=\$MRB_BUILDDIR
+echo MRB_INSTALL=\$MRB_INSTALL
+echo MRB_PROJECT=\$MRB_PROJECT
+echo MRB_PROJECT_VERSION=\$MRB_PROJECT_VERSION
+echo MRB_QUALS=\$MRB_QUALS
+echo
+echo PRODUCTS=\$PRODUCTS
+echo
+
+##$setupLine
+##echo Executed $setupLine
+
+test "$ss" = csh && unalias tnotnull nullout set_ vecho_ unsetenv_
+unset ss sts msg1 msg2 db me
+unset set_ setenv unsetenv_ tnotnull source nullout ovexe ov vecho_
+
+EOF
+# --- End of HERE document for localProducts.../setup ---
+
+    # Display what we did (note the short HERE document)
+    cat << EOF
+NOTICE: Created ${MRB_INSTALL}/setup
+
+IMPORTANT: You must type
+    source ${MRB_INSTALL}/setup
+NOW and whenever you log in
+EOF
+
+#end of if [ ${makeLP} ]
 fi
 
 exit 0

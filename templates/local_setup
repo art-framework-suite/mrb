@@ -18,18 +18,6 @@ set_ msg1='ERROR: You MUST setup ups'
 tnotnull UPS_DIR || ( echo ""; echo "$msg1"; echo "" )
 tnotnull UPS_DIR || return
 
-test -n $MRB_BUILDDIR && setenv OLD_MRB_BUILDDIR $MRB_BUILDDIR
-
-#Note: Do not replace the already setup version of MRB!
-#setup mrb v0_07_00
-
-tnotnull MRB_DIR || ( echo ""; echo "ERROR: You must first setup mrb" )
-tnotnull MRB_DIR || return
-
-setenv MRB_INSTALL $MRB_DIR
-
-# Determine default build directory
-set_ flav=`get-directory-name subdir`
-set_ buildDirName="build_${flav}"
-setenv MRB_BUILDDIR $MRB_TOP/${buildDirName}
+test "$ss" =  sh && test -n "${MRB_BUILDDIR}" && setenv OLD_MRB_BUILDDIR "${MRB_BUILDDIR}"
+test "$ss" = csh && tnotnull MRB_BUILDDIR && setenv OLD_MRB_BUILDDIR "${MRB_BUILDDIR}"
 
