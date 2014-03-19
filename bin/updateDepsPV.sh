@@ -29,20 +29,32 @@ function modify_product_deps()
 {
   local pkg=$1
   
-  pkg_name="`grep ^parent ups/product_deps | grep -v \# | awk '{print $2}'`" || exit 1
-  pkg_version="`grep ^parent ups/product_deps | grep -v \# | awk '{print $3}'`" || exit 1
+  pdfile=${pkg}ups/product_deps
+  pkg_name="`grep ^parent ${pdfile} | grep -v \# | awk '{print $2}'`" || exit 1
+  pkg_version="`grep ^parent ${pdfile} | grep -v \# | awk '{print $3}'`" || exit 1
   if [ -z "${pkg_version}" ]
   then
     echo "ERROR: failed to find existing version for ${pkg}" >&2
     exit 1
   fi
   ##echo "editing package: $pkg_name $pkg_version"
-  
-  pdfile=${pkg}ups/product_deps
 
   echo " "
   echo "Updating ${pdfile}"
   ${MRB_DIR}/bin/edit_product_deps ${pdfile} ${product} ${new_version} ${dryRun}  || exit 1
+}
+
+function get_package_list()
+{
+# Loop over directories in $MRB_SOURCE
+  pkglist=$(ls -d $MRB_SOURCE/*/)
+  for file in $pkglist
+  do
+    if [ -r $file/ups/product_deps ]
+    then
+      packages="$file $packages"
+    fi
+  done
 }
 
 dryRun="no"
@@ -58,6 +70,21 @@ do
         *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
     esac
 done
+
+if [ $restore == "yes" ]; then
+  get_package_list
+  for d in $packages
+  do
+    # Sanity checks
+    if [ ! -r $d/ups/product_deps ]; then echo "Cannot find ups/product_deps in $d"; break; fi
+     echo "Restoring $d"
+     pushd $d > /dev/null
+     rm -f ups/product_deps
+     git checkout ups/product_deps
+     popd > /dev/null
+  done
+  exit 0
+fi
 
 # Did the user provide a product name?
 shift $((OPTIND - 1))
@@ -78,37 +105,14 @@ if [ $# -lt 2 ]; then
 fi
 new_version=$2
 
-# Loop over directories in $MRB_SOURCE
-  pkglist=$(ls -d $MRB_SOURCE/*/)
-  for file in $pkglist
-  do
-    if [ -r $file/ups/product_deps ]
-    then
-      packages="$file $packages"
-    fi
-  done
+get_package_list
 
 for d in $packages
 do
   # Sanity checks
   if [ ! -r $d/CMakeLists.txt ]; then echo "Cannot find CMakeLists.txt in $d"; break; fi
   if [ ! -r $d/ups/product_deps ]; then echo "Cannot find ups/product_deps in $d"; break; fi
-  
-  cd $d
-
-  if [ $restore == "no" ]
-  then
-      
-      modify_product_deps $d
-  
-  else
-      echo "Restoring $d"
-      pushd $d > /dev/null
-      rm -f ups/product_deps
-      git checkout ups/product_deps
-      popd > /dev/null
-  fi
-
+  modify_product_deps $d
 done
 
 echo
