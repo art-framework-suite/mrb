@@ -22,19 +22,29 @@ $version = $ARGV[2];
 $dryrun = $ARGV[3];
 
 if ( $dryrun eq "yes" ) {
+  $pdfilebak = $pdfile;
   print "Dry Run: these changes will be made:\n";
   print "\n";
+} else {
+  $pdfilebak = $pdfile.".bak";
+  print "renaming $pdfile to $pdfilebak\n";
+  print "\n";
+  rename ($pdfile, $pdfilebak) || die ( "Failed to rename $pdfile" );
+  open(POUT, "> $pdfile")  || die ( "Failed to open new $pdfile" );
 }
+
 
 
 $get_phash="";
 $get_quals="";
 $get_fragment="";
-open(PIN, "< $pdfile") or die "Couldn't open $pdfile";
+open(PIN, "< $pdfilebak") or die "Couldn't open $pdfilebak";
 while ( $line=<PIN> ) {
   chop $line;
   if ( index($line,"#") == 0 ) {
+    print_line ( POUT, $line, $dryrun );
   } elsif ( $line !~ /\w+/ ) {
+    print_line ( POUT, $line, $dryrun );
   } else {
     @words = split(/\s+/,$line);
     if( $words[0] eq "parent" ) {
@@ -45,43 +55,54 @@ while ( $line=<PIN> ) {
           if ( $dryrun eq "yes" ) {
 	    print "old line: $line\n";
 	    print "new line: $newline\n";
-	  } else {
-	    print "new line: $newline\n";
 	  }
+          print_line ( POUT, $newline, $dryrun );
+       } else {
+          print_line ( POUT, $line, $dryrun );
        }
        $get_phash="";
        $get_quals="";
     } elsif( $words[0] eq "no_fq_dir" ) {
        $get_phash="";
        $get_quals="";
+       print_line ( POUT, $line, $dryrun );
     } elsif( $words[0] eq "incdir" ) {
        $get_phash="";
        $get_quals="";
+       print_line ( POUT, $line, $dryrun );
     } elsif( $words[0] eq "fcldir" ) {
        $get_phash="";
        $get_quals="";
+       print_line ( POUT, $line, $dryrun );
     } elsif( $words[0] eq "gdmldir" ) {
        $get_phash="";
        $get_quals="";
+       print_line ( POUT, $line, $dryrun );
     } elsif( $words[0] eq "libdir" ) {
        $get_phash="";
        $get_quals="";
+       print_line ( POUT, $line, $dryrun );
     } elsif( $words[0] eq "bindir" ) {
        $get_phash="";
        $get_quals="";
+       print_line ( POUT, $line, $dryrun );
     } elsif( $words[0] eq "defaultqual" ) {
        $get_phash="";
        $get_quals="";
        $dq=$words[1];
+       print_line ( POUT, $line, $dryrun );
     } elsif( $words[0] eq "only_for_build" ) {
        $get_phash="";
        $get_quals="";
+       print_line ( POUT, $line, $dryrun );
     } elsif( $words[0] eq "product" ) {
        $get_phash="true";
        $get_quals="";
+       print_line ( POUT, $line, $dryrun );
     } elsif( $words[0] eq "qualifier" ) {
        $get_phash="";
        $get_quals="true";
+       print_line ( POUT, $line, $dryrun );
     } elsif( $get_phash ) {
       if ( $words[0]  eq $product ) {
           $newline = $line;
@@ -89,22 +110,28 @@ while ( $line=<PIN> ) {
           if ( $dryrun eq "yes" ) {
 	    print "old line: $line\n";
 	    print "new line: $newline\n";
-	  } else {
-	    print "new line: $newline\n";
 	  }
+          print_line ( POUT, $newline, $dryrun );
+      } else {
+         print_line ( POUT, $line, $dryrun );
       }
     } elsif( $words[0] eq "table_fragment_begin" ) {
        $get_fragment="true";
        $get_phash="";
        $get_quals="";
+       print_line ( POUT, $line, $dryrun );
     } elsif( $words[0] eq "table_fragment_end" ) {
        $get_fragment="";
        $get_phash="";
        $get_quals="";
+       print_line ( POUT, $line, $dryrun );
     } elsif( $get_quals ) {
+       print_line ( POUT, $line, $dryrun );
     } elsif( $get_fragment ) {
+       print_line ( POUT, $line, $dryrun );
     } else {
-      print $dfile "WARING: unrecognized line in $pdep: $line\n";
+       print "WARING: unrecognized line in $pdep: $line\n";
+       print_line ( POUT, $line, $dryrun );
     }
   }
 }
@@ -112,3 +139,13 @@ close(PIN);
 
 
 exit 0;
+
+sub print_line {
+  my @params = @_;
+  my $output = $params[0];
+  my $oline = $params[1];
+  my $dr = $params[2];
+  if ( $dryrun eq "no" ) {
+    print $output "$oline\n";
+  }
+}
