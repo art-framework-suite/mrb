@@ -12,7 +12,6 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   setEnv.sh
 		   setup_products
 		   svnCheckout.sh
-		   tagit.sh
 		   updateDepsCM.sh
 		   updateDepsPV.sh
 		   zapBuild.sh
