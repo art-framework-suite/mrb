@@ -1,0 +1,114 @@
+#!/usr/bin/env perl
+#
+
+# parse and update product_deps
+
+#  ${mrb_bin}/edit_product_deps ${pdfile} ${product} ${version}  || exit 1
+
+
+use File::Basename;
+use lib dirname($0);
+
+if( $#ARGV < 3 ) {
+    print "\n";
+    print "ERROR: unspecified parameters - only have $#ARGV \n";
+    print "USAGE: edit_product_deps <file> <product> <version> <dryrun:yes|no>\n";
+    exit 1;
+}
+
+$pdfile = $ARGV[0];
+$product = $ARGV[1];
+$version = $ARGV[2];
+$dryrun = $ARGV[3];
+
+if ( $dryrun eq "yes" ) {
+  print "Dry Run: these changes will be made:\n";
+  print "\n";
+}
+
+
+$get_phash="";
+$get_quals="";
+$get_fragment="";
+open(PIN, "< $pdfile") or die "Couldn't open $pdfile";
+while ( $line=<PIN> ) {
+  chop $line;
+  if ( index($line,"#") == 0 ) {
+  } elsif ( $line !~ /\w+/ ) {
+  } else {
+    @words = split(/\s+/,$line);
+    if( $words[0] eq "parent" ) {
+       ##print $dfile "found parent in $line\n";
+       if ( $words[1]  eq $product ) {
+          $newline = $line;
+	  $newline =~ s/$words[2]/$version/;
+          if ( $dryrun eq "yes" ) {
+	    print "old line: $line\n";
+	    print "new line: $newline\n";
+	  } else {
+	    print "new line: $newline\n";
+	  }
+       }
+       $get_phash="";
+       $get_quals="";
+    } elsif( $words[0] eq "no_fq_dir" ) {
+       $get_phash="";
+       $get_quals="";
+    } elsif( $words[0] eq "incdir" ) {
+       $get_phash="";
+       $get_quals="";
+    } elsif( $words[0] eq "fcldir" ) {
+       $get_phash="";
+       $get_quals="";
+    } elsif( $words[0] eq "gdmldir" ) {
+       $get_phash="";
+       $get_quals="";
+    } elsif( $words[0] eq "libdir" ) {
+       $get_phash="";
+       $get_quals="";
+    } elsif( $words[0] eq "bindir" ) {
+       $get_phash="";
+       $get_quals="";
+    } elsif( $words[0] eq "defaultqual" ) {
+       $get_phash="";
+       $get_quals="";
+       $dq=$words[1];
+    } elsif( $words[0] eq "only_for_build" ) {
+       $get_phash="";
+       $get_quals="";
+    } elsif( $words[0] eq "product" ) {
+       $get_phash="true";
+       $get_quals="";
+    } elsif( $words[0] eq "qualifier" ) {
+       $get_phash="";
+       $get_quals="true";
+    } elsif( $get_phash ) {
+      if ( $words[0]  eq $product ) {
+          $newline = $line;
+	  $newline =~ s/$words[1]/$version/;
+          if ( $dryrun eq "yes" ) {
+	    print "old line: $line\n";
+	    print "new line: $newline\n";
+	  } else {
+	    print "new line: $newline\n";
+	  }
+      }
+    } elsif( $words[0] eq "table_fragment_begin" ) {
+       $get_fragment="true";
+       $get_phash="";
+       $get_quals="";
+    } elsif( $words[0] eq "table_fragment_end" ) {
+       $get_fragment="";
+       $get_phash="";
+       $get_quals="";
+    } elsif( $get_quals ) {
+    } elsif( $get_fragment ) {
+    } else {
+      print $dfile "WARING: unrecognized line in $pdep: $line\n";
+    }
+  }
+}
+close(PIN);
+
+
+exit 0;

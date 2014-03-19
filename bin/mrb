@@ -39,7 +39,7 @@ export mrb_command=${mrb_dir}/mrb
 
 # Define the short list of commands
 shortComList="(newDev | gitCheckout | svnCheckout | setEnv | build | install | test | setup_local_products | 
-           zapBuild | newProduct | changelog | updateDepsCM )"
+           zapBuild | newProduct | changelog | updateDepsCM | updateDepsPV )"
 #  Adams's list:  | bumpVersion | updateDeps)"
 
 # Simple help if no argumets
@@ -94,7 +94,7 @@ Usage ${mrb_command} $shortComList [-h for help]"
    newProduct (p)              Create a new product from scratch
    changelog (c)               Display a changelog for a package
    updateDepsCM (uc)           Update the master CMakeLists.txt file
-   updateDepsPD (ud)           Update dependencies in product_deps and CMakeLists.txt
+   updateDepsPV (uv)           Update a product version in product_deps
 EOF
    ;;
 
@@ -174,7 +174,7 @@ EOF
         ;;
 
    # Update product_deps and CMakeLists.txt to latest dependencies (calls &l=bin/updateDeps.sh&)
-    "updateDepsPD" | "ud" ) ${mrb_dir}/updateDepsPD.sh $*
+    "updateDepsPV" | "uv" ) ${mrb_dir}/updateDepsPV.sh $*
         ;;
 
    # Dump some debug information

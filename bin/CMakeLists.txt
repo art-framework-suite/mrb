@@ -2,6 +2,7 @@
 INSTALL ( PROGRAMS add_to_cmake.sh
 		   copy_files_to_srcs.sh
 		   define_local
+		   edit_product_deps
 		   findCetBuild
 		   get_setup_list.sh
 		   gitCheckout.sh
@@ -13,8 +14,7 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   svnCheckout.sh
 		   tagit.sh
 		   updateDepsCM.sh
-		   updateDepsPD.sh
-		   update_deps_productdeps.py
+		   updateDepsPV.sh
 		   zapBuild.sh
           DESTINATION ${product}/${version}/bin )
 
