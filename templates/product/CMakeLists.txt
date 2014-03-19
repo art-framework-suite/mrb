@@ -1,5 +1,6 @@
 
-INSTALL (FILES CMakeLists.txt_test
+INSTALL (FILES CMakeLists.txt_src
+	       CMakeLists.txt_test
 	       CMakeLists.txt_top
 	       CMakeLists.txt_top_noflav
 	       CMakeLists.txt_ups

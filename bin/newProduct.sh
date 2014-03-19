@@ -96,6 +96,10 @@ function createFiles() {
     sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/CMakeLists.txt_top > CMakeLists.txt
   fi
 
+  # @source/CMakeLists.txt@ file from &l=templates/product/CMakeLists.txt_src&
+  mkdir $PRODNAME
+  sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/CMakeLists.txt_src > $PRODNAME/CMakeLists.txt
+
   # @test/CMakeLists.txt@ file from &l=templates/product/CMakeLists.txt_test&
   mkdir test
   sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/CMakeLists.txt_test > test/CMakeLists.txt
