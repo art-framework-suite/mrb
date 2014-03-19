@@ -1,7 +1,7 @@
 # This @product_deps@ file defines dependencies for this package. 
 
 # The *parent* line must the first non-commented line and defines this product and version
-# The version must be of the form vxx_yy_zz (e.g. v01_02_03)
+# The version should be of the form vxx_yy_zz (e.g. v01_02_03)
 parent %%PD%% v1_00_00
 defaultqual e4
 
@@ -16,10 +16,7 @@ defaultqual e4
 # Add the dependent product and version
 
 product          version
-lareventdisplay	v1_00_00
-larexamples	v1_00_00
-larana		v1_00_00
-larpandora	v1_00_00
+larsoft		v1_00_00
 gcc		v4_8_1
 
 # list products required ONLY for the build
@@ -28,11 +25,11 @@ only_for_build  cetbuildtools   v3_07_11
 
 # We now define allowed qualifiers and the corresponding qualifiers for the depdencies.
 # Make a table by adding columns before "notes". 
-# e4  - with gcc 4.7.1 and -std=c++0x
-qualifier	lareventdisplay	larexamples	larpandora	larana	 	gcc	notes
-e4:debug	e4:debug	e4:debug	e4:debug	e4:debug	-nq-
-e4:opt		e4:opt		e4:opt		e4:opt		e4:opt		-nq-
-e4:prof		e4:prof		e4:prof		e4:prof		e4:prof		-nq-
+# e4  - with gcc 4.8.1 and -std=c++0x
+qualifier	larsoft	 	gcc	notes
+e4:debug	e4:debug	-nq-
+e4:opt		e4:opt		-nq-
+e4:prof		e4:prof		-nq-
 
 # Preserve tabs and formatting in emacs and vi / vim:
 

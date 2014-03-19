@@ -56,7 +56,7 @@ include(ArtMake)
 include(BuildPlugins)
 
 # ADD SOURCE CODE SUBDIRECTORIES HERE
-add_subdirectory(  )
+add_subdirectory(%%PD%%)
 # subdirectory for test code
 add_subdirectory(test)
 # ups - table and config files
