@@ -86,11 +86,11 @@ ups list -aK+ ${package} ${pkgver}   -z ${product_dir}
 # now make the tar ball
 set -x
 cd ${product_dir}
-##tar cjf ${package}-${pkgdotver}-noarch.tar.bz2 ${package}/${pkgver}/bin  ${package}/${pkgver}.version ${package}/current.chain
 tar cjf ${package}-${pkgdotver}-noarch.tar.bz2 ${package}/${pkgver}/bin  \
                                                ${package}/${pkgver}/templates  \
                                                ${package}/${pkgver}/ups  \
-                                               ${package}/${pkgver}.version
+                                               ${package}/${pkgver}.version \
+                                               ${package}/current.chain
 
 exit 0
 
