@@ -40,8 +40,6 @@ test -n "$db" && setenv MRB_TOP `dirname $db`
 
 test -n $MRB_BUILDDIR && setenv OLD_MRB_BUILDDIR $MRB_BUILDDIR
 
-setup mrb @version@
-
 tnotnull MRB_DIR || ( echo ""; echo "ERROR: You must first setup mrb" )
 tnotnull MRB_DIR || return
 
