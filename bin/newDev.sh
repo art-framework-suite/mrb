@@ -364,7 +364,8 @@ fi
 # If we're just making the localProducts area, then we MUST be where build lives
 if [ ${makeLP} ] && [ ! ${makeBuild} ]
 then
-    if ls -1 $topDir | egrep -q '/build[^/]*$';
+    if [ ${printDebug} ]; then echo "DEBUG: topDir is ${topDir}"; fi
+    if ls -1 $topDir | egrep -q '^build';
       then ok=1
       else echo 'ERROR: No build directory. Must be in a development area with build to make localProducts' ; exit 7
     fi
@@ -408,7 +409,7 @@ then
   echo "MRB_BUILDDIR is ${MRB_BUILDDIR}"
 else
     # If we are not making the build area, then we MUST know where build lives
-    if ls -1 $topDir | egrep -q '/build[^/]*$';
+    if ls -1 $topDir | egrep -q '^build';
       then ok=1
       else echo 'ERROR: No build directory. Must be in a development area with build to make localProducts' ; exit 7
     fi
