@@ -29,22 +29,7 @@ set_ msg3='ERROR: You MUST specify either -o, -p, or -d'
 set_ msg4='Usage: setEnv <-d|-o|-p> <qualifier list>'
 test -z "$1" && ( echo ""; echo "$msg4"; echo "$msg3"; echo "" ) && return
 
-# make sure we know where this script lives
-# now if we were passed a path or if not, we can figure it out (maybe if we are interactive)
-#   bash, zsh, ksh and tcsh pass params to a source file, csh does not. but someone will be writing csh scripts
-set_ msg2='Please set shell or env. variable fw_db (to be the path to the framework source code). Fix this and other errors may go away.'
-tnotnull fw_db && set_ db=`sh -c "cd $fw_db >/dev/null 2>&1 && pwd"` && vecho_ 'setting db from fw_db variable' || set_ db=
-
-test -z "$db" && tnotnull BASH_SOURCE && set_ me=`dirname $BASH_SOURCE` && set_ db=`sh -c "cd $me >/dev/null 2>&1 && pwd"` && vecho_ 'setting db via BASH_SOURCE'
-
-# history is applicable only for interactive t/csh
-test -z "$db" -a "$ss" = csh && test $?history = 0 && set history=5  # make sure history 1 works
-test -z "$db" -a "$ss" = csh && set me=`history 1|sed 's/^[ 	0-9:]*//'` && test -n "$me" && set me=`dirname $me[2]` \
-    && set db=`sh -c "cd $me >/dev/null 2>&1 && pwd"` && vecho_ 'setting db via interactive history'
-#echo This script lives in $db
-
-test -z "$db" && echo "$msg2" || vecho_ "db=$db"
-test -n "$db" && setenv CETPKG_SOURCE $db
+setenv CETPKG_SOURCE $MRB_SOURCE
 
 # make sure we know the current directory
 tnotnull MRB_BUILDDIR  && setenv CETPKG_BUILD $MRB_BUILDDIR
@@ -61,14 +46,14 @@ setenv UPS_OPTIONS -B
 # now get the rest of the products
 set_ cmd="$MRB_DIR/bin/setup_products $CETPKG_SOURCE $CETPKG_BUILD $*"
 #echo Ready to run $cmd
-source `$cmd`
+source `$MRB_DIR/bin/setup_products $CETPKG_SOURCE $CETPKG_BUILD $*`
 #echo "$cmd returned $setup_fail"
 test "$setup_fail" = "true" && echo "$msg5"
 test "$setup_fail" = "true" && unset setup_fail && return 1
 # finally, create fake products for local packages
 set_ cmd="$MRB_DIR/bin/define_local $CETPKG_SOURCE $CETPKG_BUILD $*"
 #echo Ready to run $cmd
-source `$cmd`
+source `$MRB_DIR/bin/define_local $CETPKG_SOURCE $CETPKG_BUILD $*`
 #echo "$cmd returned $setup_fail"
 test "$setup_fail" = "true" && echo "$msg5"
 test "$setup_fail" = "true" && unset setup_fail && return 1
