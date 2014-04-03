@@ -18,12 +18,32 @@ set_ msg1='ERROR: You MUST setup ups'
 tnotnull UPS_DIR || ( echo ""; echo "$msg1"; echo "" )
 tnotnull UPS_DIR || return
 
+# make sure we know where this script lives
+# now if we were passed a path or if not, we can figure it out (maybe if we are interactive)
+#   bash, zsh, ksh and tcsh pass params to a source file, csh does not. but someone will be writing csh scripts
+set_ msg2='Please set shell or env. variable fw_db (to be the path to the framework source code). Fix this and other errors may go away.'
+tnotnull fw_db && set_ db=`sh -c "cd $fw_db >/dev/null 2>&1 && pwd"` && vecho_ 'setting db from fw_db variable' || set_ db=
+
+test -z "$db" && tnotnull BASH_SOURCE && set_ me=`dirname $BASH_SOURCE` && set_ db=`sh -c "cd $me >/dev/null 2>&1 && pwd"` && vecho_ 'setting db via BASH_SOURCE'
+
+# history is applicable only for interactive t/csh
+test -z "$db" -a "$ss" = csh && test $?history = 0 && set history=5  # make sure history 1 works
+test -z "$db" -a "$ss" = csh && set me=`history 1|sed 's/^[     0-9:]*//'` && test -n "$me" && set me=`dirname $me[2]` \
+    && set db=`sh -c "cd $me >/dev/null 2>&1 && pwd"` && vecho_ 'setting db via interactive history'
+#echo This script lives in $db
+
+test -z "$db" && echo "$msg2" || vecho_ "db=$db"
+test -n "$db" && setenv MRB_TOP `dirname $db`
+
+#echo The local product directory is $db
+#echo The top directory is $MRB_TOP
+
 test -n $MRB_BUILDDIR && setenv OLD_MRB_BUILDDIR $MRB_BUILDDIR
 
 tnotnull MRB_DIR || ( echo ""; echo "ERROR: You must first setup mrb" )
 tnotnull MRB_DIR || return
 
-setenv MRB_INSTALL $MRB_DIR
+setenv MRB_INSTALL $db
 
 # Determine default build directory
 set_ flav=`get-directory-name subdir`
