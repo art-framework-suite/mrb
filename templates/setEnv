@@ -44,14 +44,14 @@ set_ msg5='ERROR: setup of required products has failed'
 echo ----------- check this block for errors -----------------------
 setenv UPS_OPTIONS -B
 # now get the rest of the products
-set_ cmd="$MRB_DIR/bin/setup_products $CETPKG_SOURCE $CETPKG_BUILD $*"
+#set_ cmd="$MRB_DIR/bin/setup_products $CETPKG_SOURCE $CETPKG_BUILD $*"
 #echo Ready to run $cmd
 source `$MRB_DIR/bin/setup_products $CETPKG_SOURCE $CETPKG_BUILD $*`
 #echo "$cmd returned $setup_fail"
 test "$setup_fail" = "true" && echo "$msg5"
 test "$setup_fail" = "true" && unset setup_fail && return 1
 # finally, create fake products for local packages
-set_ cmd="$MRB_DIR/bin/define_local $CETPKG_SOURCE $CETPKG_BUILD $*"
+#set_ cmd="$MRB_DIR/bin/define_local $CETPKG_SOURCE $CETPKG_BUILD $*"
 #echo Ready to run $cmd
 source `$MRB_DIR/bin/define_local $CETPKG_SOURCE $CETPKG_BUILD $*`
 #echo "$cmd returned $setup_fail"
