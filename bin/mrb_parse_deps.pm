@@ -504,23 +504,6 @@ sub unsetup_product_dependencies {
   return 0;
 }
 
-sub compare_qual {
-  my @params = @_;
-  my @ql1 = split(/:/,$params[0]);
-  my @ql2 = split(/:/,$params[1]);
-  my $retval = 0;
-  if( $#ql1 != $#ql2 ) { return $retval; }
-  my $size = $#ql2 + 1;
-  $qmatch = 0;
-  foreach $i ( 0 .. $#ql1 ) {
-    foreach $j ( 0 .. $#ql2 ) {
-      if( $ql1[$i] eq $ql2[$j] )  { $qmatch++; }
-    }
-  }
-  if( $qmatch == $size ) { $retval = 1; }
-  return $retval;
-}
-
 # can we use a simple database to store this info?
 sub get_dependency_list {
   my @params = @_;
@@ -731,36 +714,33 @@ sub product_setup_loop {
   # continue parsing for this package
   ($ndeps, @qlist) = parse_qualifier_list( $loopfile, $tfile );
 
-  if ( $incoming_qual ) {
-    $qual = $incoming_qual.$dop;
-    $qdir = $incoming_qdir.$dop;
+  ##print $dfile "product_setup_loop: mrb_quals are $mrb_quals\n";
+  ##print $dfile "product_setup_loop: $extra_qual - $dop\n";
+
+  $dq = find_default_qual( $pfile );
+  if ( $dq ) {
+    $qual = $dq.":";
+    $qual = $qual.$dop;
+  } elsif ( $simple ) {
+    $qual = "-nq-";
   } else {
-    $dq = find_default_qual( $pfile );
-    if ( $dq ) {
-      $qual = $dq.":";
-      $qdir = $dq."-";
-      $qual = $qual.$dop;
-      $qdir = $qdir.$dop;
-    } elsif ( $simple ) {
-      $qual = "-nq-";
-    } else {
-      $errfl2 = $builddir."/error-".$product."-".$version;
-      open(ERR2, "> $errfl2") or die "Couldn't open $errfl2";
-      print ERR2 "\n";
-      print ERR2 "unsetenv_ CETPKG_NAME\n";
-      print ERR2 "unsetenv_ CETPKG_VERSION\n";
-      print ERR2 "unsetenv_ CETPKG_QUAL\n";
-      print ERR2 "unsetenv_ CETPKG_TYPE\n";
-      print ERR2 "echo \"ERROR: no qualifiers specified\"\n";
-      print ERR2 "echo \"ERROR: add a defaultqual line to $pfile\"\n";
-      print ERR2 "echo \"ERROR: or specify the qualifier(s) on the command line\"\n";
-      print ERR2 "echo \"USAGE: setup_products <input-directory> <-d|-o|-p> <qualifiers>\"\n";
-      print ERR2 "return 1\n";
-      close(ERR2);
-      print "$errfl2\n";
-      exit 0;
-    }
+    $errfl2 = $builddir."/error-".$product."-".$version;
+    open(ERR2, "> $errfl2") or die "Couldn't open $errfl2";
+    print ERR2 "\n";
+    print ERR2 "unsetenv_ CETPKG_NAME\n";
+    print ERR2 "unsetenv_ CETPKG_VERSION\n";
+    print ERR2 "unsetenv_ CETPKG_QUAL\n";
+    print ERR2 "unsetenv_ CETPKG_TYPE\n";
+    print ERR2 "echo \"ERROR: no qualifiers specified\"\n";
+    print ERR2 "echo \"ERROR: add a defaultqual line to $pfile\"\n";
+    print ERR2 "echo \"ERROR: or specify the qualifier(s) on the command line\"\n";
+    print ERR2 "echo \"USAGE: setup_products <input-directory> <-d|-o|-p> <qualifiers>\"\n";
+    print ERR2 "return 1\n";
+    close(ERR2);
+    print "$errfl2\n";
+    exit 0;
   }
+
   ##print $dfile "product_setup_loop: using qualifier $qual for $product\n";
   $cetfl = cetpkg_info_file( $product, $version, $default_ver, $qual, $type, $sourcedir, $pkgdir );
 
@@ -781,7 +761,6 @@ sub product_setup_loop {
       print $tfile "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
     }
   }
-
 
   # are there products without listed qualifiers?
   @pkeys = keys %phash;
@@ -804,11 +783,19 @@ sub product_setup_loop {
     }
   }
 
-  # now loop over the qualifier list
+  my $sort_mrb_quals = join(":", sort { lc($a) cmp lc($b) } split(/:/,$mrb_quals));
+  my $sort_ext_quals = join(":", sort { lc($a) cmp lc($b) } split(/:/,$extra_qual.$qual));
+  print $dfile "product_setup_loop:  sorted set $sort_ext_quals\n";
+  ##print $dfile "product_setup_loop:  sorted mrb $sort_mrb_quals\n";
+  # first check for a match to the extended qualifer list 
   $match = 0;
+  $exmatch = 0;
   foreach $i ( 1 .. $#qlist ) {
-    if ( compare_qual( $qlist[$i][0], $qual ) ) {
-      $match++;
+    my $sort_pqual = join(":", sort { lc($a) cmp lc($b) } split(/:/,$qlist[$i][0]));
+    ##print $dfile "product_setup_loop: compare $sort_pqual to $sort_ext_quals\n";
+    if ( $sort_pqual eq $sort_ext_quals ) {
+      $exmatch++;
+      print $dfile "product_setup_loop: $product matched $sort_pqual to $sort_ext_quals\n";
       foreach $j ( 1 .. $ndeps ) {
 	$print_setup=true;
 	# are we building this product?
@@ -855,9 +842,64 @@ sub product_setup_loop {
       }
     }
   }
+  if ( $exmatch == 0 ) {
+  # didn't find a match to the extended qual, so check against MRB_QUAL
+  foreach $i ( 1 .. $#qlist ) {
+    my $sort_pqual = join(":", sort { lc($a) cmp lc($b) } split(/:/,$qlist[$i][0]));
+    ##print $dfile "product_setup_loop: compare $sort_pqual to $sort_mrb_quals\n";
+    if ( $sort_pqual eq $sort_mrb_quals ) {
+      $match++;
+      ##print $dfile "product_setup_loop: matched $sort_pqual to $sort_mrb_quals\n";
+      foreach $j ( 1 .. $ndeps ) {
+	$print_setup=true;
+	# are we building this product?
+	for $k ( 0 .. $#productnames ) {
+	  if ( $productnames[$k] eq $qlist[0][$j] ) {
+	     $print_setup=false;
+	  }
+	}
+	# is this product already in the setup list?
+	foreach $k ( 0 .. $#setup_list ) {
+	  if( $setup_list[$k] eq $qlist[0][$j] ) {
+	    $print_setup=false;
+	  }
+	}
+	##print $dfile "should I setup $qlist[0][$j]? ${print_setup}\n";
+        if ( $print_setup eq "true" ) {
+	  push( @setup_list, $qlist[0][$j] );
+	  # is this part of my extended package list?
+	  # if it is in the middle of the build list, use setup -j
+	  # if we are not building anything it depends on, use regular setup
+	  ##print $dfile "DIAGNOSTIC: checking product dependencies for $qlist[0][$j]\n";
+	  #$usejj = check_product_dependencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
+	  ($has_deps, $pdeplist) = get_product_depenencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
+          my $usej = "";
+	  ##print $dfile "get_product_depenencies returned $has_deps, @pdeplist\n";
+	  if ( $has_deps eq "true" ) {
+	    ##print $dfile "DIAGNOSTIC: calling unsetup_product_dependencies with $pdeplist\n";
+	    unsetup_product_dependencies( $qlist[0][$j], $pdeplist, $dfile, $tfile );
+	  }
+	  if ( $qlist[$i][$j] eq "-" ) {
+	  } elsif ( $qlist[$i][$j] eq "-nq-" ) {
+            print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, $usej, $tfile );
+	  } elsif ( $qlist[$i][$j] eq "-b-" ) {
+            print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, $usej, $tfile );
+	  } else {
+	    @qwords = split(/:/,$qlist[$i][$j]);
+	    $ql="+".$qwords[0];
+	    foreach $j ( 1 .. $#qwords ) {
+	      $ql = $ql.":+".$qwords[$j];
+	    }
+            print_setup_qual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ql, $ohash{$qlist[0][$j]}, $usej, $tfile );
+	  }
+	}
+      }
+    }
+  }
+  }
 
   # allow for the case where there are no dependencies
-  if ( $match == 0 ) {
+  if ( $match == 0 && $exmatch == 0 ) {
      if( $phash{none} eq "none" ) {
        #print "this package has no dependencies\n";
      } else {

@@ -1,16 +1,17 @@
 #!/usr/bin/env perl
 #
 # setup products for the build environment
-# use product_deps and qualifier_deps
-
-# we need to know the qualifiers
-# -d, -o, or -p and 1-2 other qualifiers
+# use product_deps and MRB_QUALS
 
 use File::Basename;
 use lib dirname($0);
 
+$builddir = $ARGV[1];
+# use this file for debugging
+$diagfl = $builddir."/diag_report";
+open(DIAG, "+> $diagfl") or die "Couldn't open $diagfl";
 
-if( $#ARGV < 2 ) {
+if( $#ARGV < 1 ) {
     $errfl1 = "problem_report";
     open(ERR1, "> $errfl1") or die "Couldn't open $errfl1";
     print ERR1 "\n";
@@ -18,8 +19,8 @@ if( $#ARGV < 2 ) {
     print ERR1 "unsetenv_ CETPKG_VERSION\n";
     print ERR1 "unsetenv_ CETPKG_QUAL\n";
     print ERR1 "unsetenv_ CETPKG_TYPE\n";
-    print ERR1 "echo \"ERROR: directory and qualifiers not specified\"\n";
-    print ERR1 "echo \"USAGE: setup_products <input-directory> <-d|-o|-p> <qualifiers>\"\n";
+    print ERR1 "echo \"ERROR: directory not specified\"\n";
+    print ERR1 "echo \"USAGE: setup_products <input-directory> <build-directory> [extra qualifiers]>\"\n";
     print ERR1 "return 1\n";
     close(ERR1);
     print "$errfl1\n";
@@ -28,28 +29,36 @@ if( $#ARGV < 2 ) {
 
 $sourcedir = $ARGV[0];
 $builddir = $ARGV[1];
-$simple = "";
-for $i ( 2 .. $#ARGV ) {
-    if( $ARGV[$i] eq "-d" ) {
+
+$mrb_project = $ENV{MRB_PROJECT};
+$mrb_version = $ENV{MRB_PROJECT_VERSION};
+$mrb_quals = $ENV{MRB_QUALS};
+
+# determine build type from MRB_QUALS
+@qlist=split(/:/,$mrb_quals);
+for $i ( 0 .. $#qlist ) {
+    ##print DIAG "setup_products: qualifier $i $qlist[$i]\n";
+    if( $qlist[$i] eq "debug" ) {
       $dop = "debug";
       $type = "Debug";
-    } elsif( $ARGV[$i] eq "-o" ) {
+    } elsif( $qlist[$i] eq "opt" ) {
       $dop = "opt";
       $type = "Opt";
-    } elsif( $ARGV[$i] eq "-p" ) {
+    } elsif( $qlist[$i] eq "prof" ) {
       $dop = "prof";
       $type = "Prof";
-    } elsif( $ARGV[$i] eq "simple" ) {
-      $simple = "true";
-    } else {
-      $incoming_qual = $incoming_qual.$ARGV[$i].":";
-      $qdir = $qdir.$ARGV[$i]."-";
     }
 }
 
-# use this file for debugging
-$diagfl = $builddir."/diag_report";
-open(DIAG, "+> $diagfl") or die "Couldn't open $diagfl";
+
+$simple = "";
+for $i ( 2 .. $#ARGV ) {
+    if( $ARGV[$i] eq "simple" ) {
+      $simple = "true";
+    } else {
+      $extra_qual = $extra_qual.$ARGV[$i].":";
+    }
+}
 
 $srcbase = basename($sourcedir);
 if ( $srcbase eq "ups" ) {
@@ -75,18 +84,14 @@ if ( $srcbase eq "ups" ) {
     $inputdir = $sourcedir."/ups";
 }
 ##print DIAG "setup_products debug info: source dir is $sourcedir\n";
-##print DIAG "setup_products: incoming qual is $incoming_qual\n";
+print DIAG "setup_products: extra qualifiers are $extra_qual\n";
 
 require mrb_parse_deps;
 
-$mrb_project = $ENV{MRB_PROJECT};
-$mrb_version = $ENV{MRB_PROJECT_VERSION};
-$mrb_quals = $ENV{MRB_QUALS};
 $tmpfl = $builddir."/".$mrb_project."-".$mrb_version;
 ##print DIAG "opening $tmpfl for $mrb_project $mrb_version\n";
 open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
-##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
 print TSET "setenv UPS_OVERRIDE -B\n";
 print TSET "setenv CETPKG_NAME $mrb_project\n";
 print TSET "setenv CETPKG_VERSION $mrb_version\n";
@@ -104,6 +109,7 @@ $dfile = $sourcedir."/dependency_list";
 
 # have to find the list of packages to traverse
 $cmakefile=$sourcedir."/CMakeLists.txt";
+##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
 @package_list = get_package_list( $cmakefile, DIAG );
 ##print DIAG "DIAGNOSTICS: packages to check: $#package_list @package_list\n";
 if ( $#package_list < 0 ) {
@@ -143,7 +149,7 @@ for $i ( 0 .. $#package_list ) {
   $pfile=$sourcedir."/".$pkg."/ups/product_deps";
   #print DIAG "checking $pfile for $pkg \n";
   #print DIAG "calling product_setup_loop with $pfile, $pkgdir\n";
-  ($product, $version) = product_setup_loop( $pfile, $pkgdir, $incoming_qual, DIAG, TSET );
+  ($product, $version) = product_setup_loop( $pfile, $pkgdir, $extra_qual, DIAG, TSET );
 
   if ( $product ne $productnames[$i] ) {
      print DIAG "ERROR: product names do not match: $product vs $productnames[$i]\n";
