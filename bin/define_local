@@ -113,7 +113,8 @@ for $i ( 0 .. $#package_list ) {
   }
   print TSET "setenv  LD_LIBRARY_PATH $ENV{MRB_BUILDDIR}/${product}/lib:\${LD_LIBRARY_PATH}\n";
   print TSET "setenv  DYLD_LIBRARY_PATH $ENV{MRB_BUILDDIR}/${product}/lib:\${DYLD_LIBRARY_PATH}\n";
-  if ( $fcl_dirctory ne "none" ) {
+  if ( "${fcl_directory}" ne "none" ) {
+    ##print DIAG "$product: Run dropit for ---${fcl_directory}---\n";
     if ( $ENV{FHICL_FILE_PATH} ne '' ) {
       print TSET "setenv  FHICL_FILE_PATH \`dropit -p \${FHICL_FILE_PATH} \'${fcl_directory}\'\`\n";
     }
