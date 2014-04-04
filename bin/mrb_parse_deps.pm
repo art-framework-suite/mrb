@@ -785,7 +785,7 @@ sub product_setup_loop {
 
   my $sort_mrb_quals = join(":", sort { lc($a) cmp lc($b) } split(/:/,$mrb_quals));
   my $sort_ext_quals = join(":", sort { lc($a) cmp lc($b) } split(/:/,$extra_qual.$qual));
-  print $dfile "product_setup_loop:  sorted set $sort_ext_quals\n";
+  ##print $dfile "product_setup_loop:  sorted set $sort_ext_quals\n";
   ##print $dfile "product_setup_loop:  sorted mrb $sort_mrb_quals\n";
   # first check for a match to the extended qualifer list 
   $match = 0;
@@ -795,7 +795,7 @@ sub product_setup_loop {
     ##print $dfile "product_setup_loop: compare $sort_pqual to $sort_ext_quals\n";
     if ( $sort_pqual eq $sort_ext_quals ) {
       $exmatch++;
-      print $dfile "product_setup_loop: $product matched $sort_pqual to $sort_ext_quals\n";
+      ##print $dfile "product_setup_loop: $product matched $sort_pqual to $sort_ext_quals\n";
       foreach $j ( 1 .. $ndeps ) {
 	$print_setup=true;
 	# are we building this product?
