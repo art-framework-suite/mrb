@@ -9,12 +9,21 @@ fullCom="${mrb_command} $thisCom"
 
 # Usage function
 function usage() {
-    ##echo "Usage: $fullCom <gitRepositoryName> [destination_name]"
-    echo "Usage: $fullCom [-d destination_name] <svnRepositoryName> [version]"
-    echo "   Clone a Git Repository to your development area. You should be in the srcs directory"
-    echo "   If the version is not specified, you will be on the HEAD"
-    echo "   If you provide a full path, version is ignored"
+  cat 1>&2 << EOF
+Usage: $fullCom [-r] [-d destination_name] [-b branch] [-t tag] <gitRepositoryName>
+  Clone a Git Repository to your development area. You should be in the srcs directory.
+  By default, you will be on the HEAD.
+  Options:
 
+     -r                    = clone a read-only copy
+     
+     -d <destination_name> = use this name instead of the default repository name
+    
+     -b <branch>           = git clone, and then git checkout this branch
+     
+     -t <tag>              = git clone, and then git checkout this tag
+
+EOF
 }
 
 run_git_command() {
@@ -71,11 +80,16 @@ clone_init_cmake() {
     cd ${MRB_SOURCE}
     run_git_command $codebase
     git_flow_init $coderep
-    if [ "${VER}" != "head" ]
+    # change to the requested branch or tag
+    if [ "x${useTag}" != "x" ]
     then
-       # change to the requested branch or tag
        cd ${MRB_SOURCE}/$coderep
-       git checkout ${VER}
+       git checkout ${useTag}
+    fi
+    if [ "x${useBranch}" != "x" ]
+    then
+       cd ${MRB_SOURCE}/$coderep
+       git checkout ${useBranch}
     fi
     # add to CMakeLists.txt
     if grep -q \($coderep\) ${MRB_SOURCE}/CMakeLists.txt
@@ -91,11 +105,14 @@ clone_init_cmake() {
 }
 
 # Determine command options (just -h for help)
-while getopts ":hd:" OPTION
+while getopts ":hrb:d:t:" OPTION
 do
     case $OPTION in
         h   ) usage ; exit 0 ;;
-        d   ) echo "NOTICE: svn checkout will use  $OPTARG" ; destinationDir=$OPTARG ;;
+        d   ) echo "NOTICE: git clone will use destination name $OPTARG" ; destinationDir=$OPTARG ;;
+        b   ) echo "NOTICE: git clone will use branch $OPTARG" ; useBranch=$OPTARG ;;
+        t   ) echo "NOTICE: git clone will use tag $OPTARG" ; useTag=$OPTARG ;;
+	r   ) echo "NOTICE: git will clone a read-only copy"; useRO=true ;;
         *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
     esac
 done
@@ -170,6 +187,11 @@ then
     done
 elif [ "${have_path}" == "true" ]
 then
+    if [ "${useRO}" == "true" ]
+    then
+       echo "ERROR: you cannot use -r when a full path is supplied"
+       exit 1
+    fi
     gitCommand="git clone $REP ${destinationDir}"
     gitCommandRO="none"
     clone_init_cmake $repbase ${destinationDir}
