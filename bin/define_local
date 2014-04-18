@@ -50,6 +50,7 @@ $tmpfl = $builddir."/".$mrb_project."-".$mrb_version."-defs";
 open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
 ##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
+print TSET "echo $LD_LIBRARY_PATH\n";
 
 # parse a list of dependencies
 $dfile = $sourcedir."/dependency_list";
@@ -89,6 +90,7 @@ for $i ( 0 .. $#package_list ) {
 
 # loop again and define package variables
 print TSET "# set package variables\n";
+print TSET "echo $LD_LIBRARY_PATH\n";
 for $i ( 0 .. $#package_list ) {
   $pkg=$package_list[$i];
   $pfile=$sourcedir."/".$pkg."/ups/product_deps";
@@ -102,8 +104,6 @@ for $i ( 0 .. $#package_list ) {
   # pretend this is a product
   $product_uc = uc($product);
   print TSET "setenv  ${product_uc}_VERSION $version\n";
-  # this is wrong - ${product_uc}_FQ should look something like slf6.x86_64.e4.prof or slf6.x86_64.nu.e4.prof
-  #print TSET "setenv  ${product_uc}_FQ $qual\n";
   if ( $ENV{LD_LIBRARY_PATH} ne '' ) {
     # Below we want to remove the local products lib from the library path. The path is hard to find, since it is
     # product/version/lib and version is hard to predict. So we'll drop "$product/"  -- the final slash is important
@@ -149,6 +149,7 @@ for $i ( 0 .. $#package_list ) {
   }
 
 }
+print TSET "echo $LD_LIBRARY_PATH\n";
 
 # cleanup
 close(TSET);
