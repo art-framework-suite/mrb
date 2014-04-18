@@ -9,11 +9,21 @@ fullCom="${mrb_command} $thisCom"
 
 # Usage function
 function usage() {
-    echo "Usage: $fullCom [-d destination_name] <svnRepositoryName> [version]"
-    echo "   Checkout a svn Repository to your development area. You should be in the srcs directory"
-    echo "   If the version is not specified, you will be on the head"
-    echo "   If you provide a full path, version is ignored"
+ cat 1>&2 << EOF
+Usage: $fullCom [-r] [-d destination_name] [-b branch] [-t tag] <svnRepositoryName>
+  Checkout a svn Repository to your development area. You should be in the srcs directory.
+  By default, you will be on the HEAD.
+  Options:
 
+     -r                    = checkout a read-only copy
+     
+     -d <destination_name> = use this name instead of the default repository name
+    
+     -b <branch>           = checkout this branch
+     
+     -t <tag>              = checkout this tag
+
+EOF
 }
 
 run_svn_command() {
@@ -30,12 +40,17 @@ run_svn_command() {
     fi
 }
 
+VER="trunk"
+
 # Determine command options (just -h for help)
-while getopts ":hd:" OPTION
+while getopts ":hrb:d:t:" OPTION
 do
     case $OPTION in
         h   ) usage ; exit 0 ;;
-        d   ) echo "NOTICE: svn checkout will use  $OPTARG" ; destinationDir=$OPTARG ;;
+        d   ) echo "NOTICE: svn checkout will use destination name $OPTARG" ; destinationDir=$OPTARG ;;
+        b   ) echo "NOTICE: svn checkout will use branch $OPTARG" ; useBranch=$OPTARG ;;
+        t   ) echo "NOTICE: svn checkout will use tag $OPTARG" ; useTag=$OPTARG ;;
+	r   ) echo "NOTICE: svn will checkout a read-only copy"; useRO=true ;;
         *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
     esac
 done
@@ -52,26 +67,31 @@ fi
 REP=$1
 
 # check for version
-if [ $# -lt 2 ]; then
+if [ "x${useTag}" != "x" ]
+then
+    VER=tags/${useTag}
+elif [ "x${useBranch}" != "x" ]
+then
+    VER=branch/${useBranch}
+else
     echo "NOTICE: No version specified, using the head"
     VER="trunk"
-else
-    VER=tags/$2
-fi
-
-# Ensure that the current directory is @srcs/@
-if echo $PWD | egrep -q "/srcs$";
-then
-    ok=1
-else
-    echo 'ERROR: You must be in your srcs directory'
-    exit 1
 fi
 
 if [ -z "${MRB_SOURCE}" ]
 then
     echo 'ERROR: MRB_SOURCE must be defined'
     echo '       source the appropriate localProductsXXX/setup'
+    exit 1
+fi
+
+# Ensure that the current directory is @srcs/@
+cd ${MRB_SOURCE}
+if echo $PWD | egrep -q "/srcs$";
+then
+    ok=1
+else
+    echo 'ERROR: MRB_SOURCE is improperly defined'
     exit 1
 fi
 
@@ -105,6 +125,11 @@ then
     run_svn_command
 elif [ "${have_path}" = "true" ]
 then
+    if [ "${useRO}" == "true" ]
+    then
+       echo "ERROR: you cannot use -r when a full path is supplied"
+       exit 1
+    fi
     svnCommand="svn co ${REP} ${destinationDir}"
     run_svn_command
 else
