@@ -116,7 +116,7 @@ EOF
     "newProduct" | "p" ) ${mrb_dir}/newProduct.sh $*
         ;; 
 
-  # Set up a development environment (calls &l=bin/setEnv.sh&)
+  # Set up a development environment (calls &l=bin/mrbSetEnv&)
     "setEnv" | "s" )
 
       # Check that the user sourced the script

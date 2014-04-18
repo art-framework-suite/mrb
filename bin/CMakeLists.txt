@@ -9,7 +9,7 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   mrb
 		   newDev.sh
 		   newProduct.sh
-		   setEnv.sh
+		   mrbSetEnv
 		   setup_products
 		   svnCheckout.sh
 		   updateDepsCM.sh
