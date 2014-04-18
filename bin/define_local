@@ -50,7 +50,7 @@ $tmpfl = $builddir."/".$mrb_project."-".$mrb_version."-defs";
 open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
 ##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
-print TSET "echo $LD_LIBRARY_PATH\n";
+print TSET "echo \$LD_LIBRARY_PATH\n";
 
 # parse a list of dependencies
 $dfile = $sourcedir."/dependency_list";
@@ -90,7 +90,7 @@ for $i ( 0 .. $#package_list ) {
 
 # loop again and define package variables
 print TSET "# set package variables\n";
-print TSET "echo $LD_LIBRARY_PATH\n";
+print TSET "echo \$LD_LIBRARY_PATH\n";
 for $i ( 0 .. $#package_list ) {
   $pkg=$package_list[$i];
   $pfile=$sourcedir."/".$pkg."/ups/product_deps";
@@ -128,7 +128,7 @@ for $i ( 0 .. $#package_list ) {
   }
 
 }
-print TSET "echo $LD_LIBRARY_PATH\n";
+print TSET "echo \$LD_LIBRARY_PATH\n";
 
 # cleanup
 close(TSET);
