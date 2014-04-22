@@ -27,10 +27,18 @@ EOF
 }
 
 run_svn_command() {
-    echo "NOTICE: Running $svnCommand"
+
+    if [ "${useRO}" == "true" ]
+    then
+        mySvnCommand=$svnCommandRO
+    else
+	mySvnCommand=$svnCommand
+    fi
+
+    echo "NOTICE: Running $mySvnCommand"
     # Run the svn co command
     cd ${MRB_SOURCE}
-    $svnCommand
+    $mySvnCommand
 
     # Did it work?
     if [ $? -ne 0 ];
@@ -122,6 +130,7 @@ fi
 if [ "${REP}" = "nutools" ]
 then
     svnCommand="svn co  svn+ssh://p-nusoftart@cdcvs.fnal.gov/cvs/projects/nusoftsvn/$VER/nutools ${destinationDir}"
+    svnCommandRO="svn co  http://cdcvs.fnal.gov/subversion/nusoftsvn/$VER/nutools ${destinationDir}"
     run_svn_command
 elif [ "${have_path}" = "true" ]
 then
@@ -135,9 +144,11 @@ then
 else
     if [ -z " ${destinationDir}" ]
     then
-       svnCommand="svn co http://cdcvs.fnal.gov/subversion/$REP/$VER $REP "
+       svnCommand="svn co svn+ssh://p-nusoftart@cdcvs.fnal.gov/cvs/projects/$REP/$VER $REP "
+       svnCommandRO="svn co http://cdcvs.fnal.gov/subversion/$REP/$VER $REP "
     else
-       svnCommand="svn co http://cdcvs.fnal.gov/subversion/$REP/$VER  ${destinationDir}"
+       svnCommand="svn co svn+ssh://p-nusoftart@cdcvs.fnal.gov/cvs/projects/$REP/$VER  ${destinationDir}"
+       svnCommandRO="svn co http://cdcvs.fnal.gov/subversion/$REP/$VER  ${destinationDir}"
     fi
     run_svn_command
 fi
