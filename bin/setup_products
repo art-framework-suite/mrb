@@ -84,7 +84,7 @@ if ( $srcbase eq "ups" ) {
     $inputdir = $sourcedir."/ups";
 }
 ##print DIAG "setup_products debug info: source dir is $sourcedir\n";
-print DIAG "setup_products: extra qualifiers are $extra_qual\n";
+##print DIAG "setup_products debug info: extra qualifiers are $extra_qual\n";
 
 require mrb_parse_deps;
 
