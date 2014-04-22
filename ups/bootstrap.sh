@@ -78,19 +78,22 @@ cd ${pkgdir}/${pkgver}/build
 setup cmake
 cmake -DCMAKE_INSTALL_PREFIX=${product_dir} ${pkgdir}/${pkgver}/source/mrb-${pkgver}
 make install
+make package
 
 ##ups declare -c ${package} ${pkgver} -r ${package}/${pkgver} -0 -m ${package}.table  -z ${product_dir}:${PRODUCTS}
 
 ups list -aK+ ${package} ${pkgver}   -z ${product_dir}
 
-# now make the tar ball
-set -x
-cd ${product_dir}
-tar cjf ${package}-${pkgdotver}-noarch.tar.bz2 ${package}/${pkgver}/bin  \
-                                               ${package}/${pkgver}/templates  \
-                                               ${package}/${pkgver}/ups  \
-                                               ${package}/${pkgver}.version \
-                                               ${package}/current.chain
+mv ${pkgdir}/${pkgver}/build/${package}-${pkgdotver}-noarch.tar.bz2 ${product_dir}/
 
+# now make the tar ball
+# set -x
+# cd ${product_dir}
+# tar cjf ${package}-${pkgdotver}-noarch.tar.bz2 ${package}/${pkgver}/bin  \
+#                                                ${package}/${pkgver}/templates  \
+#                                                ${package}/${pkgver}/ups  \
+#                                                ${package}/${pkgver}.version \
+#                                                ${package}/current.chain
+# 
 exit 0
 
