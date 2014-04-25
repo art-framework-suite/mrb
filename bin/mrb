@@ -1,191 +1,551 @@
 #!/usr/bin/env bash
 
-# mrb is a convenient "umbrella" script used to dispatch other scripts to do development 
-# releated tasks.
+# mrb is a convenient "umbrella" script used to dispatch other
+# scripts to do development related tasks.  The subcommands
+# setEnv and setup_local_products must be sourced in order to
+# affect the caller's environment variables.  This is not
+# necessary for the other mrb commands.
 
-function run_buildtool()
-{
-   echo $MRB_BUILDDIR
-   if [ -z $MRB_BUILDDIR ]; then
-      echo "ERROR: MRB_BUILDDIR is undefined"
-      exit 1
-   fi 
-   if [ ! -e $MRB_BUILDDIR/cetpkg_variable_report ]; then
-      echo "ERROR: you must \"source mrb setEnv\" in $MRB_BUILDDIR"
-      exit 2
-   fi
-   cd $MRB_BUILDDIR
-   echo "calling buildtool $*"
-   buildtool $*
-}
+#
+#  Begin boilerplate.
+#
 
-# setEnv must be sourced in order to affect your environment
-# setup_local_products must also be sourced
-# This is not necessary for the other mrb commands.
-# Did the user source this script?
-isSourced=""
-[[ ${BASH_SOURCE[0]} != "${0}" ]] && isSourced="yes"
+# Note: All the following special tricks for $_ must continue
+#       relaying the value to the next rule.  Be careful!
+# Special trick to nail the value of $_ down in a variety of shells.
+echo $_ >& /dev/null
+# Special trick for tcsh which is one-off on the command history stack.
+: $_
+# Special trick to capture the value of $_ in zsh and bash
+test $?shell$_ != 1$_ >& /dev/null && \
+    dollar_underscore="$_" && \
+    dollar_underscore=`expr "${dollar_underscore}" : ".\(.*\)"`
+# Special trick to capture the value of $_ in tcsh
+test $?shell = 1 && set dollar_underscore=`echo $_`
 
-# Get the directory where this script resides
-if [ -z ${MRB_DIR} ]; then
-   echo "ERROR: MRB_DIR is undefined"
-   echo "       Please setup mrb"
-   exit 1
-fi 
-export mrb_dir=${MRB_DIR}/bin
+# Setup the shell independence functions and aliases.
+source "${MRB_DIR}/bin/shell_independence.sh"
 
-# Export this umbrella command name to subshells (should be mrb)
-export mrb_command=${mrb_dir}/mrb
+# Capture the value of $0
+set_ dollar_zed="${0}"
 
-# Define the short list of commands
-shortComList="(newDev | gitCheckout | svnCheckout | setEnv | build | install | test | setup_local_products | 
-           zapBuild | newProduct | changelog | updateDepsCM | updateDepsPV )"
-#  Adams's list:  | bumpVersion | updateDeps)"
+# Special tricks to figure out if this script has been sourced.
+# Works for bash, tcsh, and in some cases for zsh.
+set_ is_sourced=false
+ifcsh_
+    # Note: It is unfortunate that we must hard-code the name
+    #       of this script here, but there is no other way
+    #       that works, tcsh is brain-dead.
+    set base=`basename "${dollar_zed}"`
+    test "${base}" != "mrb" && \
+        set is_sourced=true
+else
+    # Special trick for zsh.
+    test "${ZSH_NAME}" && test "${dollar_underscore}" = "${dollar_zed}" && \
+        is_sourced=true
+    # If there were arguments then there is no safe way to find out
+    # whether or not the script was sourced in zsh.  Pretend it was.
+    test "${ZSH_NAME}" && test "${#argv}" != "0" && \
+        is_sourced=true
+    # Special trick for bash.
+    test "${BASH}" && test "${BASH_SOURCE}" != "${dollar_zed}" && \
+        is_sourced=true
+# Warning, this must be here because the tcsh parser is brain-dead.
+endif
+endifcsh_
 
-# Simple help if no argumets
-if [ $# -lt 1 ]
-then
-  echo "Usage ${mrb_command} $shortComList [-h for help]"
-  echo "           ${mrb_command} -h   gives more information"
+#
+#  End of boilerplate.  Begin of real work.
+#
 
-  [ $isSourced ] && return || exit 1
-fi
+# Utility for getting exiting in error right
+# in the case we have been sourced.
+set_ mrb_exit=false
+set_ mrb_status=0
 
-# Get the desired sub-command
-subcom=$1
+# Get the directory where this script resides.
+test -z "${MRB_DIR}" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    echo "ERROR: You must setup the mrb product first!"
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Export this umbrella command name to subshells.
+setenv mrb_command "${MRB_DIR}/bin/mrb"
+
+# Define the usage message.
+set_ usageMsg="usage: mrb { newDev | gitCheckout | svnCheckout | setEnv | build | install | test | setup_local_products | zapBuild | newProduct | changelog | updateDepsCM } [-h for help]"
+
+# We need at least one argument.
+test $# -lt 1 && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    echo "${usageMsg}"
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Make sure we have ups.
+test -z "${UPS_DIR}" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    echo "ERROR: Please setup the ups product first!"
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Make sure MRB_PROJECT is defined.
+test -z "${MRB_PROJECT}" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    echo "ERROR: MRB_PROJECT is not defined!" && \
+    echo "       Please set \${MRB_PROJECT} to the master product, e.g., larsoft, uboone, etc."
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Get the desired subcommand.
+set_ subcom="$1"
 shift
 
-# Some sanity checks -
+# Set up a new development area.
+test "${subcom}" = "newDev" -o "${subcom}" = "n" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    "${MRB_DIR}/bin/newDev.sh" $*
 
-# Make sure we have ups
-if [ -z ${UPS_DIR} ]
-then
-   echo "ERROR: please setup ups"
-   exit 1
-fi
+set_ mrb_status=$?
 
-# Make sure the @MRB_PROJECT@ product is setup
-if [ -z ${MRB_PROJECT} ]
-then
-    echo "ERROR: MRB_PROJECT is not defined."
-    echo "       Please set \${MRB_PROJECT} to the master product (e.g., larsoft, uboone, etc.)"
-    exit 2
-fi
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
 
-# Determine how to dispatch
-case "${subcom}" in
+# Clone a git repository.
+test "${subcom}" = "gitCheckout" -o "${subcom}" = "g" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    "${MRB_DIR}/bin/gitCheckout.sh" $*
 
-  # Give help if necessary (note the "here document":http://en.wikipedia.org/wiki/Here_document )
-  "-h" | "--help" | "help" | "h" )
-   cat 1>&2 << EOF
-Usage ${mrb_command} $shortComList [-h for help]"
+set_ mrb_status=$?
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Checkout from a svn repository.
+test "${subcom}" = "svnCheckout" -o "${subcom}" = "svn" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    "${MRB_DIR}/bin/svnCheckout.sh" $*
+
+set_ mrb_status=$?
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Create a new product.
+test "${subcom}" = "newProduct" -o "${subcom}" = "p" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    "${MRB_DIR}/bin/newProduct.sh" $*
+
+set_ mrb_status=$?
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Set up a development environment.
+test "${subcom}" = "setEnv" -o "${subcom}" = "s" && \
+        test "${is_sourced}" != "true" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    echo 'ERROR: You must source this script to run setEnv!' && \
+    echo 'Usage: source mrb setEnv {extra qualifiers}'
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Set up a development environment.
+test "${subcom}" = "setEnv" -o "${subcom}" = "s" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    source "${MRB_DIR}/bin/mrbSetEnv" $*
+
+set_ mrb_status=$?
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Set up all products installed in the working localProducts_XXX.
+test "${subcom}" = "setup_local_products" -o "${subcom}" = "slp" && \
+        test "${is_sourced}" != "true" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    echo 'ERROR: You must source this script to run setup_local_products!'
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Set up all products installed in the working localProducts_XXX.
+test "${subcom}" = "setup_local_products" -o "${subcom}" = "slp" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    source "${MRB_DIR}/bin/setup_local_products"
+
+set_ mrb_status=$?
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# We must have MRB_BUILDDIR for build, install, and test
+test "${subcom}" = "build" -o "${subcom}" = "b" \
+        -o "${subcom}" = "install" -o "${subcom}" = "i" \
+        -o "${subcom}" = "test" -o "${subcom}" = "t" && \
+        test -z "${MRB_BUILDDIR}" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    echo "ERROR: MRB_BUILDDIR is undefined!"
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# We must have MRB_BUILDDIR/cetpkg_variable_report for build, install, and test
+test "${subcom}" = "build" -o "${subcom}" = "b" \
+        -o "${subcom}" = "install" -o "${subcom}" = "i" \
+        -o "${subcom}" = "test" -o "${subcom}" = "t" && \
+        test ! -e "${MRB_BUILDDIR}/cetpkg_variable_report" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    echo "ERROR: You must \"source mrb setEnv\" in ${MRB_BUILDDIR} first!"
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Run buildtool.
+test "${subcom}" = "build" -o "${subcom}" = "b" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    set_ curdir=`/bin/pwd` && \
+    cd "${MRB_BUILDDIR}" && \
+    echo "Calling buildtool -I ${MRB_INSTALL} -b $*" && \
+    buildtool -I "${MRB_INSTALL}" -b $*
+
+set_ mrb_status=$?
+
+test "${mrb_exit}" = "true" && cd "${curdir}"
+unset curdir
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Install into the local product area.
+test "${subcom}" = "install" -o "${subcom}" = "i" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    set_ curdir=`/bin/pwd` && \
+    cd "${MRB_BUILDDIR}" && \
+    echo "Calling buildtool -I ${MRB_INSTALL} -i $*" && \
+    buildtool -I "${MRB_INSTALL}" -i $*
+
+set_ mrb_status=$?
+
+test "${mrb_exit}" = "true" && cd "${curdir}"
+unset curdir
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Build code and then run tests.
+test "${subcom}" = "test" -o "${subcom}" = "t" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    set_ curdir=`/bin/pwd` && \
+    cd "${MRB_BUILDDIR}" && \
+    echo "Calling buildtool -I ${MRB_INSTALL} -b -t $*" && \
+    buildtool -I "${MRB_INSTALL}" -b -t $*
+
+set_ mrb_status=$?
+
+test "${mrb_exit}" = "true" && cd "${curdir}"
+unset curdir
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Delete everything in this build area.
+test "${subcom}" = "zapBuild" -o "${subcom}" = "z" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    "${MRB_DIR}/bin/zapBuild.sh"
+
+set_ mrb_status=$?
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Display a git log
+test "${subcom}" = "changelog" -o "${subcom}" = "c" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    test ! -d .git && \
+    echo "ERROR: changeLog: this is not a git repository!"
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Display a git log
+test "${subcom}" = "changelog" -o "${subcom}" = "c" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    git log --decorate --pretty=format:"%ad %ae %h%d %s" --date=short
+
+set_ mrb_status=$?
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Update CMakeLists.txt for latest dependencies.
+test "${subcom}" = "updateDepsCM" -o "${subcom}" = "uc" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    "${MRB_DIR}/bin/updateDepsCM.sh" $*
+
+set_ mrb_status=$?
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Update product_deps and CMakeLists.txt to latest dependencies.
+test "${subcom}" = "updateDepsPD" -o "${subcom}" = "ud" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    "${MRB_DIR}/bin/updateDepsPD.sh" $*
+
+set_ mrb_status=$?
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Usage message to stderr.
+test "${subcom}" = "-h" -o "${subcom}" = "--help" -o \
+        "${subcom}" = "help" -o "${subcom}" = "h" && \
+    echo "${usageMsg}" && \
+    cat - << EOF
   
-  Tools ( for help on tool, do "${mrb_command} <tool> -h" )
+  Tools (for help on tool, do "${mrb_command} <tool> -h")
 
-   newDev (n)                  Start a new development area
-   gitCheckout (g)             Clone a git repository
-   svnCheckout (svn)           Checkout from a svn repository
-   setEnv (s)                  Setup a development enviornment
-   build (b)                   Run buildtool
-   install (i)                 Run buildtool with install
-   test (t)                    Run buildtool with tests
-   setup_local_products (slp)  Setup all products installed in the working localProducts_XXX directory
-   zapBuild (z)                Delete everything in your build area
-   newProduct (p)              Create a new product from scratch
-   changelog (c)               Display a changelog for a package
-   updateDepsCM (uc)           Update the master CMakeLists.txt file
-   updateDepsPV (uv)           Update a product version in product_deps
+    newDev (n)                  Start a new development area
+    gitCheckout (g)             Clone a git repository
+    svnCheckout (svn)           Checkout from a svn repository
+    setEnv (s)                  Setup a development enviornment
+    build (b)                   Run buildtool
+    install (i)                 Run buildtool with install
+    test (t)                    Run buildtool with tests
+    setup_local_products (slp)  Setup all products installed in the working
+                                localProducts_XXX directory
+    zapBuild (z)                Delete everything in your build area
+    newProduct (p)              Create a new product from scratch
+    changelog (c)               Display a changelog for a package
+    updateDepsCM (uc)           Update the master CMakeLists.txt file
+    updateDepsPD (ud)           Update dependencies in product_deps
+                                and CMakeLists.txt
 EOF
-   ;;
 
-  # h3. The available commands 
+test "${subcom}" = "-h" -o "${subcom}" = "--help" -o \
+        "${subcom}" = "help" -o "${subcom}" = "h" && \
+        "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_exit mrb_status && \
+    unset usageMsg subcom is_sourced && \
+    exit 0
 
-   # Set up a new development area (calls &l=bin/newDev.sh&)
-    "newDev" | "n"     ) ${mrb_dir}/newDev.sh $*
-        ;;
+test "${subcom}" = "-h" -o "${subcom}" = "--help" -o \
+        "${subcom}" = "help" -o "${subcom}" = "h" && \
+    exit 0
 
-   # Clone a Redmine git repository (calls &l=bin/gitCheckout.sh&)
-    "gitCheckout" | "g" ) ${mrb_dir}/gitCheckout.sh $*
-        ;;
+echo "ERROR: Unknown command ${subcom}!"
+echo "${usageMsg}"
 
-   # Checkout from a Redmine svn repository (calls &l=bin/svnCheckout.sh&)
-    "svnCheckout" | "svn" ) ${mrb_dir}/svnCheckout.sh $*
-        ;;
-
-   # Create a new product (calls &l=bin/newProduct.sh&)
-    "newProduct" | "p" ) ${mrb_dir}/newProduct.sh $*
-        ;; 
-
-  # Set up a development environment (calls &l=bin/setEnv.sh&)
-    "setEnv" | "s" )
-
-      # Check that the user sourced the script
-      if [ "$isSourced" = "yes" ]; then 
-        source ${mrb_dir}/mrbSetEnv $*
-      else
-        echo 'You must source to run setEnv'
-        echo ' '
-        echo 'Usage: source mrb setEnv [extra qualifiers]'
-        exit 5 
-      fi
-    ;;
-
-  # Set up all products installed in the working localProducts_XXX
-    "setup_local_products" | "slp" )
-
-      # Check that the user sourced the script
-      if [ "$isSourced" = "yes" ]; then 
-        source ${mrb_dir}/setup_local_products
-      else
-        echo 'You must source to run setup_local_products'
-        echo ' '
-        exit 5 
-      fi
-    ;;
-
-   # Run buildtool 
-    "build" | "b" ) run_buildtool -I $MRB_INSTALL -b $*
-        ;;
-
-   # install into local product area
-    "install" | "i" ) run_buildtool -I $MRB_INSTALL -i $*
-        ;;
-
-   # Run tests
-    "test" | "t" ) run_buildtool -I $MRB_INSTALL -b -t $*
-        ;;
-
-   # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)
-    "zapBuild" | "z" ) ${mrb_dir}/zapBuild.sh $*
-        ;;
-
-   # Display a git log
-    "changelog" | "c" ) 
-      if [ -d .git ]
-      then
-        git log --decorate --pretty=format:"%ad %ae %h%d %s" --date=short
-      else
-        echo "changelog: this is not a git repository"
-      fi
-       ;;  
-
-   # Update CMakeLists.txt for latest dependencies (calls &l=bin/updateDepsCM.sh&)
-    "updateDepsCM" | "uc" ) ${mrb_dir}/updateDepsCM.sh $*
-        ;;
-
-   # Update product_deps and CMakeLists.txt to latest dependencies (calls &l=bin/updateDeps.sh&)
-    "updateDepsPV" | "uv" ) ${mrb_dir}/updateDepsPV.sh $*
-        ;;
-
-   # Dump some debug information
-   "debug" )
-      echo "mrb_dir=${mrb_dir}"
-      echo "umbCom=${mrb_command}"
-      echo "isSourced=$isSourced"
-      ;;
-
-    *) echo "Unknown command ${subcom}"
-       echo "Usage ${mrb_command} $shortComList [-h for help]"
-        ;;
-
-esac
+source "${MRB_DIR}/bin/unset_shell_independence.sh"
+unset dollar_underscore dollar_zed base mrb_exit mrb_status
+unset usageMsg subcom
+test $?shell = 1 && test "${is_sourced}" = "true" && unset is_sourced && exit
+test $?shell != 1 && test "${is_sourced}" = "true" && unset is_sourced && return
+unset is_sourced
+exit 1

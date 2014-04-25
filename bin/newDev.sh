@@ -115,6 +115,34 @@ function make_srcs_directory()
 
 function create_local_setup()
 {
+    # Determine the proper string for top.
+    if [ "${topDirGiven}" = "yes" ] ; then
+        mrbTopString="\"${fullTopDir}\""
+    else
+        mrbTopString='`dirname "${db}"`'
+    fi
+
+    # Determine the proper string for source.
+    if [ "${srcTopDirGiven}" = "yes" ] ; then
+        mrbSrcTopDirString="\"${MRB_SOURCE}\""
+    else
+        mrbSrcTopDirString='"${MRB_TOP}/srcs"'
+    fi
+
+    # Determine the proper string for build.
+    if [ "${topDirGiven}" = "yes" ] ; then
+        mrbBuildString="\"${MRB_BUILDDIR}\""
+    else
+        mrbBuildString='"${MRB_TOP}/${buildDirName}"'
+    fi
+
+    # Determine the proper string for local products.
+    if [ "${topDirGiven}" = "yes" ] ; then
+        mrbInstallString="\"${MRB_INSTALL}\""
+    else
+        mrbInstallString='"${db}"'
+    fi
+
     # copy the setup script
     cp ${mrb_bin}/../templates/local_setup  $dirName/setup
     
@@ -124,30 +152,29 @@ function create_local_setup()
 
     # --- Comments below pertain to that file ---
     cat >> $dirName/setup << EOF
-setenv PRODUCTS "\$MRB_INSTALL:\${PRODUCTS}"
-setenv MRB_PROJECT_VERSION ${MRB_PROJECT_VERSION}
-setenv MRB_SOURCE ${MRB_SOURCE}
-setenv MRB_QUALS "${MRB_QUALS}"
 setenv MRB_PROJECT "${MRB_PROJECT}"
+setenv MRB_PROJECT_VERSION "${MRB_PROJECT_VERSION}"
+setenv MRB_QUALS "${MRB_QUALS}"
+setenv MRB_TOP ${mrbTopString}
+setenv MRB_SOURCE ${mrbSrcTopDirString}
+setenv MRB_BUILDDIR ${mrbBuildString}
+setenv MRB_INSTALL ${mrbInstallString}
 
 # report the environment
 echo
-echo MRB_SOURCE=\$MRB_SOURCE
-echo MRB_BUILDDIR=\$MRB_BUILDDIR
 echo MRB_PROJECT=\$MRB_PROJECT
 echo MRB_PROJECT_VERSION=\$MRB_PROJECT_VERSION
 echo MRB_QUALS=\$MRB_QUALS
+echo MRB_TOP=\$MRB_TOP
+echo MRB_SOURCE=\$MRB_SOURCE
+echo MRB_BUILDDIR=\$MRB_BUILDDIR
 echo MRB_INSTALL=\$MRB_INSTALL
 echo
 echo PRODUCTS=\$PRODUCTS
 echo
 
-##$setupLine
-##echo Executed $setupLine
-
-test "$ss" = csh && unalias tnotnull nullout set_ vecho_ unsetenv_
-unset ss sts msg1 msg2 db me
-unset set_ setenv unsetenv_ tnotnull source nullout ovexe ov vecho_
+source "\${MRB_DIR}/bin/unset_shell_independence.sh"
+unset db buildDirName
 
 EOF
 # --- End of HERE document for localProducts.../setup ---
@@ -167,7 +194,9 @@ EOF
 doForce=""
 doNewBuildDir=""
 topDir="."
+topDirGiven="no"
 srcTopDir="."
+srcTopDirGiven="no"
 currentDir=${PWD}
 makeLP="yes"
 makeBuild="yes"
@@ -207,10 +236,12 @@ do
 	    ;;
         S   ) 
 	    echo "NOTICE: source code srcs will go into $OPTARG" 
+            srcTopDirGiven="yes"
 	    srcTopDir=$OPTARG 
 	    ;;
         T   ) 
 	    echo "NOTICE: localPproducts and build areas will go to $OPTARG" 
+            topDirGiven="yes"
 	    topDir=$OPTARG 
 	    ;;
         v   ) 
@@ -260,7 +291,6 @@ get_mrb_bin
 
 if [ ${printDebug} ]
 then
-    echo "DEBUG: mrb_dir: ${mrb_dir}"
     echo "DEBUG: mrb_bin: ${mrb_bin}"
 fi
 
@@ -373,6 +403,7 @@ fi
 
 # Record the mrb version
 # But we might create more here later, so should this be in the localProducts and srcs areas?
+# FIXME: If both -T and -S have been specified, then this will be the only file in the directory!
 ups active | grep ^mrb >  ${currentDir}/.mrbversion
 
 # h3. Build area

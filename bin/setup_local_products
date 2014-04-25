@@ -9,19 +9,6 @@
 #    set fw_db=/some/path; source /some/path/this_file
 # or  fw_db=/some/path; . /some/path/this_file
 
-test $?shell = 1 && set ss=csh || ss=sh
-#echo Shell type is $ss.
-
-# make some things similar. need to use set_ because sh builtin set would hide function set
-# Note: perhaps the trickiest thing in this file is the sh set_ function tries to return the same status
-#       as at the start of the function (which most likely is the result of a back-tick expression
-test "$ss" = csh && alias set_ set && alias vecho_ 'if ($?vv == 1) echo \!*' || eval 'vecho_() { test -n "${vv-}" && echo "$@"; return 0; }'
-test "$ss" =  sh && eval 'set_() { sts=$?;for xx in "$@";do var=`expr "$xx" : "\([^=]*\)"`;val=`expr "$xx" : "[^=]*=\(.*\)"`;eval "$var=\"$val\"";done;return $sts; }'
-test "$ss" =  sh && eval 'setenv() { export $1;eval "$1=\"\${2-}\""; }; source() { file=$1; shift; . $file "$@"; }; unsetenv_() { unset "$@"; }'
-test "$ss" =  sh && eval 'tnotnull() { eval "test -n \"\${$1-}\""; }'                             && eval 'nullout() { "$@" >/dev/null 2>&1; }'
-test "$ss" = csh && alias tnotnull "eval '"'test $?'"\!* -eq 1' && eval '"'test -n "$'"\!*"'"'"'" && alias nullout "\!* >& /dev/null" && alias unsetenv_ unsetenv
-test "$ss" = csh && alias return exit
-
 set_ msg1='ERROR: You MUST setup ups'
 test -z $UPS_DIR && ( echo ""; echo "$msg1"; echo "" ) && return
 
@@ -40,7 +27,13 @@ test -z "$db" && tnotnull BASH_SOURCE && set_ me=`dirname $BASH_SOURCE` && set_ 
 test -z "$db" -a "$ss" = csh && test $?history = 0 && set history=5  # make sure history 1 works
 test -z "$db" -a "$ss" = csh && set me=`history 1|sed 's/^[ 	0-9:]*//'` && test -n "$me" && set me=`dirname $me[2]` \
     && set db=`sh -c "cd $me >/dev/null 2>&1 && pwd"` && vecho_ 'setting db via interactive history'
-test -z "$db" -a "$ss" = sh && test "${shell%%*/}" = "zsh" && db=${${(%):-%N}%/*}
+ifcsh_
+else
+    # Special trick for zsh.
+    test -z "$db" && test "${shell%%*/}" = "zsh" && db=${${(%):-%N}%/*}
+# Warning, this must be here because the tcsh parser is brain-dead.
+endif
+endifcsh_
 #echo This script lives in $db
 
 test -z "$db" && echo "$msg2" || vecho_ "db=$db"
@@ -71,6 +64,7 @@ tnotnull LD_LIBRARY_PATH   && setenv LD_LIBRARY_PATH   `dropit -p $LD_LIBRARY_PA
 tnotnull DYLD_LIBRARY_PATH && setenv DYLD_LIBRARY_PATH `dropit -p $DYLD_LIBRARY_PATH $MRB_BUILDDIR`
 
 echo ----------- check this block for errors -----------------------
+
 source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
 setenv UPS_OVERRIDE -B
 # now get the rest of the products
@@ -87,6 +81,3 @@ echo ----------------------------------------------------------------
 
 # cleanup before exiting
 rm -f "$cmdfile"
-test "$ss" = csh && unalias tnotnull nullout set_ vecho_ return
-unset ss db me thisdir msg1 msg2 msg3 msg4 msg5 setup_fail
-unset set_ setenv unsetenv_ tnotnull nullout vecho_
