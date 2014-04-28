@@ -10,6 +10,7 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   newDev.sh
 		   newProduct.sh
 		   setEnv.sh
+		   mrbSetEnv
 		   setup_products
 		   svnCheckout.sh
 		   updateDepsCM.sh
@@ -19,4 +20,6 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 
 INSTALL (FILES mrb_parse_deps.pm
                setup_local_products
+		   shell_independence.sh
+		   unset_shell_independence.sh
          DESTINATION ${product}/${version}/bin )
