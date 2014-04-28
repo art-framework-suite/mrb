@@ -37,7 +37,7 @@ $mrb_quals = $ENV{MRB_QUALS};
 # determine build type from MRB_QUALS
 @qlist=split(/:/,$mrb_quals);
 for $i ( 0 .. $#qlist ) {
-    ##print DIAG "setup_products: qualifier $i $qlist[$i]\n";
+    ##print DIAG "setup_products debug info: qualifier $i $qlist[$i]\n";
     if( $qlist[$i] eq "debug" ) {
       $dop = "debug";
       $type = "Debug";
@@ -84,12 +84,12 @@ if ( $srcbase eq "ups" ) {
     $inputdir = $sourcedir."/ups";
 }
 ##print DIAG "setup_products debug info: source dir is $sourcedir\n";
-print DIAG "setup_products: extra qualifiers are $extra_qual\n";
+##print DIAG "setup_products debug info: extra qualifiers are $extra_qual\n";
 
 require mrb_parse_deps;
 
 $tmpfl = $builddir."/".$mrb_project."-".$mrb_version;
-##print DIAG "opening $tmpfl for $mrb_project $mrb_version\n";
+##print DIAG "setup_products debug info: opening $tmpfl for $mrb_project $mrb_version\n";
 open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
 print TSET "setenv UPS_OVERRIDE -B\n";
@@ -109,7 +109,7 @@ $dfile = $sourcedir."/dependency_list";
 
 # have to find the list of packages to traverse
 $cmakefile=$sourcedir."/CMakeLists.txt";
-##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
+##print DIAG "setup_products debug info: cmakefile is $cmakefile\n";
 @package_list = get_package_list( $cmakefile, DIAG );
 ##print DIAG "DIAGNOSTICS: packages to check: $#package_list @package_list\n";
 if ( $#package_list < 0 ) {
@@ -122,10 +122,10 @@ $use_cetbver="v0_00_00";
 for $i ( 0 .. $#package_list ) {
   $pkg=$package_list[$i];
   $pfile=$sourcedir."/".$pkg."/ups/product_deps";
-  ##print DIAG "checking $pfile for $pkg \n";
+  ##print DIAG "setup_products debug info: checking $pfile for $pkg \n";
   ($productnames[$i], $productversn[$i]) = get_product_name( $pfile, DIAG );
   $cetbver[$i] = find_cetbuildtools( $pfile );
-  ##print DIAG "DIAGNOSTICS: cetbuildtools $cetbver[$i]\n";
+  ##print DIAG "setup_products debug info: cetbuildtools $cetbver[$i]\n";
   $use_cetbver = compare_versions( $use_cetbver, $cetbver[$i] );
 }
 print TSET "setup -B cetbuildtools $use_cetbver\n";
@@ -135,20 +135,20 @@ print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n";
 # now check for an old build directory 
 $old_build_dir=$ENV{OLD_MRB_BUILDDIR};
 if ( $old_build_dir ) {
-   ##print DIAG "DIAGNOSTICS: found old build directory $old_build_dir\n";
+   ##print DIAG "setup_products debug info: found old build directory $old_build_dir\n";
   print TSET "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${old_build_dir}\'`\n";
   print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${old_build_dir}\'\`\n";
 }
-##print DIAG "DIAGNOSTICS: product name $#productnames @productnames\n";
-##print DIAG "DIAGNOSTICS: product version $#productversn @productversn\n";
+##print DIAG "setup_products debug info: product name $#productnames @productnames\n";
+##print DIAG "setup_products debug info: product version $#productversn @productversn\n";
 print TSET "# setup package dependencies\n";
 for $i ( 0 .. $#package_list ) {
   $pkg=$package_list[$i];
   $pkgdir = $builddir."/".$pkg;
   unless ( -e $pkgdir or mkdir $pkgdir ) { die "Couldn't create $pkgdir"; }
   $pfile=$sourcedir."/".$pkg."/ups/product_deps";
-  #print DIAG "checking $pfile for $pkg \n";
-  #print DIAG "calling product_setup_loop with $pfile, $pkgdir\n";
+  ##print DIAG "setup_products debug info: checking $pfile for $pkg \n";
+  ##print DIAG "setup_products debug info: calling product_setup_loop with $pfile, $pkgdir\n";
   ($product, $version) = product_setup_loop( $pfile, $pkgdir, $extra_qual, DIAG, TSET );
 
   if ( $product ne $productnames[$i] ) {
