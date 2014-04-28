@@ -320,7 +320,7 @@ test "${subcom}" = "build" -o "${subcom}" = "b" \
         test ! -e "${MRB_BUILDDIR}/cetpkg_variable_report" && \
     set_ mrb_exit=true && \
     set_ mrb_status=1 && \
-    echo "ERROR: You must \"source mrb setEnv\" in ${MRB_BUILDDIR} first!"
+    echo 'ERROR: You must "source mrb setEnv" in '"${MRB_BUILDDIR}"' first!'
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
@@ -502,11 +502,29 @@ test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
     unset is_sourced mrb_exit && \
     return
 
+test "${subcom}" != "-h" -a "${subcom}" != "--help" -a \
+        "${subcom}" != "help" -a "${subcom}" != "h" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    echo "ERROR: Unknown command ${subcom}!" && \
+    echo "${usageMsg}"
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
 # Usage message to stderr.
-test "${subcom}" = "-h" -o "${subcom}" = "--help" -o \
-        "${subcom}" = "help" -o "${subcom}" = "h" && \
-    echo "${usageMsg}" && \
-    cat - << EOF
+set_ mrb_exit=true
+set_ mrb_status=1
+echo "${usageMsg}"
+cat - << EOF
   
   Tools (for help on tool, do "${mrb_command} <tool> -h")
 
@@ -527,25 +545,16 @@ test "${subcom}" = "-h" -o "${subcom}" = "--help" -o \
                                 and CMakeLists.txt
 EOF
 
-test "${subcom}" = "-h" -o "${subcom}" = "--help" -o \
-        "${subcom}" = "help" -o "${subcom}" = "h" && \
-        "${is_sourced}" = "true" && \
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
     source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
-    unset dollar_underscore dollar_zed base mrb_exit mrb_status && \
-    unset usageMsg subcom is_sourced && \
-    exit 0
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
 
-test "${subcom}" = "-h" -o "${subcom}" = "--help" -o \
-        "${subcom}" = "help" -o "${subcom}" = "h" && \
-    exit 0
-
-echo "ERROR: Unknown command ${subcom}!"
-echo "${usageMsg}"
-
-source "${MRB_DIR}/bin/unset_shell_independence.sh"
-unset dollar_underscore dollar_zed base mrb_exit mrb_status
-unset usageMsg subcom
-test $?shell = 1 && test "${is_sourced}" = "true" && unset is_sourced && exit
-test $?shell != 1 && test "${is_sourced}" = "true" && unset is_sourced && return
-unset is_sourced
+# Failsafe exit.
 exit 1
