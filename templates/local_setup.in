@@ -109,5 +109,6 @@ tnotnull MRB_DIR || source "${MRB_DIR}/bin/unset_shell_independence.sh"
 tnotnull MRB_DIR || unset me db dollar_underscore dollar_zed is_sourced base msg1 flav
 tnotnull MRB_DIR || return 1
 
-source "${MRB_DIR}/bin/unset_shell_independence.sh"
+# Note: This is done by the small bit added on the end by the newDev.sh script.
+#source "${MRB_DIR}/bin/unset_shell_independence.sh"
 unset me dollar_underscore dollar_zed is_sourced base msg1 flav
