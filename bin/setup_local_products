@@ -88,7 +88,22 @@ tnotnull DYLD_LIBRARY_PATH && setenv DYLD_LIBRARY_PATH `dropit -p $DYLD_LIBRARY_
 
 echo ----------- check this block for errors -----------------------
 
-source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
+ifcsh_
+    # tcsh needs it this way
+    source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
+else
+    if [ "${ZSH_NAME}" ]
+    then
+        # zsh does word expansion differently
+        . `${UPS_DIR}/bin/ups setup ${=SETUP_UPS}`
+    else
+        # bash likes it this way
+        . `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
+    fi
+# Warning, this must be here because the tcsh parser is brain-dead.
+endif
+endifcsh_
+
 setenv UPS_OVERRIDE -B
 # Now run get_setup_list.sh to get the ups setup commands
 # for the local products as a temporary script file.

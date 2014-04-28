@@ -25,6 +25,22 @@ set_ msg5='ERROR: setup of required products has failed'
 
 echo ----------- check this block for errors -----------------------
 
+ifcsh_
+    # tcsh needs it this way
+    source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
+else
+    if [ "${ZSH_NAME}" ]
+    then
+        # zsh does word expansion differently
+        . `${UPS_DIR}/bin/ups setup ${=SETUP_UPS}`
+    else
+        # bash likes it this way
+        . `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
+    fi
+# Warning, this must be here because the tcsh parser is brain-dead.
+endif
+endifcsh_
+
 setenv UPS_OPTIONS -B
 # now get the rest of the products
 #set_ cmd="$MRB_DIR/bin/setup_products $CETPKG_SOURCE $CETPKG_BUILD $*"
