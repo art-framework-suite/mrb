@@ -15,6 +15,9 @@ if( $#ARGV < 1 ) {
     print ERR1 "unsetenv_ CETPKG_VERSION\n";
     print ERR1 "unsetenv_ CETPKG_QUAL\n";
     print ERR1 "unsetenv_ CETPKG_TYPE\n";
+    print ERR1 "unsetenv_ CETPKG_CC\n";
+    print ERR1 "unsetenv_ CETPKG_CXX\n";
+    print ERR1 "unsetenv_ CETPKG_FC\n";
     print ERR1 "echo \"ERROR: directory not specified\"\n";
     print ERR1 "echo \"USAGE: define_local <input-directory> <build-directory> [extra qualifiers]>\"\n";
     print ERR1 "return 1\n";
