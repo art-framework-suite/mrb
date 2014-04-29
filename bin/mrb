@@ -24,7 +24,7 @@ test $?shell$_ != 1$_ >& /dev/null && \
 test $?shell = 1 && set dollar_underscore=`echo $_`
 
 # Setup the shell independence functions and aliases.
-source "${MRB_DIR}/bin/shell_independence.sh"
+source "${MRB_DIR}/bin/shell_independence"
 
 # Capture the value of $0
 set_ dollar_zed="${0}"
@@ -71,7 +71,7 @@ test -z "${MRB_DIR}" && \
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -94,7 +94,7 @@ test $# -lt 1 && \
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -111,7 +111,7 @@ test -z "${UPS_DIR}" && \
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -129,7 +129,7 @@ test -z "${MRB_PROJECT}" && \
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -152,7 +152,7 @@ set_ mrb_status=$?
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -171,7 +171,7 @@ set_ mrb_status=$?
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -190,7 +190,7 @@ set_ mrb_status=$?
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -209,7 +209,7 @@ set_ mrb_status=$?
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -228,7 +228,7 @@ test "${subcom}" = "setEnv" -o "${subcom}" = "s" && \
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -247,7 +247,7 @@ set_ mrb_status=$?
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -265,7 +265,7 @@ test "${subcom}" = "setup_local_products" -o "${subcom}" = "slp" && \
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -284,7 +284,7 @@ set_ mrb_status=$?
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -304,7 +304,7 @@ test "${subcom}" = "build" -o "${subcom}" = "b" \
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -324,7 +324,7 @@ test "${subcom}" = "build" -o "${subcom}" = "b" \
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -349,7 +349,7 @@ unset curdir
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -374,7 +374,7 @@ unset curdir
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -399,7 +399,7 @@ unset curdir
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -418,7 +418,7 @@ set_ mrb_status=$?
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -436,7 +436,7 @@ test "${subcom}" = "changelog" -o "${subcom}" = "c" && \
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -455,7 +455,7 @@ set_ mrb_status=$?
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -474,7 +474,7 @@ set_ mrb_status=$?
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -493,7 +493,7 @@ set_ mrb_status=$?
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -511,7 +511,7 @@ test "${subcom}" != "-h" -a "${subcom}" != "--help" -a \
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -547,7 +547,7 @@ EOF
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \

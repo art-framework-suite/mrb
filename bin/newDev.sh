@@ -173,7 +173,7 @@ echo
 echo PRODUCTS=\$PRODUCTS
 echo
 
-source "\${MRB_DIR}/bin/unset_shell_independence.sh"
+source "\${MRB_DIR}/bin/unset_shell_independence"
 unset db buildDirName
 
 EOF

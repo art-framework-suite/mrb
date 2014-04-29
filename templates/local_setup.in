@@ -18,7 +18,7 @@ test $?shell$_ != 1$_ >& /dev/null && \
 test $?shell = 1 && set dollar_underscore=`echo $_`
 
 # Get the shell independence aliases and functions.
-source "${MRB_DIR}/bin/shell_independence.sh"
+source "${MRB_DIR}/bin/shell_independence"
 
 # Capture the value of $0
 set_ dollar_zed="${0}"
@@ -55,7 +55,7 @@ endifcsh_
 set_ msg1='ERROR: You MUST setup the ups product!'
 
 tnotnull UPS_DIR || ( echo "" ; echo "${msg1}" ; echo "" )
-tnotnull UPS_DIR || source "${MRB_DIR}/bin/unset_shell_independence.sh"
+tnotnull UPS_DIR || source "${MRB_DIR}/bin/unset_shell_independence"
 tnotnull UPS_DIR || unset me db dollar_underscore dollar_zed is_sourced base msg1 flav
 tnotnull UPS_DIR || return
 
@@ -88,11 +88,11 @@ endifcsh_
 
 test -z "${db}" && echo 'ERROR: Could not determine script location!'
 test -z "${db}" && test "${ss}" = "csh" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset me db dollar_underscore dollar_zed is_sourced base msg1 flav && \
     exit 1
 test -z "${db}" && test "${ss}" =  "sh" && \
-    source "${MRB_DIR}/bin/unset_shell_independence.sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset me db dollar_underscore dollar_zed is_sourced base msg1 flav && \
     return 1
 
@@ -105,10 +105,10 @@ test "$ss" =  sh && test -n "${MRB_BUILDDIR}" && setenv OLD_MRB_BUILDDIR "${MRB_
 test "$ss" = csh && tnotnull MRB_BUILDDIR && setenv OLD_MRB_BUILDDIR "${MRB_BUILDDIR}"
 
 tnotnull MRB_DIR || ( echo ""; echo "ERROR: You must first setup mrb!" )
-tnotnull MRB_DIR || source "${MRB_DIR}/bin/unset_shell_independence.sh"
+tnotnull MRB_DIR || source "${MRB_DIR}/bin/unset_shell_independence"
 tnotnull MRB_DIR || unset me db dollar_underscore dollar_zed is_sourced base msg1 flav
 tnotnull MRB_DIR || return 1
 
 # Note: This is done by the small bit added on the end by the newDev.sh script.
-#source "${MRB_DIR}/bin/unset_shell_independence.sh"
+#source "${MRB_DIR}/bin/unset_shell_independence"
 unset me dollar_underscore dollar_zed is_sourced base msg1 flav
