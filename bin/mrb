@@ -116,16 +116,16 @@ EOF
     "newProduct" | "p" ) ${mrb_dir}/newProduct.sh $*
         ;; 
 
-  # Set up a development environment (calls &l=bin/setEnv.sh&)
+  # Set up a development environment (calls &l=bin/mrbSetEnv&)
     "setEnv" | "s" )
 
       # Check that the user sourced the script
       if [ "$isSourced" = "yes" ]; then 
-        source ${mrb_dir}/setEnv.sh $*
+        source ${mrb_dir}/mrbSetEnv $*
       else
         echo 'You must source to run setEnv'
         echo ' '
-        ${mrb_dir}/setEnv.sh -H
+        echo 'Usage: source mrb setEnv [extra qualifiers]'
         exit 5 
       fi
     ;;

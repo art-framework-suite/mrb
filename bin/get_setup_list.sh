@@ -3,8 +3,6 @@
 # called by setup_local_products
 # creates a temporary script to be sourced
 
-#  The source_area must point to a directory that contains a setEnv file
-
 # Function to show command usage
 function usage() {
 

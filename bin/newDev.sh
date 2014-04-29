@@ -7,7 +7,7 @@
 # * Construct a @setup@ script in local products
 
 # Within the srcs area is a top level @CMakeLists.txt@ file so that, if you want, you can
-# build everything in @srcs@. It also makes a main @setEnv@ script. 
+# build everything in @srcs@.
 
 # The local products area directory name has the version and qualifier of @${MRB_PROJECT}@ that you
 # currently have set up. It also makes a setup script in there that is necessary to set up
@@ -94,16 +94,6 @@ function make_srcs_directory()
   # this is a hack....
   cp ${mrb_bin}/../templates/dependency_list ${MRB_SOURCE}/ || exit 1;
   # end hack
-
-  # Make the top setEnv script (this is more complicated, so we'll just copy it from
-  # @templates@). See &l=templates/setEnv& for the template
-  cp ${mrb_bin}/../templates/setEnv ${MRB_SOURCE}/setEnv
-  if [ -e ${MRB_SOURCE}/setEnv ]
-  then
-    chmod a+x ${MRB_SOURCE}/setEnv
-    echo "NOTICE: Created ${MRB_SOURCE}/setEnv"
-  else echo "ERROR: failed to create ${MRB_SOURCE}/setEnv"; exit 9
-  fi
 
   # If we're on MacOSX, then copy the xcodeBuild.sh file
   if ups flavor -1 | grep -q 'Darwin'; then

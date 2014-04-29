@@ -25,9 +25,6 @@ test "$ss" = csh && alias return exit
 set_ msg1='ERROR: You MUST setup ups'
 test -z $UPS_DIR && ( echo ""; echo "$msg1"; echo "" ) && return
 
-set_ msg3='ERROR: You MUST specify either -o, -p, or -d'
-set_ msg4='Usage: setEnv <-d|-o|-p> <qualifier list>'
-
 # make sure we know where this script lives
 # now if we were passed a path or if not, we can figure it out (maybe if we are interactive)
 #   bash, zsh, ksh and tcsh pass params to a source file, csh does not. but someone will be writing csh scripts
@@ -87,5 +84,5 @@ echo ----------------------------------------------------------------
 # cleanup before exiting
 rm -f "$cmdfile"
 test "$ss" = csh && unalias tnotnull nullout set_ vecho_ return
-unset ss db me thisdir msg1 msg2 msg3 msg4 msg5 setup_fail
+unset ss db me thisdir msg1 msg2 msg3 msg5 setup_fail
 unset set_ setenv unsetenv_ tnotnull nullout vecho_

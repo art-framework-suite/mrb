@@ -1,16 +1,13 @@
 #!/usr/bin/env perl
 #
 # setup products for the build environment
-# use product_deps and qualifier_deps
-
-# we need to know the qualifiers
-# -d, -o, or -p and 1-2 other qualifiers
+# use product_deps and MRB_QUALS
 
 use File::Basename;
 use lib dirname($0);
 
 
-if( $#ARGV < 2 ) {
+if( $#ARGV < 1 ) {
     $errfl1 = "problem_report";
     open(ERR1, "> $errfl1") or die "Couldn't open $errfl1";
     print ERR1 "\n";
@@ -18,8 +15,11 @@ if( $#ARGV < 2 ) {
     print ERR1 "unsetenv_ CETPKG_VERSION\n";
     print ERR1 "unsetenv_ CETPKG_QUAL\n";
     print ERR1 "unsetenv_ CETPKG_TYPE\n";
-    print ERR1 "echo \"ERROR: directory and qualifiers not specified\"\n";
-    print ERR1 "echo \"USAGE: setup_products <input-directory> <-d|-o|-p> <qualifiers>\"\n";
+    print ERR1 "unsetenv_ CETPKG_CC\n";
+    print ERR1 "unsetenv_ CETPKG_CXX\n";
+    print ERR1 "unsetenv_ CETPKG_FC\n";
+    print ERR1 "echo \"ERROR: directory not specified\"\n";
+    print ERR1 "echo \"USAGE: define_local <input-directory> <build-directory> [extra qualifiers]>\"\n";
     print ERR1 "return 1\n";
     close(ERR1);
     print "$errfl1\n";
@@ -30,20 +30,10 @@ $sourcedir = $ARGV[0];
 $builddir = $ARGV[1];
 $simple = "";
 for $i ( 2 .. $#ARGV ) {
-    if( $ARGV[$i] eq "-d" ) {
-      $dop = "debug";
-      $type = "Debug";
-    } elsif( $ARGV[$i] eq "-o" ) {
-      $dop = "opt";
-      $type = "Opt";
-    } elsif( $ARGV[$i] eq "-p" ) {
-      $dop = "prof";
-      $type = "Prof";
-    } elsif( $ARGV[$i] eq "simple" ) {
+    if( $ARGV[$i] eq "simple" ) {
       $simple = "true";
     } else {
-      $incoming_qual = $incoming_qual.$ARGV[$i].":";
-      $qdir = $qdir.$ARGV[$i]."-";
+      $extra_qual = $extra_qual.$ARGV[$i].":";
     }
 }
 
@@ -102,6 +92,7 @@ for $i ( 0 .. $#package_list ) {
 
 # loop again and define package variables
 print TSET "# set package variables\n";
+my $build_dir = $ENV{MRB_BUILDDIR};
 for $i ( 0 .. $#package_list ) {
   $pkg=$package_list[$i];
   $pfile=$sourcedir."/".$pkg."/ups/product_deps";
@@ -115,31 +106,22 @@ for $i ( 0 .. $#package_list ) {
   # pretend this is a product
   $product_uc = uc($product);
   print TSET "setenv  ${product_uc}_VERSION $version\n";
-  # this is wrong - ${product_uc}_FQ should look something like slf6.x86_64.e4.prof or slf6.x86_64.nu.e4.prof
-  #print TSET "setenv  ${product_uc}_FQ $qual\n";
-  if ( $ENV{LD_LIBRARY_PATH} ne '' ) {
-    # Below we want to remove the local products lib from the library path. The path is hard to find, since it is
-    # product/version/lib and version is hard to predict. So we'll drop "$product/"  -- the final slash is important
-    # as without it, dropit artg4 would also drop artg4examples and we don't want that.
-    print TSET "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${product}/\'\`\n";
-    print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${product}/\'\`\n";
-  }
-  print TSET "setenv  LD_LIBRARY_PATH $ENV{MRB_BUILDDIR}/${product}/lib:\${LD_LIBRARY_PATH}\n";
-  print TSET "setenv  DYLD_LIBRARY_PATH $ENV{MRB_BUILDDIR}/${product}/lib:\${DYLD_LIBRARY_PATH}\n";
-  if ( $fcl_dirctory ne "none" ) {
-    if ( $ENV{FHICL_FILE_PATH} ne '' ) {
-      print TSET "setenv  FHICL_FILE_PATH \`dropit -p \${FHICL_FILE_PATH} \'${fcl_directory}\'\`\n";
-    }
-    print TSET "setenv  FHICL_FILE_PATH $ENV{MRB_BUILDDIR}/${fcl_directory}:\${FHICL_FILE_PATH}\n";
+  # dropit -esf will remove any existing instances of the path and then prepend the path
+  print TSET "setenv  LD_LIBRARY_PATH \`dropit -esf -p \${LD_LIBRARY_PATH} \'${build_dir}/${product}/lib\'\`\n";
+  print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -esf -p \${DYLD_LIBRARY_PATH} \'${build_dir}/${product}/lib\'\`\n";
+  if ( "${fcl_directory}" ne "none" ) {
+    ##print DIAG "$product: add ---${fcl_directory}---\n";
+    print TSET "setenv  FHICL_FILE_PATH \`dropit -esf -p \${FHICL_FILE_PATH} \'${build_dir}/${fcl_directory}\'\`\n";
   }
   if ( "${gdml_directory}" ne "none" ) {
-    if ( $ENV{FW_SEARCH_PATH} ne '' ) {
-      print TSET "setenv  FW_SEARCH_PATH \`dropit -p \${FW_SEARCH_PATH} \'${gdml_directory}\'\`\n";
-    }
-    print TSET "setenv  FW_SEARCH_PATH $ENV{MRB_BUILDDIR}/${gdml_directory}:\${FW_SEARCH_PATH}\n";
+    print TSET "setenv  FW_SEARCH_PATH \`dropit -esf -p \${FW_SEARCH_PATH} \'${build_dir}/${gdml_directory}\'\`\n";
   }
+  # LArG4.mac is installed in lib, but must be found via FW_SEARCH_PATH, so add lib to FW_SEARCH_PATH
+  #print TSET "setenv  FW_SEARCH_PATH \`dropit -esf -p \${FW_SEARCH_PATH} \'${build_dir}/${product}/lib\'\`\n";
 
 }
+# make sure we still have the local directory
+print TSET "setenv  FHICL_FILE_PATH .:\${FHICL_FILE_PATH}\n";
 
 # cleanup
 close(TSET);

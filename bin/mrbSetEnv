@@ -3,11 +3,7 @@
 # There should be as little as possible here,
 # with most of the heavy lifting done by other small scripts
 #
-# When sourcing this file from a script, you may have to tell this
-# source file where it is via the fw_db shell (or env) variable.
-# I.e.:
-#    set fw_db=/some/path; source /some/path/this_file
-# or  fw_db=/some/path; . /some/path/this_file
+# usage: source mrbSetEnv [optional extra qualifiers]
 
 test $?shell = 1 && set ss=csh || ss=sh
 #echo Shell type is $ss.
@@ -25,16 +21,11 @@ test "$ss" = csh && alias return exit
 set_ msg1='ERROR: You MUST setup ups'
 test -z $UPS_DIR && ( echo ""; echo "$msg1"; echo "" ) && return
 
-set_ msg3='ERROR: You MUST specify either -o, -p, or -d'
-set_ msg4='Usage: setEnv <-d|-o|-p> <qualifier list>'
-test -z "$1" && ( echo ""; echo "$msg4"; echo "$msg3"; echo "" ) && return
-
 setenv CETPKG_SOURCE $MRB_SOURCE
 
 # make sure we know the current directory
 tnotnull MRB_BUILDDIR  && setenv CETPKG_BUILD $MRB_BUILDDIR
 test -z "$CETPKG_BUILD" && setenv CETPKG_BUILD `pwd`
-#echo Build directory is $CETPKG_BUILD
 
 echo The working build directory is $CETPKG_BUILD
 echo The source code directory is $CETPKG_SOURCE
@@ -63,5 +54,5 @@ echo ----------------------------------------------------------------
 
 # cleanup before exiting
 test "$ss" = csh && unalias tnotnull nullout set_ vecho_ return
-unset ss db me thisdir msg1 msg2 msg3 msg4 msg5 setup_fail
+unset ss db me msg1 msg2 msg3 msg4 msg5 setup_fail
 unset set_ setenv unsetenv_ tnotnull nullout vecho_

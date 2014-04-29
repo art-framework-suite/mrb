@@ -2,3 +2,9 @@ This is the Multi Repository Build System (mrb).
 
 Please see https://cdcvs.fnal.gov/redmine/projects/mrb/wiki 
 for the latest documentation.
+
+To build mrb:
+mkdir working_directory
+cd working_directory
+cmake -DCMAKE_INSTALL_PREFIX=/local/product/directory /source/directory/mrb
+
