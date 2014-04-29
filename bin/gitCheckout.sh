@@ -29,16 +29,21 @@ EOF
 run_git_command() {
     # First check permissions
     rbase=${1}
-    myGitCommand=$gitCommand
-    if [ "$gitCommandRO" != "none" ]
+    if [ "${useRO}" == "true" ]
     then
-	larret=`ssh p-${rbase}@cdcvs.fnal.gov "echo Hi" 2>&1`
-	is_bad=`echo $larret | grep Permission | wc -l`
-	if [ $is_bad -gt 0 ]
+        myGitCommand=$gitCommandRO
+    else
+	myGitCommand=$gitCommand
+	if [ "$gitCommandRO" != "none" ]
 	then
-          echo ""
-          echo "NOTICE: You do not have read-write permissions for this repository"
-	  myGitCommand=$gitCommandRO
+	    larret=`ssh p-${rbase}@cdcvs.fnal.gov "echo Hi" 2>&1`
+	    is_bad=`echo $larret | grep Permission | wc -l`
+	    if [ $is_bad -gt 0 ]
+	    then
+              echo ""
+              echo "NOTICE: You do not have read-write permissions for this repository"
+	      myGitCommand=$gitCommandRO
+	    fi
 	fi
     fi
     echo "NOTICE: Running $myGitCommand"
