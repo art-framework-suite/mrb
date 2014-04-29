@@ -10,10 +10,28 @@ $builddir = $ENV{MRB_BUILDDIR};
 
 require mrb_parse_deps;
 
+my $default_fc = ( $^O eq "darwin" ) ? "-" : "gfortran";
+
+my $compiler_table =
+  {
+   cc => { CC => "cc", CXX => "c++", FC => $default_fc },
+   gcc => { CC => "gcc", CXX => "g++", FC => "gfortran" },
+   icc => { CC => "icc", CXX => "icpc", FC => "ifort" },
+  };
+
 $mrb_project = $ENV{MRB_PROJECT};
 $mrb_version = $ENV{MRB_PROJECT_VERSION};
 $mrb_quals = $ENV{MRB_QUALS};
 $tmpfl = $builddir."/".$mrb_project."-".$mrb_version;
+
+if (!$compiler) {
+  my @quals = split /:/, $mrb_quals;
+  if (grep /^(e[245]|gcc4[78])$/, @quals) {
+    $compiler = "gcc";
+  } else {
+    $compiler = "cc"; # Native.
+  }
+}
 ##print DIAG "opening $tmpfl for $mrb_project $mrb_version\n";
 open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
@@ -24,9 +42,15 @@ print TSET "setenv CETPKG_VERSION $mrb_version\n";
 if ( $simple ) {
   print TSET "unsetenv_ CETPKG_QUAL\n";
   print TSET "unsetenv_ CETPKG_TYPE\n";
+  print TSET "unsetenv_ CETPKG_CC\n";
+  print TSET "unsetenv_ CETPKG_CXX\n";
+  print TSET "unsetenv_ CETPKG_FC\n";
 } else {
   print TSET "setenv CETPKG_QUAL $mrb_quals\n";
   print TSET "setenv CETPKG_TYPE $type\n";
+  print TSET "setenv CETPKG_CC $compiler_table->{${compiler}}->{CC}\n";
+  print TSET "setenv CETPKG_CXX $compiler_table->{${compiler}}->{CXX}\n";
+  print TSET "setenv CETPKG_FC $compiler_table->{${compiler}}->{FC}\n";
 }
 
 # parse a list of dependencies

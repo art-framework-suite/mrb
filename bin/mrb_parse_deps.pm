@@ -36,6 +36,8 @@
 # -nq-	this dependent product has no qualifier
 # -b-	this dependent product is only used for the build - it will not be in the table
 
+use List::Util qw(min max); # Numeric min / max funcions.
+
 sub get_package_list {
   my @params = @_;
   my $dfile = $params[1];
@@ -402,17 +404,26 @@ sub cetpkg_info_file {
   ## add CETPKG_SOURCE and CETPKG_BUILD for ease of reference by the user
   # if there is a cmake cache file, we could check for the install prefix
   # cmake -N -L | grep CMAKE_INSTALL_PREFIX | cut -f2 -d=
-  my @params = @_;
-  $cetpkgfile = $params[6]."/cetpkg_variable_report";
+  my @param_names =
+    qw (name version default_version qual type source build cc cxx fc);
+  my @param_vals = @_;
+  if (scalar @param_vals != scalar @param_names) {
+    print STDERR "ERROR: cetpkg_info_file expects the following paramaters in order:\n",
+      join(", ", @param_names), ".\n";
+    print STDERR "ERROR: cetpkg_info_file found:\n",
+      join(", ", @param_vals), ".\n";
+    exit(1);
+  }
+  $cetpkgfile = "$param_vals[6]/cetpkg_variable_report";
   open(CPG, "> $cetpkgfile") or die "Couldn't open $cetpkgfile";
   print CPG "\n";
-  print CPG "CETPKG_NAME     $params[0]\n";
-  print CPG "CETPKG_VERSION  $params[1]\n";
-  print CPG "CETPKG_DEFAULT_VERSION  $params[2]\n";
-  print CPG "CETPKG_QUAL     $params[3]\n";
-  print CPG "CETPKG_TYPE     $params[4]\n";
-  print CPG "CETPKG_SOURCE   $params[5]\n";
-  print CPG "CETPKG_BUILD    $params[6]\n";
+  foreach my $index (0 .. $#param_names) {
+    printf CPG "CETPKG_%s%s%s\n",
+      uc $param_names[$index], # Var name.
+        " " x (max(map { length() + 2 } @param_names) -
+               length($param_names[$index])), # Space padding.
+          $param_vals[$index]; # Value.
+  }
   print CPG "to check cmake cached variables, use cmake -N -L\n";
   close(CPG);
   return($cetpkgfile);  
@@ -742,7 +753,36 @@ sub product_setup_loop {
   }
 
   ##print $dfile "product_setup_loop: using qualifier $qual for $product\n";
-  $cetfl = cetpkg_info_file( $product, $version, $default_ver, $qual, $type, $sourcedir, $pkgdir );
+  my $default_fc = ( $^O eq "darwin" ) ? "-" : "gfortran";
+
+  my $compiler_table =
+    {
+     cc => { CC => "cc", CXX => "c++", FC => $default_fc },
+     gcc => { CC => "gcc", CXX => "g++", FC => "gfortran" },
+     icc => { CC => "icc", CXX => "icpc", FC => "ifort" },
+    };
+
+  if (!$compiler) {
+    my @quals = split /:/, $qual;
+    if (grep /^(e[245]|gcc4[78])$/, @quals) {
+      $compiler = "gcc";
+    } else {
+      $compiler = "cc"; # Native.
+    }
+  }
+  ##print $dfile "product_setup_loop: compiler is $compiler\n";
+  ##print $dfile "product_setup_loop: $compiler_table->{$compiler}->{CC} $compiler_table->{$compiler}->{CXX} $compiler_table->{$compiler}->{FC}\n";
+  $cetfl = cetpkg_info_file( $product, 
+                             $version, 
+			     $default_ver, 
+			     $qual, 
+			     $type, 
+			     $sourcedir, 
+			     $pkgdir,
+                          $compiler_table->{$compiler}->{CC},
+                          $compiler_table->{$compiler}->{CXX},
+                          $compiler_table->{$compiler}->{FC}
+			     );
 
   (%ohash) = find_optional_products( $pfile );
   ($ecount, @ehash) = find_only_for_build_products( $pfile );
