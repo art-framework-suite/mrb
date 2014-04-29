@@ -7,10 +7,86 @@
 # usage: source mrbSetEnv [optional extra qualifiers]
 
 
-set_ msg1='ERROR: You MUST setup ups'
-test -z $UPS_DIR && ( echo ""; echo "$msg1"; echo "" )
-unset msg1
-test -z $UPS_DIR && return
+# Note: All the following special tricks for $_ must continue
+#       relaying the value to the next rule.  Be careful!
+# Special trick to nail the value of $_ down in a variety of shells.
+echo $_ >& /dev/null
+# Special trick for tcsh which is one-off on the command history stack.
+: $_
+# Special trick to capture the value of $_ in zsh and bash
+test $?shell$_ != 1$_ >& /dev/null && \
+    dollar_underscore="$_" && \
+    dollar_underscore=`expr "${dollar_underscore}" : ".\(.*\)"`
+# Special trick to capture the value of $_ in tcsh
+test $?shell = 1 && set dollar_underscore=`echo $_`
+
+# Setup the shell independence functions and aliases.
+source "${MRB_DIR}/bin/shell_independence"
+
+# Capture the value of $0
+set_ dollar_zed="${0}"
+
+# Special tricks to figure out if this script has been sourced.
+# Works for bash, tcsh, and in some cases for zsh.
+set_ is_sourced=false
+ifcsh_
+    # Note: It is unfortunate that we must hard-code the name
+    #       of this script here, but there is no other way
+    #       that works, tcsh is brain-dead.
+    set base=`basename "${dollar_zed}"`
+    test "${base}" != "mrb" && \
+        set is_sourced=true
+else
+    # Special trick for zsh.
+    test "${ZSH_NAME}" && test "${dollar_underscore}" = "${dollar_zed}" && \
+        is_sourced=true
+    # If there were arguments then there is no safe way to find out
+    # whether or not the script was sourced in zsh.  Pretend it was.
+    test "${ZSH_NAME}" && test "${#argv}" != "0" && \
+        is_sourced=true
+    # Special trick for bash.
+    test "${BASH}" && test "${BASH_SOURCE}" != "${dollar_zed}" && \
+        is_sourced=true
+# Warning, this must be here because the tcsh parser is brain-dead.
+endif
+endifcsh_
+
+#
+#  End of boilerplate.  Begin of real work.
+#
+
+# Utility for getting exiting in error right
+# in the case we have been sourced.
+set_ mrb_exit=false
+set_ mrb_status=0
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Make sure we have ups.
+test -z "${UPS_DIR}" && \
+    set_ mrb_exit=true && \
+    set_ mrb_status=1 && \
+    echo "ERROR: Please setup the ups product first!"
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
 
 setenv CETPKG_SOURCE $MRB_SOURCE
 
@@ -63,5 +139,19 @@ unset setup_fail
 test -e "$CETPKG_BUILD/diag_report" && cat $CETPKG_BUILD/diag_report
 
 echo ----------------------------------------------------------------
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
+
+# Failsafe exit.
+exit 1
 
 #----- End of mrbSetEnv ----
