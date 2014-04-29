@@ -5,6 +5,36 @@
 # and writes the name of the temporary script
 # to the standard output.
 
+# Function to show command usage
+function usage() {
+
+cat 1>&2 << EOF
+Usage: source mrb get_setup_list
+
+EOF
+exit 1
+}
+
+localP=$MRB_INSTALL
+
+if [ $# -gt 0 ]; then
+
+  if [ "$1" == "-H" ];then
+    usage
+  fi
+
+  if [ "$1" == "-h" ]; then
+    usage
+  fi
+
+fi
+
+# Make sure we have ups
+if [ -z ${UPS_DIR} ]
+then
+   echo "ERROR: please setup ups"
+   exit 1
+fi
 source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
 tmpfl=/tmp/`basename $MRB_INSTALL`_setup_$$$$
 rm -f "${tmpfl}"
