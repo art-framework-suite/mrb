@@ -83,7 +83,7 @@ function createFiles() {
   then
     templateDir=$(eval echo \$${pkgdirnm}/templates )
   else
-    templateDir=${mrb_dir}/../templates/product
+    templateDir=${MRB_DIR}/templates/product
   fi
 
   # Let's start filling in templates

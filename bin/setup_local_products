@@ -9,55 +9,75 @@
 #    set fw_db=/some/path; source /some/path/this_file
 # or  fw_db=/some/path; . /some/path/this_file
 
-test $?shell = 1 && set ss=csh || ss=sh
-#echo Shell type is $ss.
-
-# make some things similar. need to use set_ because sh builtin set would hide function set
-# Note: perhaps the trickiest thing in this file is the sh set_ function tries to return the same status
-#       as at the start of the function (which most likely is the result of a back-tick expression
-test "$ss" = csh && alias set_ set && alias vecho_ 'if ($?vv == 1) echo \!*' || eval 'vecho_() { test -n "${vv-}" && echo "$@"; return 0; }'
-test "$ss" =  sh && eval 'set_() { sts=$?;for xx in "$@";do var=`expr "$xx" : "\([^=]*\)"`;val=`expr "$xx" : "[^=]*=\(.*\)"`;eval "$var=\"$val\"";done;return $sts; }'
-test "$ss" =  sh && eval 'setenv() { export $1;eval "$1=\"\${2-}\""; }; source() { file=$1; shift; . $file "$@"; }; unsetenv_() { unset "$@"; }'
-test "$ss" =  sh && eval 'tnotnull() { eval "test -n \"\${$1-}\""; }'                             && eval 'nullout() { "$@" >/dev/null 2>&1; }'
-test "$ss" = csh && alias tnotnull "eval '"'test $?'"\!* -eq 1' && eval '"'test -n "$'"\!*"'"'"'" && alias nullout "\!* >& /dev/null" && alias unsetenv_ unsetenv
-test "$ss" = csh && alias return exit
-
-set_ msg1='ERROR: You MUST setup ups'
-test -z $UPS_DIR && ( echo ""; echo "$msg1"; echo "" ) && return
+test -z "${UPS_DIR}" && \
+    echo "" && \
+    echo "ERROR: You MUST setup ups" && \
+    echo "" && \
+    return
 
 # make sure we know where this script lives
 # now if we were passed a path or if not, we can figure it out (maybe if we are interactive)
 #   bash, zsh, ksh and tcsh pass params to a source file, csh does not. but someone will be writing csh scripts
-set_ msg2='Please set shell or env. variable fw_db (to be the path to the framework source code). Fix this and other errors may go away.'
-tnotnull fw_db && set_ db=`sh -c "cd $fw_db >/dev/null 2>&1 && pwd"` && vecho_ 'setting db from fw_db variable' || set_ db=
+set_ db=
+tnotnull fw_db && \
+    set_ db=`sh -c "cd ${fw_db} > /dev/null 2>&1 && /bin/pwd"`
 
-test -z "$db" && tnotnull BASH_SOURCE && set_ me=`dirname $BASH_SOURCE` && set_ db=`sh -c "cd $me >/dev/null 2>&1 && pwd"` && vecho_ 'setting db via BASH_SOURCE'
+test -z "${db}" && tnotnull BASH_SOURCE && \
+    set_ me=`dirname ${BASH_SOURCE}` && \
+    set_ db=`sh -c "cd ${me} > /dev/null 2>&1 && /bin/pwd"`
 
-# history is applicable only for interactive t/csh
-test -z "$db" -a "$ss" = csh && test $?history = 0 && set history=5  # make sure history 1 works
-test -z "$db" -a "$ss" = csh && set me=`history 1|sed 's/^[ 	0-9:]*//'` && test -n "$me" && set me=`dirname $me[2]` \
-    && set db=`sh -c "cd $me >/dev/null 2>&1 && pwd"` && vecho_ 'setting db via interactive history'
+# history is applicable only for interactive tcsh
+test -z "${db}" -a "${ss}" = csh && test $?history = 0 && \
+    set history=5  # make sure history 1 works, FIXME: This is not needed.
+test -z "${db}" -a "${ss}" = csh && \
+    set me=`history 1 | sed 's/^[ 	0-9:]*//'` && \
+    test -n "${me}" && \
+    set me=`dirname ${me[2]}` && \
+    set db=`sh -c "cd ${me} > /dev/null 2>&1 && /bin/pwd"`
+
+ifcsh_
+else
+    # Special trick for zsh.
+    test -z "$db" && test "${shell%%*/}" = "zsh" && \
+        db=${${(%):-%N}%/*}
+# Warning, this must be here because the tcsh parser is brain-dead.
+endif
+endifcsh_
+
 #echo This script lives in $db
 
-test -z "$db" && echo "$msg2" || vecho_ "db=$db"
-test -n "$db" && setenv CETPKG_SOURCE $db
+test -z "${db}" && \
+    echo "Please set shell or env. variable fw_db (to be the path to the framework source code). Fix this and other errors may go away."
+
+test -n "$db" && \
+    setenv CETPKG_SOURCE "${db}"
 
 # make sure we know the current directory
-tnotnull MRB_BUILDDIR  && setenv CETPKG_BUILD $MRB_BUILDDIR
-test -z "$CETPKG_BUILD" && setenv CETPKG_BUILD `pwd`
-tnotnull MRB_SOURCE  && setenv CETPKG_BUILD $MRB_SOURCE
-test -z "$CETPKG_SOURCE" && setenv CETPKG_SOURCE `pwd`
+tnotnull MRB_BUILDDIR  && \
+    setenv CETPKG_BUILD "${MRB_BUILDDIR}"
+
+test -z "${CETPKG_BUILD}" && \
+    setenv CETPKG_BUILD "`/bin/pwd`"
+
+tnotnull MRB_SOURCE && \
+    setenv CETPKG_BUILD "${MRB_SOURCE}"
+
+test -z "${CETPKG_SOURCE}" && \
+    setenv CETPKG_SOURCE "`/bin/pwd`"
 
 #echo The working build directory is $CETPKG_BUILD
 #echo The source code directory is $CETPKG_SOURCE
 
 # make sure we know the local product directory
-set_ msg6='ERROR: MRB_INSTALL is not defined - please source localProducts_XXX/setup'
-test -z "$MRB_INSTALL" && ( echo ""; echo "$msg6"; echo "" ) && return
+test -z "${MRB_INSTALL}" && \
+    echo "" && \
+    echo "ERROR: MRB_INSTALL is not defined - please source localProducts_XXX/setup" && \
+    echo "" && \
+    unset db me && \
+    return
+
 echo local product directory is $MRB_INSTALL
 
-set_ msg5='ERROR: setup of required products has failed'
-set_ msg3='ERROR: $MRB_DIR/bin/get_setup_list.sh has failed'
 
 # Remove build directory from FHICL_FILE_PATH
 tnotnull FHICL_FILE_PATH && setenv FHICL_FILE_PATH `dropit -p $FHICL_FILE_PATH $MRB_BUILDDIR`
@@ -67,22 +87,40 @@ tnotnull LD_LIBRARY_PATH   && setenv LD_LIBRARY_PATH   `dropit -p $LD_LIBRARY_PA
 tnotnull DYLD_LIBRARY_PATH && setenv DYLD_LIBRARY_PATH `dropit -p $DYLD_LIBRARY_PATH $MRB_BUILDDIR`
 
 echo ----------- check this block for errors -----------------------
-source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
+
+ifcsh_
+    # tcsh needs it this way
+    source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
+else
+    if [ "${ZSH_NAME}" ]
+    then
+        # zsh does word expansion differently
+        . `${UPS_DIR}/bin/ups setup ${=SETUP_UPS}`
+    else
+        # bash likes it this way
+        . `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
+    fi
+# Warning, this must be here because the tcsh parser is brain-dead.
+endif
+endifcsh_
+
 setenv UPS_OVERRIDE -B
-# now get the rest of the products
+# Now run get_setup_list.sh to get the ups setup commands
+# for the local products as a temporary script file.
 set_ cmdfile=`$db/get_setup_list.sh $*`
-test "$setup_fail" = "true" && echo "$msg3"
-chmod +x $cmdfile
+# FIXME: Test for failure here.
+chmod +x "${cmdfile}"
 #echo Ready to source $cmdfile
-source "$cmdfile"
-#echo "$cmd returned $setup_fail"
-test "$setup_fail" = "true" && echo "$msg5"
-test "$setup_fail" = "true" && unset setup_fail && return 1
+set_ setup_fail=false
+source "${cmdfile}"
+#echo "$cmdfile returned $setup_fail"
+test "$setup_fail" = "true" && \
+    echo "ERROR: setup of required products has failed" && \
+    unset db me cmdfile setup_fail && \
+    return 1
 
 echo ----------------------------------------------------------------
 
 # cleanup before exiting
-rm -f "$cmdfile"
-test "$ss" = csh && unalias tnotnull nullout set_ vecho_ return
-unset ss db me thisdir msg1 msg2 msg3 msg5 setup_fail
-unset set_ setenv unsetenv_ tnotnull nullout vecho_
+rm -f "${cmdfile}"
+unset db me cmdfile setup_fail
