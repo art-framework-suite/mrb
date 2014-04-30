@@ -481,13 +481,6 @@ fi
 if [ ${makeLP} ]; then
     # Prepare the setup script in @local_products@
 
-    # Construct the call for the setup
-    if [ `ups exist ${MRB_PROJECT} ${prjver} -q ${MRB_QUALS}` ]
-    then
-        setupLine="setup ${MRB_PROJECT} ${prjver} -q \"${MRB_QUALS}\""
-    else
-        setupLine="setup ${MRB_PROJECT} ${oldprjver} -q \"${MRB_QUALS}\""
-    fi
     MRB_QUALS=${MRB_QUALS}
 
     # Construct the version and qualifier string
