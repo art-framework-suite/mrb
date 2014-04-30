@@ -91,7 +91,7 @@ test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
 setenv CETPKG_SOURCE $MRB_SOURCE
 
 # make sure we know the build directory
-MRB_BUILDDIR=`${MRB_DIR}/bin/checkBuildDir.sh`
+setenv MRB_BUILDDIR `${MRB_DIR}/bin/checkBuildDir.sh`
 tnotnull MRB_BUILDDIR  && setenv CETPKG_BUILD $MRB_BUILDDIR
 test -z "$CETPKG_BUILD" && setenv CETPKG_BUILD `pwd`
 
