@@ -21,7 +21,7 @@ test $?shell = 1 && set dollar_underscore=`echo $_`
 source "${MRB_DIR}/bin/shell_independence"
 
 # Capture the value of $0
-set_ dollar_zed="${0}"
+set_ dollar_zed=`echo "${0}" | sed -e 's/^-//'`
 
 # Special tricks to figure out if this script has been sourced.
 # Works for bash, tcsh, and in some cases for zsh.
