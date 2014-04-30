@@ -4,6 +4,7 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   define_local
 		   edit_product_deps
 		   findCetBuild
+		   findDir.sh
 		   get_setup_list.sh
 		   gitCheckout.sh
 		   mrb
