@@ -96,18 +96,20 @@ test -z "${db}" && test "${ss}" =  "sh" && \
     unset me db dollar_underscore dollar_zed is_sourced base msg1 flav && \
     return 1
 
-set_ flav=`get-directory-name subdir`
-set_ buildDirName="build_${flav}"
-
-setenv PRODUCTS "${db}:${PRODUCTS}"
-
-test "$ss" =  sh && test -n "${MRB_BUILDDIR}" && setenv OLD_MRB_BUILDDIR "${MRB_BUILDDIR}"
-test "$ss" = csh && tnotnull MRB_BUILDDIR && setenv OLD_MRB_BUILDDIR "${MRB_BUILDDIR}"
-
 tnotnull MRB_DIR || ( echo ""; echo "ERROR: You must first setup mrb!" )
 tnotnull MRB_DIR || source "${MRB_DIR}/bin/unset_shell_independence"
 tnotnull MRB_DIR || unset me db dollar_underscore dollar_zed is_sourced base msg1 flav
 tnotnull MRB_DIR || return 1
+
+set_ flav=`get-directory-name subdir`
+set_ buildDirName="build_${flav}"
+setenv MRB_TOP `dirname $db`
+setenv PRODUCTS "${db}:${PRODUCTS}"
+setenv MRB_INSTALL $db
+
+test "$ss" =  sh && test -n "${MRB_BUILDDIR}" && setenv OLD_MRB_BUILDDIR "${MRB_BUILDDIR}"
+test "$ss" = csh && tnotnull MRB_BUILDDIR && setenv OLD_MRB_BUILDDIR "${MRB_BUILDDIR}"
+setenv MRB_BUILDDIR ${MRB_TOP}/${buildDirName}
 
 # Note: This is done by the small bit added on the end by the newDev.sh script.
 #source "${MRB_DIR}/bin/unset_shell_independence"

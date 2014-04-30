@@ -56,16 +56,6 @@ Usage: $fullCom [-n | -p] [-f] [-b] [-T dir] [-S dir] [-v project_version] [-q q
 EOF
 }
 
-function get_mrb_bin()
-{
-    ( cd / ; /bin/pwd -P ) >/dev/null 2>&1
-    if (( $? == 0 )); then
-      pwd_P_arg="-P"
-    fi
-    reldir=`dirname ${0}`
-    mrb_bin=`cd ${reldir} && /bin/pwd ${pwd_P_arg}`
-}
-
 function find_local_srcs()
 {
     have_mrb_source="none"
@@ -105,33 +95,8 @@ function make_srcs_directory()
 
 function create_local_setup()
 {
-    # Determine the proper string for top.
-    if [ "${topDirGiven}" = "yes" ] ; then
-        mrbTopString="\"${fullTopDir}\""
-    else
-        mrbTopString='`dirname "${db}"`'
-    fi
-
-    # Determine the proper string for source.
-    if [ "${srcTopDirGiven}" = "yes" ] ; then
-        mrbSrcTopDirString="\"${MRB_SOURCE}\""
-    else
-        mrbSrcTopDirString='"${MRB_TOP}/srcs"'
-    fi
-
-    # Determine the proper string for build.
-    if [ "${topDirGiven}" = "yes" ] ; then
-        mrbBuildString="\"${MRB_BUILDDIR}\""
-    else
-        mrbBuildString='"${MRB_TOP}/${buildDirName}"'
-    fi
-
-    # Determine the proper string for local products.
-    if [ "${topDirGiven}" = "yes" ] ; then
-        mrbInstallString="\"${MRB_INSTALL}\""
-    else
-        mrbInstallString='"${db}"'
-    fi
+    # We want to avoid full paths, but we do need a full path for MRB_SOURCE
+    # MRB_SOURCE might be in a completely different directory tree
 
     # copy the setup script
     cp ${mrb_bin}/../templates/local_setup  $dirName/setup
@@ -145,10 +110,7 @@ function create_local_setup()
 setenv MRB_PROJECT "${MRB_PROJECT}"
 setenv MRB_PROJECT_VERSION "${MRB_PROJECT_VERSION}"
 setenv MRB_QUALS "${MRB_QUALS}"
-setenv MRB_TOP ${mrbTopString}
-setenv MRB_SOURCE ${mrbSrcTopDirString}
-setenv MRB_BUILDDIR ${mrbBuildString}
-setenv MRB_INSTALL ${mrbInstallString}
+setenv MRB_SOURCE ${MRB_SOURCE}
 
 # report the environment
 echo
@@ -277,8 +239,7 @@ then
     echo "DEBUG: makeSrcs    is ${makeSrcs}"
 fi
 
-get_mrb_bin
-
+mrb_bin=${MRB_DIR}/bin
 if [ ${printDebug} ]
 then
     echo "DEBUG: mrb_bin: ${mrb_bin}"
