@@ -11,7 +11,7 @@ function run_buildtool()
       exit 1
    fi 
    if [ ! -e $MRB_BUILDDIR/cetpkg_variable_report ]; then
-      echo "ERROR: you must \"source mrb setEnv\" in $MRB_BUILDDIR"
+      echo "ERROR: you must \"mrbsetenv\" in $MRB_BUILDDIR"
       exit 2
    fi
    cd $MRB_BUILDDIR
@@ -22,9 +22,7 @@ function run_buildtool()
 # setEnv must be sourced in order to affect your environment
 # setup_local_products must also be sourced
 # This is not necessary for the other mrb commands.
-# Did the user source this script?
-isSourced=""
-[[ ${BASH_SOURCE[0]} != "${0}" ]] && isSourced="yes"
+# We use the mrbsetenv and mrbslp aliases
 
 # Get the directory where this script resides
 if [ -z ${MRB_DIR} ]; then
@@ -32,13 +30,13 @@ if [ -z ${MRB_DIR} ]; then
    echo "       Please setup mrb"
    exit 1
 fi 
-export mrb_dir=${MRB_DIR}/bin
+mrb_bin=${MRB_DIR}/bin
 
 # Export this umbrella command name to subshells (should be mrb)
-export mrb_command=${mrb_dir}/mrb
+export mrb_command=${mrb_bin}/mrb
 
 # Define the short list of commands
-shortComList="(newDev | gitCheckout | svnCheckout | setEnv | build | install | test | setup_local_products | 
+shortComList="(newDev | gitCheckout | svnCheckout | mrbsetenv | build | install | test | mrbslp | 
            zapBuild | newProduct | changelog | updateDepsCM | updateDepsPV )"
 #  Adams's list:  | bumpVersion | updateDeps)"
 
@@ -48,7 +46,7 @@ then
   echo "Usage ${mrb_command} $shortComList [-h for help]"
   echo "           ${mrb_command} -h   gives more information"
 
-  [ $isSourced ] && return || exit 1
+  exit 1
 fi
 
 # Get the desired sub-command
@@ -85,62 +83,59 @@ Usage ${mrb_command} $shortComList [-h for help]"
    newDev (n)                  Start a new development area
    gitCheckout (g)             Clone a git repository
    svnCheckout (svn)           Checkout from a svn repository
-   setEnv (s)                  Setup a development enviornment
    build (b)                   Run buildtool
    install (i)                 Run buildtool with install
    test (t)                    Run buildtool with tests
-   setup_local_products (slp)  Setup all products installed in the working localProducts_XXX directory
    zapBuild (z)                Delete everything in your build area
    newProduct (p)              Create a new product from scratch
    changelog (c)               Display a changelog for a package
    updateDepsCM (uc)           Update the master CMakeLists.txt file
    updateDepsPV (uv)           Update a product version in product_deps
+
+  Aliases ( we use aliases for these commands because they must be sourced )
+
+   mrbsetenv                   Setup a development enviornment 
+                               (source $MRB_DIR/bin/mrbSetEnv)
+   mrbslp                      Setup all products installed in the working localProducts_XXX directory
+                               (source $MRB_DIR/bin/setup_local_products)
+
 EOF
    ;;
 
   # h3. The available commands 
 
    # Set up a new development area (calls &l=bin/newDev.sh&)
-    "newDev" | "n"     ) ${mrb_dir}/newDev.sh $*
+    "newDev" | "n"     ) ${mrb_bin}/newDev.sh $*
         ;;
 
    # Clone a Redmine git repository (calls &l=bin/gitCheckout.sh&)
-    "gitCheckout" | "g" ) ${mrb_dir}/gitCheckout.sh $*
+    "gitCheckout" | "g" ) ${mrb_bin}/gitCheckout.sh $*
         ;;
 
    # Checkout from a Redmine svn repository (calls &l=bin/svnCheckout.sh&)
-    "svnCheckout" | "svn" ) ${mrb_dir}/svnCheckout.sh $*
+    "svnCheckout" | "svn" ) ${mrb_bin}/svnCheckout.sh $*
         ;;
 
    # Create a new product (calls &l=bin/newProduct.sh&)
-    "newProduct" | "p" ) ${mrb_dir}/newProduct.sh $*
+    "newProduct" | "p" ) ${mrb_bin}/newProduct.sh $*
         ;; 
 
   # Set up a development environment (calls &l=bin/mrbSetEnv&)
     "setEnv" | "s" )
 
-      # Check that the user sourced the script
-      if [ "$isSourced" = "yes" ]; then 
-        source ${mrb_dir}/mrbSetEnv $*
-      else
-        echo 'You must source to run setEnv'
+        echo 'Please use the mrbsetenv alias'
         echo ' '
-        echo 'Usage: source mrb setEnv [extra qualifiers]'
+        echo 'Usage: mrbsetenv'
         exit 5 
-      fi
     ;;
 
   # Set up all products installed in the working localProducts_XXX
     "setup_local_products" | "slp" )
 
-      # Check that the user sourced the script
-      if [ "$isSourced" = "yes" ]; then 
-        source ${mrb_dir}/setup_local_products
-      else
-        echo 'You must source to run setup_local_products'
+        echo 'Please use the mrbslp alias'
         echo ' '
+        echo 'Usage: mrbslp'
         exit 5 
-      fi
     ;;
 
    # Run buildtool 
@@ -156,7 +151,7 @@ EOF
         ;;
 
    # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)
-    "zapBuild" | "z" ) ${mrb_dir}/zapBuild.sh $*
+    "zapBuild" | "z" ) ${mrb_bin}/zapBuild.sh $*
         ;;
 
    # Display a git log
@@ -170,18 +165,17 @@ EOF
        ;;  
 
    # Update CMakeLists.txt for latest dependencies (calls &l=bin/updateDepsCM.sh&)
-    "updateDepsCM" | "uc" ) ${mrb_dir}/updateDepsCM.sh $*
+    "updateDepsCM" | "uc" ) ${mrb_bin}/updateDepsCM.sh $*
         ;;
 
    # Update product_deps and CMakeLists.txt to latest dependencies (calls &l=bin/updateDeps.sh&)
-    "updateDepsPV" | "uv" ) ${mrb_dir}/updateDepsPV.sh $*
+    "updateDepsPV" | "uv" ) ${mrb_bin}/updateDepsPV.sh $*
         ;;
 
    # Dump some debug information
    "debug" )
-      echo "mrb_dir=${mrb_dir}"
+      echo "mrb_bin=${mrb_bin}"
       echo "umbCom=${mrb_command}"
-      echo "isSourced=$isSourced"
       ;;
 
     *) echo "Unknown command ${subcom}"
