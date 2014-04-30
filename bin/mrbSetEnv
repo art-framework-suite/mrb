@@ -151,7 +151,4 @@ test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
     unset is_sourced mrb_exit && \
     return
 
-# Failsafe exit.
-exit 1
-
 #----- End of mrbSetEnv ----
