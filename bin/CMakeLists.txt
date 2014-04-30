@@ -1,5 +1,6 @@
 
 INSTALL ( PROGRAMS add_to_cmake.sh
+                   checkBuildDir.sh
 		   copy_files_to_srcs.sh
 		   define_local
 		   edit_product_deps
