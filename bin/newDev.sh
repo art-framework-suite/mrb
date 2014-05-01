@@ -82,12 +82,12 @@ function make_srcs_directory()
   # Make the main CMakeLists.txt file
   ${mrb_bin}/copy_files_to_srcs.sh ${MRB_SOURCE} || exit 1
   # this is a hack....
-  cp ${mrb_bin}/../templates/dependency_list ${MRB_SOURCE}/ || exit 1;
+  cp ${MRB_DIR}/templates/dependency_list ${MRB_SOURCE}/ || exit 1;
   # end hack
 
   # If we're on MacOSX, then copy the xcodeBuild.sh file
   if ups flavor -1 | grep -q 'Darwin'; then
-    cp ${mrb_bin}/../templates/xcodeBuild.sh ${MRB_SOURCE}/xcodeBuild.sh
+    cp ${MRB_DIR}/templates/xcodeBuild.sh ${MRB_SOURCE}/xcodeBuild.sh
     chmod a+x ${MRB_SOURCE}/xcodeBuild.sh
     echo "NOTICE: Created ${MRB_SOURCE}/xcodeBuild.sh"
   fi
@@ -99,7 +99,7 @@ function create_local_setup()
     # MRB_SOURCE might be in a completely different directory tree
 
     # copy the setup script
-    cp ${mrb_bin}/../templates/local_setup  $dirName/setup
+    cp ${MRB_DIR}/templates/local_setup  $dirName/setup
     
     # Write mrb_definitions
 
@@ -110,8 +110,20 @@ function create_local_setup()
 setenv MRB_PROJECT "${MRB_PROJECT}"
 setenv MRB_PROJECT_VERSION "${MRB_PROJECT_VERSION}"
 setenv MRB_QUALS "${MRB_QUALS}"
+setenv MRB_TOP "${fullTopDir}"
 setenv MRB_SOURCE ${MRB_SOURCE}
+setenv MRB_INSTALL \${MRB_TOP}/localProducts${dirVerQual}
+setenv PRODUCTS "\${MRB_INSTALL}:\${PRODUCTS}"
 
+EOF
+# --- End of HERE document for localProducts.../setup ---
+
+   cat ${MRB_DIR}/templates/local_mid  >> $dirName/setup
+
+    # --- Start of HERE document for localProducts.../setup ---
+
+    # --- Comments below pertain to that file ---
+    cat >> $dirName/setup << EOF
 # report the environment
 echo
 echo MRB_PROJECT=\$MRB_PROJECT
