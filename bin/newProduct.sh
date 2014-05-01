@@ -30,16 +30,6 @@ Options:
 EOF
 }
 
-function get_mrb_bin()
-{
-    ( cd / ; /bin/pwd -P ) >/dev/null 2>&1
-    if (( $? == 0 )); then
-      pwd_P_arg="-P"
-    fi
-    reldir=`dirname ${0}`
-    mrb_bin=`cd ${reldir} && /bin/pwd ${pwd_P_arg}`
-}
-
 # Create the necessary directories and files
 function createFiles() {
 
@@ -83,7 +73,7 @@ function createFiles() {
   then
     templateDir=$(eval echo \$${pkgdirnm}/templates )
   else
-    templateDir=${mrb_dir}/../templates/product
+    templateDir=${MRB_DIR}/templates/product
   fi
 
   # Let's start filling in templates
@@ -199,7 +189,7 @@ if echo $PWD | egrep -q "/srcs$";
   exit 7
 fi
 
-get_mrb_bin
+mrb_bin=${MRB_DIR}/bin
 
 # If we want to create the files
 if [ $create ]; then createFiles $PRODNAME $noflav; fi

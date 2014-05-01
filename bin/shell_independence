@@ -1,0 +1,78 @@
+# No dollar bang marker, this script must be sourced.
+
+# Special trick to quickly find out if this is a csh kind of shell
+# or a bash kind of shell.
+test $?shell = 1 && set ss="csh" || ss="sh"
+
+# Special trick for bash to make aliases work
+# FIXME: We need to restore this value!
+test "$ss" = "sh" && test "${BASH}" && \
+    old_expand_aliases="`shopt -p expand_aliases`"
+test "$ss" = "sh" && test "${BASH}" && shopt -s expand_aliases
+
+# Special set of alias tricks which we use when we need to hide
+# a whole block of lines completely from the csh parser which
+# is especially brain-dead.
+test "$ss" = "csh" && alias ifcsh_ if '(1)' then
+test "$ss" = "csh" && alias endifcsh_ :
+test "$ss" = "sh" && alias ifcsh_=': ; if test ""; then : ;'
+test "$ss" = "sh" && alias endif=':'
+test "$ss" = "sh" && alias endifcsh_='fi'
+
+# Special set of aliases and shell functions which give us some
+# shell agnostic tools.
+
+# vecho_
+test "$ss" = "csh" && \
+    alias vecho_ 'if ($?vv == 1) echo \!*'
+test "$ss" = "sh" && \
+    eval 'vecho_() { test -n "${vv-}" && echo "$@" ; return 0 ;}'
+
+# set_
+test "$ss" = "csh" && \
+    alias set_ set
+test "$ss" = "sh" && \
+    eval 'set_() { \
+        sts=$? ; \
+        for xx in "$@" ; do \
+            var=`expr "$xx" : "\([^=]*\)"` ; \
+            val=`expr "$xx" : "[^=]*=\(.*\)"` ; \
+            eval "$var=\"$val\"" ; \
+        done ; \
+        return $sts ;}'
+
+# setenv
+test "$ss" = "sh" && \
+    eval 'setenv() { \
+        export $1 ; \
+        eval "$1=\"\${2-}\"" ;}'
+
+# source
+test "$ss" = "sh" && \
+    eval 'source() { \
+            file=$1 ; \
+            shift ; \
+            . $file "$@" ;}'
+
+# unsetenv_
+test "$ss" = "csh" && \
+    alias unsetenv_ unsetenv
+test "$ss" = "sh" && \
+    eval 'unsetenv_() { unset "$@" ;}'
+
+# tnotnull
+test "$ss" = "csh" && \
+    alias tnotnull "eval '"'test $?'"\!* -eq 1' && eval '"'test -n "$'"\!*"'"'"'"
+test "$ss" = "sh" && \
+    eval 'tnotnull() { eval "test -n \"\${$1-}\"" ;}'
+
+# nullout
+test "$ss" = "csh" && \
+    alias nullout "\!* >& /dev/null"
+test "$ss" = "sh" && \
+    eval 'nullout() { "$@" >/dev/null 2>&1 ;}'
+
+# return
+test "$ss" = "csh" && \
+    alias return exit
+

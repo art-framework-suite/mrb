@@ -1,9 +1,11 @@
 
 INSTALL ( PROGRAMS add_to_cmake.sh
+                   checkBuildDir.sh
 		   copy_files_to_srcs.sh
 		   define_local
 		   edit_product_deps
 		   findCetBuild
+		   findDir.sh
 		   get_setup_list.sh
 		   gitCheckout.sh
 		   mrb
@@ -19,4 +21,6 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 
 INSTALL (FILES mrb_parse_deps.pm
                setup_local_products
+		   shell_independence
+		   unset_shell_independence
          DESTINATION ${product}/${version}/bin )

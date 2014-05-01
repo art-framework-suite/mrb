@@ -1,52 +1,116 @@
+# No magic #!, this script must be sourced!
+
+#
+#  Begin boilerplate.
 #
 
-test $?shell = 1 && set ss=csh || ss=sh
-#echo Shell type is $ss.
+# Note: All the following special tricks for $_ must continue
+#       relaying the value to the next rule.  Be careful!
+# Special trick to nail the value of $_ down in a variety of shells.
+echo $_ >& /dev/null
+# Special trick for tcsh which is one-off on the command history stack.
+: $_
+# Special trick to capture the value of $_ in zsh and bash
+test $?shell$_ != 1$_ >& /dev/null && \
+    dollar_underscore="$_" && \
+    dollar_underscore=`expr "${dollar_underscore}" : ".\(.*\)"`
+# Special trick to capture the value of $_ in tcsh
+test $?shell = 1 && set dollar_underscore=`echo $_`
 
-# make some things similar. need to use set_ because sh builtin set would hide function set
-# Note: perhaps the trickiest thing in this file is the sh set_ function tries to return the same status
-#       as at the start of the function (which most likely is the result of a back-tick expression
-test "$ss" = csh && alias set_ set && alias vecho_ 'if ($?vv == 1) echo \!*' || eval 'vecho_() { test -n "${vv-}" && echo "$@"; return 0; }'
-test "$ss" =  sh && eval 'set_() { sts=$?;for xx in "$@";do var=`expr "$xx" : "\([^=]*\)"`;val=`expr "$xx" : "[^=]*=\(.*\)"`;eval "$var=\"$val\"";done;return $sts; }'
-test "$ss" =  sh && eval 'setenv() { export $1;eval "$1=\"\${2-}\""; }; source() { file=$1; shift; . $file "$@"; }; unsetenv_() { unset "$@"; }'
-test "$ss" =  sh && eval 'tnotnull() { eval "test -n \"\${$1-}\""; }'                             && eval 'nullout() { "$@" >/dev/null 2>&1; }'
-test "$ss" = csh && alias tnotnull "eval '"'test $?'"\!* -eq 1' && eval '"'test -n "$'"\!*"'"'"'" && alias nullout "\!* >& /dev/null" && alias unsetenv_ unsetenv
-test "$ss" = csh && alias return exit
+# Get the shell independence aliases and functions.
+source "${MRB_DIR}/bin/shell_independence"
 
-set_ msg1='ERROR: You MUST setup ups'
+# Capture the value of $0
+set_ dollar_zed=`echo "${0}" | sed -e 's/^-//'`
 
-tnotnull UPS_DIR || ( echo ""; echo "$msg1"; echo "" )
+# Special tricks to figure out if this script has been sourced.
+# Works for bash, tcsh, and in some cases for zsh.
+set_ is_sourced=false
+ifcsh_
+    # Note: It is unfortunate that we must hard-code the name
+    #       of this script here, but there is no other way
+    #       that works, tcsh is brain-dead.
+    set base=`basename "${dollar_zed}"`
+    test "${base}" != "setup" && \
+        set is_sourced=true
+else
+    # Special trick for zsh.
+    test "${ZSH_NAME}" && test "${dollar_underscore}" = "${dollar_zed}" && \
+        is_sourced=true
+    # If there were arguments then there is no safe way to find out
+    # whether or not the script was sourced in zsh.  Pretend it was.
+    test "${ZSH_NAME}" && test "${#argv}" != "0" && \
+        is_sourced=true
+    # Special trick for bash.
+    test "${BASH}" && test "${BASH_SOURCE}" != "${dollar_zed}" && \
+        is_sourced=true
+# Warning, this must be here because the tcsh parser is brain-dead.
+endif
+endifcsh_
+
+#
+#  End of boilerplate.  Begin of real work.
+#
+
+set_ msg1='ERROR: You MUST setup the ups product!'
+
+tnotnull UPS_DIR || ( echo "" ; echo "${msg1}" ; echo "" )
+tnotnull UPS_DIR || source "${MRB_DIR}/bin/unset_shell_independence"
+tnotnull UPS_DIR || unset me db dollar_underscore dollar_zed is_sourced base msg1 flav
 tnotnull UPS_DIR || return
 
 # make sure we know where this script lives
-# now if we were passed a path or if not, we can figure it out (maybe if we are interactive)
-#   bash, zsh, ksh and tcsh pass params to a source file, csh does not. but someone will be writing csh scripts
-set_ msg2='Please set shell or env. variable fw_db (to be the path to the framework source code). Fix this and other errors may go away.'
-tnotnull fw_db && set_ db=`sh -c "cd $fw_db >/dev/null 2>&1 && pwd"` && vecho_ 'setting db from fw_db variable' || set_ db=
+set_ db=
 
-test -z "$db" && tnotnull BASH_SOURCE && set_ me=`dirname $BASH_SOURCE` && set_ db=`sh -c "cd $me >/dev/null 2>&1 && pwd"` && vecho_ 'setting db via BASH_SOURCE'
+# Allow setting via fw_db from the caller.
+tnotnull fw_db && \
+    set_ db=`sh -c "cd ${fw_db} > /dev/null 2>&1 && /bin/pwd"`
 
-# history is applicable only for interactive t/csh
-test -z "$db" -a "$ss" = csh && test $?history = 0 && set history=5  # make sure history 1 works
-test -z "$db" -a "$ss" = csh && set me=`history 1|sed 's/^[     0-9:]*//'` && test -n "$me" && set me=`dirname $me[2]` \
-    && set db=`sh -c "cd $me >/dev/null 2>&1 && pwd"` && vecho_ 'setting db via interactive history'
-#echo This script lives in $db
+# If bash, use BASH_SOURCE to find the location of this script.
+test -z "${db}" -a "${ss}" = sh && tnotnull BASH_SOURCE && \
+    set_ me=`dirname ${BASH_SOURCE}` && \
+    set_ db=`sh -c "cd ${me} > /dev/null 2>&1 && /bin/pwd"`
 
-test -z "$db" && echo "$msg2" || vecho_ "db=$db"
-test -n "$db" && setenv MRB_TOP `dirname $db`
+# if tcsh, use dollar_underscore to find the location of this script.
+test -z "${db}" -a "${ss}" = csh && \
+    set_ me=`dirname ${dollar_underscore[2]}` && \
+    set_ db=`/bin/sh -c "cd ${me} > /dev/null 2>&1 && /bin/pwd"`
 
-#echo The local product directory is $db
-#echo The top directory is $MRB_TOP
+# if zsh, use trick to find the location of this script.
+ifcsh_
+else
+    test -z "$db" && test "${shell%%*/}" = "zsh" && \
+        set_ me=${${(%):-%N}%/*} && \
+        set_ db=`sh -c "cd ${me} > /dev/null 2>&1 && /bin/pwd"`
+# Warning, this must be here because the tcsh parser is brain-dead.
+endif
+endifcsh_
 
-test -n $MRB_BUILDDIR && setenv OLD_MRB_BUILDDIR $MRB_BUILDDIR
+test -z "${db}" && echo 'ERROR: Could not determine script location!'
+test -z "${db}" && test "${ss}" = "csh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
+    unset me db dollar_underscore dollar_zed is_sourced base msg1 flav && \
+    exit 1
+test -z "${db}" && test "${ss}" =  "sh" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
+    unset me db dollar_underscore dollar_zed is_sourced base msg1 flav && \
+    return 1
 
-tnotnull MRB_DIR || ( echo ""; echo "ERROR: You must first setup mrb" )
-tnotnull MRB_DIR || return
+tnotnull MRB_DIR || ( echo ""; echo "ERROR: You must first setup mrb!" )
+tnotnull MRB_DIR || source "${MRB_DIR}/bin/unset_shell_independence"
+tnotnull MRB_DIR || unset me db dollar_underscore dollar_zed is_sourced base msg1 flav
+tnotnull MRB_DIR || return 1
 
-setenv MRB_INSTALL $db
-
-# Determine default build directory
 set_ flav=`get-directory-name subdir`
 set_ buildDirName="build_${flav}"
-setenv MRB_BUILDDIR $MRB_TOP/${buildDirName}
+setenv MRB_TOP `dirname $db`
+setenv PRODUCTS "${db}:${PRODUCTS}"
+setenv MRB_INSTALL $db
 
+test "$ss" =  sh && test -n "${MRB_BUILDDIR}" && setenv OLD_MRB_BUILDDIR "${MRB_BUILDDIR}"
+test "$ss" = csh && tnotnull MRB_BUILDDIR && setenv OLD_MRB_BUILDDIR "${MRB_BUILDDIR}"
+setenv MRB_BUILDDIR ${MRB_TOP}/${buildDirName}
+
+# Note: This is done by the small bit added on the end by the newDev.sh script.
+#source "${MRB_DIR}/bin/unset_shell_independence"
+unset me dollar_underscore dollar_zed is_sourced base msg1 flav

@@ -56,16 +56,6 @@ Usage: $fullCom [-n | -p] [-f] [-b] [-T dir] [-S dir] [-v project_version] [-q q
 EOF
 }
 
-function get_mrb_bin()
-{
-    ( cd / ; /bin/pwd -P ) >/dev/null 2>&1
-    if (( $? == 0 )); then
-      pwd_P_arg="-P"
-    fi
-    reldir=`dirname ${0}`
-    mrb_bin=`cd ${reldir} && /bin/pwd ${pwd_P_arg}`
-}
-
 function find_local_srcs()
 {
     have_mrb_source="none"
@@ -105,6 +95,9 @@ function make_srcs_directory()
 
 function create_local_setup()
 {
+    # We want to avoid full paths, but we do need a full path for MRB_SOURCE
+    # MRB_SOURCE might be in a completely different directory tree
+
     # copy the setup script
     cp ${mrb_bin}/../templates/local_setup  $dirName/setup
     
@@ -114,30 +107,26 @@ function create_local_setup()
 
     # --- Comments below pertain to that file ---
     cat >> $dirName/setup << EOF
-setenv PRODUCTS "\$MRB_INSTALL:\${PRODUCTS}"
-setenv MRB_PROJECT_VERSION ${MRB_PROJECT_VERSION}
-setenv MRB_SOURCE ${MRB_SOURCE}
-setenv MRB_QUALS "${MRB_QUALS}"
 setenv MRB_PROJECT "${MRB_PROJECT}"
+setenv MRB_PROJECT_VERSION "${MRB_PROJECT_VERSION}"
+setenv MRB_QUALS "${MRB_QUALS}"
+setenv MRB_SOURCE ${MRB_SOURCE}
 
 # report the environment
 echo
-echo MRB_SOURCE=\$MRB_SOURCE
-echo MRB_BUILDDIR=\$MRB_BUILDDIR
 echo MRB_PROJECT=\$MRB_PROJECT
 echo MRB_PROJECT_VERSION=\$MRB_PROJECT_VERSION
 echo MRB_QUALS=\$MRB_QUALS
+echo MRB_TOP=\$MRB_TOP
+echo MRB_SOURCE=\$MRB_SOURCE
+echo MRB_BUILDDIR=\$MRB_BUILDDIR
 echo MRB_INSTALL=\$MRB_INSTALL
 echo
 echo PRODUCTS=\$PRODUCTS
 echo
 
-##$setupLine
-##echo Executed $setupLine
-
-test "$ss" = csh && unalias tnotnull nullout set_ vecho_ unsetenv_
-unset ss sts msg1 msg2 db me
-unset set_ setenv unsetenv_ tnotnull source nullout ovexe ov vecho_
+source "\${MRB_DIR}/bin/unset_shell_independence"
+unset db buildDirName
 
 EOF
 # --- End of HERE document for localProducts.../setup ---
@@ -157,7 +146,9 @@ EOF
 doForce=""
 doNewBuildDir=""
 topDir="."
+topDirGiven="no"
 srcTopDir="."
+srcTopDirGiven="no"
 currentDir=${PWD}
 makeLP="yes"
 makeBuild="yes"
@@ -197,10 +188,12 @@ do
 	    ;;
         S   ) 
 	    echo "NOTICE: source code srcs will go into $OPTARG" 
+            srcTopDirGiven="yes"
 	    srcTopDir=$OPTARG 
 	    ;;
         T   ) 
 	    echo "NOTICE: localPproducts and build areas will go to $OPTARG" 
+            topDirGiven="yes"
 	    topDir=$OPTARG 
 	    ;;
         v   ) 
@@ -246,11 +239,9 @@ then
     echo "DEBUG: makeSrcs    is ${makeSrcs}"
 fi
 
-get_mrb_bin
-
+mrb_bin=${MRB_DIR}/bin
 if [ ${printDebug} ]
 then
-    echo "DEBUG: mrb_dir: ${mrb_dir}"
     echo "DEBUG: mrb_bin: ${mrb_bin}"
 fi
 
@@ -363,6 +354,7 @@ fi
 
 # Record the mrb version
 # But we might create more here later, so should this be in the localProducts and srcs areas?
+# FIXME: If both -T and -S have been specified, then this will be the only file in the directory!
 ups active | grep ^mrb >  ${currentDir}/.mrbversion
 
 # h3. Build area
@@ -450,13 +442,6 @@ fi
 if [ ${makeLP} ]; then
     # Prepare the setup script in @local_products@
 
-    # Construct the call for the setup
-    if [ `ups exist ${MRB_PROJECT} ${prjver} -q ${MRB_QUALS}` ]
-    then
-        setupLine="setup ${MRB_PROJECT} ${prjver} -q \"${MRB_QUALS}\""
-    else
-        setupLine="setup ${MRB_PROJECT} ${oldprjver} -q \"${MRB_QUALS}\""
-    fi
     MRB_QUALS=${MRB_QUALS}
 
     # Construct the version and qualifier string

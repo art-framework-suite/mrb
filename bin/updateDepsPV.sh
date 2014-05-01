@@ -120,7 +120,7 @@ if [ "${dryRun}" = "yes" ]; then
   echo "If the dry run was successful, run: "
   echo " mrb uv ${product} ${new_version}"
 else
-  echo 'Be sure to re-run source mrb setEnv'
+  echo 'Be sure to re-run mrbsetenv'
 fi
 
 exit 0

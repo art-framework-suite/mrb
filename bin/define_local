@@ -107,17 +107,32 @@ for $i ( 0 .. $#package_list ) {
   $product_uc = uc($product);
   print TSET "setenv  ${product_uc}_VERSION $version\n";
   # dropit -esf will remove any existing instances of the path and then prepend the path
-  print TSET "setenv  LD_LIBRARY_PATH \`dropit -esf -p \${LD_LIBRARY_PATH} \'${build_dir}/${product}/lib\'\`\n";
-  print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -esf -p \${DYLD_LIBRARY_PATH} \'${build_dir}/${product}/lib\'\`\n";
+  # unfortunately, tcsh complains if the variable is not already set, so we have to check
+  if ( $ENV{LD_LIBRARY_PATH} ne '' ) {
+    print TSET "setenv  LD_LIBRARY_PATH \`dropit -esf -p \${LD_LIBRARY_PATH} \'${build_dir}/${product}/lib\'\`\n";
+  } else {
+    print TSET "setenv  LD_LIBRARY_PATH \'${build_dir}/${product}/lib\'\n";
+  }
+  if ( $ENV{DYLD_LIBRARY_PATH} ne '' ) {
+    print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -esf -p \${DYLD_LIBRARY_PATH} \'${build_dir}/${product}/lib\'\`\n";
+  } else {
+    print TSET "setenv  DYLD_LIBRARY_PATH \'${build_dir}/${product}/lib\'\n";
+  }
   if ( "${fcl_directory}" ne "none" ) {
     ##print DIAG "$product: add ---${fcl_directory}---\n";
-    print TSET "setenv  FHICL_FILE_PATH \`dropit -esf -p \${FHICL_FILE_PATH} \'${build_dir}/${fcl_directory}\'\`\n";
+    if ( $ENV{FHICL_FILE_PATH} ne '' ) {
+      print TSET "setenv  FHICL_FILE_PATH \`dropit -esf -p \${FHICL_FILE_PATH} \'${build_dir}/${fcl_directory}\'\`\n";
+    } else {
+      print TSET "setenv  FHICL_FILE_PATH \'${build_dir}/${fcl_directory}\'\n";
+    }
   }
   if ( "${gdml_directory}" ne "none" ) {
-    print TSET "setenv  FW_SEARCH_PATH \`dropit -esf -p \${FW_SEARCH_PATH} \'${build_dir}/${gdml_directory}\'\`\n";
+    if ( $ENV{FW_SEARCH_PATH} ne '' ) {
+      print TSET "setenv  FW_SEARCH_PATH \`dropit -esf -p \${FW_SEARCH_PATH} \'${build_dir}/${gdml_directory}\'\`\n";
+    } else {
+      print TSET "setenv  FW_SEARCH_PATH \'${build_dir}/${gdml_directory}\'\n";
+    }
   }
-  # LArG4.mac is installed in lib, but must be found via FW_SEARCH_PATH, so add lib to FW_SEARCH_PATH
-  #print TSET "setenv  FW_SEARCH_PATH \`dropit -esf -p \${FW_SEARCH_PATH} \'${build_dir}/${product}/lib\'\`\n";
 
 }
 # make sure we still have the local directory
