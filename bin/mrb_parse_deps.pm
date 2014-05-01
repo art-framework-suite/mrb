@@ -131,6 +131,9 @@ sub parse_product_list {
       } elsif( $words[0] eq "gdmldir" ) {
 	 $get_phash="";
          $get_quals="";
+      } elsif( $words[0] eq "fwdir" ) {
+	 $get_phash="";
+         $get_quals="";
       } elsif( $words[0] eq "libdir" ) {
 	 $get_phash="";
          $get_quals="";
@@ -205,6 +208,9 @@ sub parse_qualifier_list {
 	 $get_phash="";
          $get_quals="";
       } elsif( $words[0] eq "gdmldir" ) {
+	 $get_phash="";
+         $get_quals="";
+      } elsif( $words[0] eq "fwdir" ) {
 	 $get_phash="";
          $get_quals="";
       } elsif( $words[0] eq "libdir" ) {
@@ -304,6 +310,9 @@ sub find_optional_products {
 	 $get_phash="";
          $get_quals="";
       } elsif( $words[0] eq "gdmldir" ) {
+	 $get_phash="";
+         $get_quals="";
+      } elsif( $words[0] eq "fwdir" ) {
 	 $get_phash="";
          $get_quals="";
       } elsif( $words[0] eq "libdir" ) {
@@ -708,6 +717,41 @@ sub get_gdml_directory {
   close(PIN);
   ##print "defining executable directory $gdmldir\n";
   return ($gdmldir);
+}
+
+sub get_fw_directory {
+  my @params = @_;
+  # default fw directory (none)
+  $fwdir = "none";
+  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
+  while ( $line=<PIN> ) {
+    chop $line;
+    if ( index($line,"#") == 0 ) {
+    } elsif ( $line !~ /\w+/ ) {
+    } else {
+      @words = split(/\s+/,$line);
+      if( $words[0] eq "fwdir" ) {
+         if( ! $words[2] ) { 
+	    print "ERROR: you must specify the fw subdirectory name, there is no default\n";
+	 } else {
+            if( $words[1] eq "product_dir" ) {
+	       $fwdir = $params[1]."/".$words[2];
+            } elsif( $words[1] eq "fq_dir" ) {
+	       $fwdir = $params[1]."/".$words[2];
+            } elsif( $words[1] eq "-" ) {
+	       $fwdir = "none";
+	    } else {
+	       print "ERROR: $words[1] is an invalid directory path\n";
+	       print "ERROR: directory path must be specified as either \"product_dir\" or \"fq_dir\"\n";
+	       print "ERROR: using the default fw directory path\n";
+	    }
+	 }
+      }
+    }
+  }
+  close(PIN);
+  ##print "defining executable directory $fwdir\n";
+  return ($fwdir);
 }
 
 

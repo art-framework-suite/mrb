@@ -103,6 +103,7 @@ for $i ( 0 .. $#package_list ) {
 
   $fcl_directory = get_fcl_directory( $pfile, $product );
   $gdml_directory = get_gdml_directory( $pfile, $product );
+  $fw_directory = get_fw_directory( $pfile, $product );
   # pretend this is a product
   $product_uc = uc($product);
   print TSET "setenv  ${product_uc}_VERSION $version\n";
@@ -131,6 +132,13 @@ for $i ( 0 .. $#package_list ) {
       print TSET "setenv  FW_SEARCH_PATH \`dropit -esf -p \${FW_SEARCH_PATH} \'${build_dir}/${gdml_directory}\'\`\n";
     } else {
       print TSET "setenv  FW_SEARCH_PATH \'${build_dir}/${gdml_directory}\'\n";
+    }
+  }
+  if ( "${fw_directory}" ne "none" ) {
+    if ( $ENV{FW_SEARCH_PATH} ne '' ) {
+      print TSET "setenv  FW_SEARCH_PATH \`dropit -esf -p \${FW_SEARCH_PATH} \'${build_dir}/${fw_directory}\'\`\n";
+    } else {
+      print TSET "setenv  FW_SEARCH_PATH \'${build_dir}/${fw_directory}\'\n";
     }
   }
 
