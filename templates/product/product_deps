@@ -2,34 +2,48 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version should be of the form vxx_yy_zz (e.g. v01_02_03)
-parent %%PD%% v1_00_00
-defaultqual e4
+parent %%PD%% %%PV%%
+defaultqual %%DQ%%
 
-# These optional lines define where headers, libraries, and executables go and should
-# be used only if your product does not conform to the defaults.
+# These optional lines define the installed directories where headers,
+# libraries, and executables will be found.
+# Use them only if your product does not conform to the defaults
+#
 # Format: directory_type directory_path directory_name
-#   where directory_type is one of incdir, libdir, or bindir
-#   where directory_path is one of product_dir, fq_dir and - 
+#
+# The only recognized values of the first field are fcldir, gdmldir, incdir, libdir, and bindir
+# The only recognized values of the second field are product_dir, fq_dir, and -
+# The third field is not constrained.
+#
+# Defaults:
+# incdir  product_dir  include
+# fcldir  product_dir  fcl
+# libdir  fq_dir       lib
+# bindir  fq_dir       bin
+# gdmldir -  
+# fwdir   -  
+#
+incdir	product_dir	include
+libdir	fq_dir		lib
+bindir	fq_dir		bin
 
 # With "product  version" table below, we now define depdendencies
-
 # Add the dependent product and version
 
 product          version
-larsoft		v1_00_00
-gcc		v4_8_1
+%%PROJECT%%		%%PV%%
+gcc		%%GCCV%%
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
-only_for_build  cetbuildtools   v3_07_11
+only_for_build  cetbuildtools   %%CETBV%%   
 
 # We now define allowed qualifiers and the corresponding qualifiers for the depdencies.
 # Make a table by adding columns before "notes". 
-# e4  - with gcc 4.8.1 and -std=c++0x
 qualifier	larsoft	 	gcc	notes
-e4:debug	e4:debug	-nq-
-e4:opt		e4:opt		-nq-
-e4:prof		e4:prof		-nq-
+%%DQ%%:debug	%%DQ%%:debug	-nq-
+%%DQ%%:opt		%%DQ%%:opt		-nq-
+%%DQ%%:prof		%%DQ%%:prof		-nq-
 
 # Preserve tabs and formatting in emacs and vi / vim:
 

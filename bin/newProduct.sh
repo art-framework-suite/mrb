@@ -40,6 +40,24 @@ function createFiles() {
   if [ "$daNoFlav" = "yes" ]; then
     noflav="yes"
   fi
+  
+  # Find default qualifier
+  DQ=`echo ${MRB_QUALS} | sed -e 's/debug//' -e 's/opt//' -e 's/prof//' -e 's/::/:/g' -e 's/:$//g' -e 's/^://'`
+  ##echo "DEBUG: default qualifier is $DQ"
+  
+  echo ${MRB_QUALS} | grep -q e5
+  status=$?
+  if [ ${status} = 0 ]
+  then
+     CETBV=v3_10_01
+     GCCV=v4_8_2
+  else
+     CETBV=v3_07_11
+     GCCV=v4_8_1
+     CHECK_GCC="cet_check_gcc()"
+  fi
+  ##echo "DEBUG: cetbuildtools version is $CETBV"
+  ##echo "DEBUG: gcc version is $GCCV"
 
   # Check that the product name is all lowercase and no punctuation
   if echo $PRODNAME | egrep -q '[^a-z0-9]'; then
@@ -83,7 +101,7 @@ function createFiles() {
   if [ "$noflav" ]; then
     sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/CMakeLists.txt_top_noflav > CMakeLists.txt
   else
-    sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/CMakeLists.txt_top > CMakeLists.txt
+    sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" -e "s/%%CHECK_GCC%%/$CHECK_GCC/g" < ${templateDir}/CMakeLists.txt_top > CMakeLists.txt
   fi
 
   # @source/CMakeLists.txt@ file from &l=templates/product/CMakeLists.txt_src&
@@ -107,11 +125,12 @@ function createFiles() {
 
   # From &l=templates/product/product_deps&
   if [ "$noflav" ]; then
-    sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/product_deps_noflav > product_deps
+    input_product_deps=${templateDir}/product_deps_noflav
   else
-    sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/product_deps > product_deps
+    input_product_deps=${templateDir}/product_deps
     cp ${templateDir}/setup_deps.template setup_deps
   fi
+  sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" -e "s/%%DQ%%/$DQ/g" -e "s/%%CETBV%%/$CETBV/g" -e "s/%%GCCV%%/$GCCV/g" -e "s/%%PROJECT%%/$MRB_PROJECT/g" -e "s/%%PV%%/$MRB_PROJECT_VERSION/g" < ${input_product_deps} > product_deps
 
   # From &l=templates/product/setup_for_development&
   if [ "$noflav" ]; then
@@ -150,9 +169,12 @@ function createFiles() {
       ${MRB_DIR}/bin/add_to_cmake.sh ${MRB_SOURCE} ${PRODNAME} || exit 1;
   fi
 
-  echo "Complete - Product $PRODNAME is set for the develop branch"
+  echo "Complete - Product $PRODNAME was created"
 
-  echo "Your next task: Create directory for sources and add to CMakeLists.txt file"
+  echo "Your next task: "
+  echo "                Check $PRODNAME/ups/product_deps"
+  echo "                Check $PRODNAME/CMakeLists.txt file"
+  echo "                Acc code in $PRODNAME/$PRODNAME"
 }
 
 # Process options
@@ -179,6 +201,13 @@ if [ ! $# == 1 ]; then
 fi
 
 PRODNAME=$1
+
+if [ -z "${MRB_SOURCE}" ]
+then
+    echo 'ERROR: MRB_SOURCE must be defined'
+    echo '       source the appropriate localProductsXXX/setup'
+    exit 1
+fi
 
 #   Are we in the source area?
 if echo $PWD | egrep -q "/srcs$";
