@@ -1,5 +1,7 @@
 # No magic #!, this script must be sourced!
 
+# NOTICE: this script is not relocatable
+
 #
 #  Begin boilerplate.
 #
@@ -59,58 +61,9 @@ tnotnull UPS_DIR || source "${MRB_DIR}/bin/unset_shell_independence"
 tnotnull UPS_DIR || unset me db dollar_underscore dollar_zed is_sourced base msg1 flav
 tnotnull UPS_DIR || return
 
-# make sure we know where this script lives
-set_ db=
-
-# Allow setting via fw_db from the caller.
-tnotnull fw_db && \
-    set_ db=`sh -c "cd ${fw_db} > /dev/null 2>&1 && /bin/pwd"`
-
-# If bash, use BASH_SOURCE to find the location of this script.
-test -z "${db}" -a "${ss}" = sh && tnotnull BASH_SOURCE && \
-    set_ me=`dirname ${BASH_SOURCE}` && \
-    set_ db=`sh -c "cd ${me} > /dev/null 2>&1 && /bin/pwd"`
-
-# if tcsh, use dollar_underscore to find the location of this script.
-test -z "${db}" -a "${ss}" = csh && \
-    set_ me=`dirname ${dollar_underscore[2]}` && \
-    set_ db=`/bin/sh -c "cd ${me} > /dev/null 2>&1 && /bin/pwd"`
-
-# if zsh, use trick to find the location of this script.
-ifcsh_
-else
-    test -z "$db" && test "${shell%%*/}" = "zsh" && \
-        set_ me=${${(%):-%N}%/*} && \
-        set_ db=`sh -c "cd ${me} > /dev/null 2>&1 && /bin/pwd"`
-# Warning, this must be here because the tcsh parser is brain-dead.
-endif
-endifcsh_
-
-test -z "${db}" && echo 'ERROR: Could not determine script location!'
-test -z "${db}" && test "${ss}" = "csh" && \
-    source "${MRB_DIR}/bin/unset_shell_independence" && \
-    unset me db dollar_underscore dollar_zed is_sourced base msg1 flav && \
-    exit 1
-test -z "${db}" && test "${ss}" =  "sh" && \
-    source "${MRB_DIR}/bin/unset_shell_independence" && \
-    unset me db dollar_underscore dollar_zed is_sourced base msg1 flav && \
-    return 1
 
 tnotnull MRB_DIR || ( echo ""; echo "ERROR: You must first setup mrb!" )
 tnotnull MRB_DIR || source "${MRB_DIR}/bin/unset_shell_independence"
 tnotnull MRB_DIR || unset me db dollar_underscore dollar_zed is_sourced base msg1 flav
 tnotnull MRB_DIR || return 1
 
-set_ flav=`get-directory-name subdir`
-set_ buildDirName="build_${flav}"
-setenv MRB_TOP `dirname $db`
-setenv PRODUCTS "${db}:${PRODUCTS}"
-setenv MRB_INSTALL $db
-
-test "$ss" =  sh && test -n "${MRB_BUILDDIR}" && setenv OLD_MRB_BUILDDIR "${MRB_BUILDDIR}"
-test "$ss" = csh && tnotnull MRB_BUILDDIR && setenv OLD_MRB_BUILDDIR "${MRB_BUILDDIR}"
-setenv MRB_BUILDDIR ${MRB_TOP}/${buildDirName}
-
-# Note: This is done by the small bit added on the end by the newDev.sh script.
-#source "${MRB_DIR}/bin/unset_shell_independence"
-unset me dollar_underscore dollar_zed is_sourced base msg1 flav
