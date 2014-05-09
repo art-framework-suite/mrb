@@ -27,7 +27,8 @@ if pwd | egrep -q '/build[^/]*$';
   then
      pwda=`pwd`
      reldir=`${MRB_DIR}/bin/findDir.sh ${pwda}`
-     if [ ${reldir} != ${MRB_BUILDDIR} ];
+     bdir=`${MRB_DIR}/bin/findDir.sh ${MRB_BUILDDIR}`
+     if [ ${reldir} != ${bdir} ];
        then
          echo "ERROR: You are sitting in ${reldir}, but \$MRB_BUILDDIR=${MRB_BUILDDIR} !!"
          echo "cd to \$MRB_BUILDDIR or out of the build area"
