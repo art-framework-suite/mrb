@@ -86,7 +86,7 @@ tnotnull FHICL_FILE_PATH && setenv FHICL_FILE_PATH `dropit -p $FHICL_FILE_PATH $
 tnotnull LD_LIBRARY_PATH   && setenv LD_LIBRARY_PATH   `dropit -p $LD_LIBRARY_PATH   $MRB_BUILDDIR`
 tnotnull DYLD_LIBRARY_PATH && setenv DYLD_LIBRARY_PATH `dropit -p $DYLD_LIBRARY_PATH $MRB_BUILDDIR`
 
-echo ----------- check this block for errors -----------------------
+echo ----------- this block should be empty ------------------
 
 ifcsh_
     # tcsh needs it this way
@@ -119,7 +119,7 @@ test "$setup_fail" = "true" && \
     unset db me cmdfile setup_fail && \
     return 1
 
-echo ----------------------------------------------------------------
+echo ---------------------------------------------------------
 
 # cleanup before exiting
 rm -f "${cmdfile}"
