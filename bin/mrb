@@ -8,11 +8,11 @@ function run_buildtool()
    echo $MRB_BUILDDIR
    if [ -z $MRB_BUILDDIR ]; then
       echo "ERROR: MRB_BUILDDIR is undefined"
-      exit 1
+      [ $isSourced ] && return || exit 1
    fi 
    if [ ! -e $MRB_BUILDDIR/cetpkg_variable_report ]; then
       echo "ERROR: you must \"mrbsetenv\" in $MRB_BUILDDIR"
-      exit 2
+      [ $isSourced ] && return || exit 2
    fi
    cd $MRB_BUILDDIR
    echo "calling buildtool $*"
@@ -23,12 +23,14 @@ function run_buildtool()
 # setup_local_products must also be sourced
 # This is not necessary for the other mrb commands.
 # We use the mrbsetenv and mrbslp aliases
+isSourced=""
+[[ ${BASH_SOURCE[0]} != "${0}" ]] && isSourced="yes"
 
 # Get the directory where this script resides
 if [ -z ${MRB_DIR} ]; then
    echo "ERROR: MRB_DIR is undefined"
    echo "       Please setup mrb"
-   exit 1
+  [ $isSourced ] && return || exit 1
 fi 
 mrb_bin=${MRB_DIR}/bin
 
@@ -46,7 +48,7 @@ then
   echo "Usage ${mrb_command} $shortComList [-h for help]"
   echo "           ${mrb_command} -h   gives more information"
 
-  exit 1
+  [ $isSourced ] && return || exit 1
 fi
 
 # Get the desired sub-command
@@ -59,7 +61,7 @@ shift
 if [ -z ${UPS_DIR} ]
 then
    echo "ERROR: please setup ups"
-   exit 1
+  [ $isSourced ] && return || exit 1
 fi
 
 # Make sure the @MRB_PROJECT@ product is setup
@@ -67,7 +69,7 @@ if [ -z ${MRB_PROJECT} ]
 then
     echo "ERROR: MRB_PROJECT is not defined."
     echo "       Please set \${MRB_PROJECT} to the master product (e.g., larsoft, uboone, etc.)"
-    exit 2
+  [ $isSourced ] && return || exit 2
 fi
 
 # Determine how to dispatch
@@ -126,7 +128,7 @@ EOF
         echo 'Please use the mrbsetenv alias'
         echo ' '
         echo 'Usage: mrbsetenv'
-        exit 5 
+       [ $isSourced ] && return || exit 5
     ;;
 
   # Set up all products installed in the working localProducts_XXX
@@ -135,7 +137,7 @@ EOF
         echo 'Please use the mrbslp alias'
         echo ' '
         echo 'Usage: mrbslp'
-        exit 5 
+        [ $isSourced ] && return || exit 5
     ;;
 
    # Run buildtool 
