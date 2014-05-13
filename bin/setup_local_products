@@ -9,6 +9,22 @@
 #    set fw_db=/some/path; source /some/path/this_file
 # or  fw_db=/some/path; . /some/path/this_file
 
+# Note: All the following special tricks for $_ must continue
+#       relaying the value to the next rule.  Be careful!
+# Special trick to nail the value of $_ down in a variety of shells.
+echo $_ >& /dev/null
+# Special trick for tcsh which is one-off on the command history stack.
+: $_
+# Special trick to capture the value of $_ in zsh and bash
+test $?shell$_ != 1$_ >& /dev/null && \
+    dollar_underscore="$_" && \
+    dollar_underscore=`expr "${dollar_underscore}" : ".\(.*\)"`
+# Special trick to capture the value of $_ in tcsh
+test $?shell = 1 && set dollar_underscore=`echo $_`
+
+# Setup the shell independence functions and aliases.
+source "${MRB_DIR}/bin/shell_independence"
+
 test -z "${UPS_DIR}" && \
     echo "" && \
     echo "ERROR: You MUST setup ups" && \
@@ -124,3 +140,14 @@ echo ---------------------------------------------------------
 # cleanup before exiting
 rm -f "${cmdfile}"
 unset db me cmdfile setup_fail
+
+test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
+    source "${MRB_DIR}/bin/unset_shell_independence" && \
+    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
+    unset is_sourced mrb_exit && \
+    exit
+test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
+    unset is_sourced mrb_exit && \
+    return
