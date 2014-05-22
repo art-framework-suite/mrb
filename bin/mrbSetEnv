@@ -50,6 +50,10 @@ else
 endif
 endifcsh_
 
+set_ msg2='ERROR: you must source this script'
+test "${is_sourced}" != "true" && echo "$msg2"
+test "${is_sourced}" != "true" && unset msg2 && exit 1
+
 #
 #  End of boilerplate.  Begin of real work.
 #
@@ -58,17 +62,6 @@ endifcsh_
 # in the case we have been sourced.
 set_ mrb_exit=false
 set_ mrb_status=0
-
-test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
-test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence" && \
-    unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
-test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
-    unset is_sourced mrb_exit && \
-    exit
-test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
-    unset is_sourced mrb_exit && \
-    return
 
 # Make sure we have ups.
 test -z "${UPS_DIR}" && \
@@ -140,15 +133,17 @@ test -e "$CETPKG_BUILD/diag_report" && cat $CETPKG_BUILD/diag_report
 
 echo ----------------------------------------------------------------
 
+set_ mrb_exit=true
+
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
     source "${MRB_DIR}/bin/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
-    exit
+    exit 0
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
     unset is_sourced mrb_exit && \
-    return
+    return 0
 
 #----- End of mrbSetEnv ----
