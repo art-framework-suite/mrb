@@ -50,6 +50,10 @@ else
 endif
 endifcsh_
 
+set_ msg2='ERROR: you must source this script'
+test "${is_sourced}" != "true" && echo "$msg2"
+test "${is_sourced}" != "true" && unset msg2 && exit 1
+
 #
 #  End of boilerplate.  Begin of real work.
 #
