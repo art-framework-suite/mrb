@@ -140,6 +140,8 @@ test -e "$CETPKG_BUILD/diag_report" && cat $CETPKG_BUILD/diag_report
 
 echo ----------------------------------------------------------------
 
+set_ mrb_exit=true
+
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
     source "${MRB_DIR}/bin/unset_shell_independence" && \
