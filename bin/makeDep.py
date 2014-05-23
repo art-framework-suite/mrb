@@ -3,6 +3,7 @@
 
 """Consruct a dependency database."""
 
+import optparse
 import os
 import re
 import sys
@@ -20,8 +21,12 @@ class GLOBALS:
     """Global variables container."""
 
     def __init__(self):
+        """Constructor."""
         #print >>sys.stderr, "DEBUG: Globals initializing."
-        self.indent = " " * 2
+        #self.indent = " " * 2
+        # Results of parsing the command line.
+        self.opts = None
+        self.args = None
         self.mrb_source = os.environ.get("MRB_SOURCE", "")
         if self.mrb_source and (self.mrb_source[-1] == os.sep):
             del self.mrb_source[-1]
@@ -35,18 +40,34 @@ class GLOBALS:
                 del dir[-1]
             self.product_dirs.append(dir)
         self.pat_mrb_source = re.compile(self.mrb_source + os.sep)
-        self.pat_pkg_names = re.compile(r"([^/]+)/.*: " + \
-            self.mrb_source + r"/([^/]+)/.*")
-        #self.pat_pkg_subpkg_names = re.compile(r"([^/]+/[^/]+)/.*: " + \
-        #    self.mrb_source + r"/([^/]+/[^/]+)/.*")
+        self.pat_pkg_names = re.compile(r"([^/]+)/(.*): " + \
+            self.mrb_source + r"/([^/]+)/(.*[.](?:h|hh|hpp|i|icc|tcc))$")
         self.dep_file_name = os.path.join(self.mrb_build, \
             ".dependency_database")
         self.project_dep_file_name = os.path.join(self.mrb_top, \
             ".base_dependency_database")
+        #print >>sys.stderr, "DEBUG: opts:", self.opts
+        #print >>sys.stderr, "DEBUG: args:", self.args
         #print >>sys.stderr, "DEBUG: MRB_SOURCE:", globals.mrb_source
         #print >>sys.stderr, "DEBUG: MRB_BUILD:", globals.mrb_build
         #print >>sys.stderr, "DEBUG: MRB_TOP:", globals.mrb_top
+        #print >>sys.stderr, "DEBUG: products:", self.products
         #print >>sys.stderr, "DEBUG: product_dirs:", self.product_dirs
+        #print >>sys.stderr, "DEBUG: dep_file_name:", self.dep_file_name
+        #print >>sys.stderr, "DEBUG: project_dep_file_name:", \
+        #    self.project_dep_file_name
+
+    def parse_options(self):
+        """Parse the command line."""
+        descrip="Create the local dependency database by loading " + \
+                "information from the cmake dependency files created in " + \
+                "the build area during a build."
+        p = optparse.OptionParser(description=descrip)
+        p.set_defaults(do_nothing=False)
+        p.add_option("-n", dest="do_nothing", action="store_true",
+            help="do nothing")
+        (self.opts, self.args) = p.parse_args()
+        #print >>sys.stderr, "DEBUG: do_nothing:", self.opts.do_nothing
 
 # Create an object to contain global variables.
 globals = GLOBALS()
@@ -59,18 +80,21 @@ class SYSTEM:
         #print >>sys.stderr, "DEBUG: System initializing."
         # Project dependency database.
         self.project_deps = {}
-        # Local package information.
-        self.local_pkgs = {}
-        # Patterns for matching base pkgs.
-        self.pat_base_pkgs = []
         # Local dependency database.
         self.local_deps = {}
         # Combined project and local dependency database.
         self.deps = {}
+        # Local package information.
+        self.local_pkgs = {}
+        # Patterns for matching base pkgs.
+        self.pat_base_pkgs = []
 
     def run(self):
         """Entry Point."""
         #print >>sys.stderr, "DEBUG: System running."
+        globals.parse_options()
+        if globals.opts.do_nothing:
+            return
         self.load_project_dependency_database()
         #print >>sys.stderr, "DEBUG: project_deps:", self.project_deps
         self.get_list_of_local_pkgs()
@@ -80,8 +104,8 @@ class SYSTEM:
         self.scan_local_dependencies()
         #print >>sys.stderr, "DEBUG: deps:", self.deps
         self.deps = self.project_deps
+        # Combine the project and local dependency databases.
         self.deps.update(self.local_deps)
-        self.do_transitive_reduction()
         #print >>sys.stderr, "DEBUG: deps:", self.deps
         self.write_local_dependency_database()
 
@@ -94,15 +118,21 @@ class SYSTEM:
             #       database itself.
             return
         inf = open(globals.project_dep_file_name, "r")
-        line = inf.readline()
-        while len(line):
+        for line in inf:
             #print >>sys.stderr, "DEBUG:", line,
-            (pkg, tmp) = line.split(":")
+            (pkg, dep, dep_file) = line.split(":")
             pkg = pkg.strip()
-            vals = tmp.split()
-            self.project_deps[pkg] = vals
-            #print >>sys.stderr, "DEBUG: %s%s:" % (globals.indent, pkg), vals
-            line = inf.readline()
+            dep = dep.strip()
+            dep_file = dep_file.strip()
+            #print >>sys.stderr, "DEBUG: '%s' : '%s' : '%s'" % \
+            #    (pkg, dep, dep_file)
+            if not self.project_deps.has_key(pkg):
+                self.project_deps[pkg] = { dep : { dep_file : 1 } }
+            else:
+                if not self.project_deps[pkg].has_key(dep):
+                    self.project_deps[pkg][dep] = { dep_file : 1 }
+                else:
+                    self.project_deps[pkg][dep][dep_file] = 1
         inf.close()
 
     def get_list_of_local_pkgs(self):
@@ -133,10 +163,11 @@ class SYSTEM:
                     continue
                 self.pat_base_pkgs[pkg] = [
                     re.compile(pkg_dir + os.sep),
-                    re.compile(r"([^/]+)/.*: " +
-                        prod_dir + r"/([^/]+)/.*") ]
+                    re.compile(r"([^/]+)/(.*): " + prod_dir + \
+                    r"/([^/]+)/v[^/]+/include/(.*[.](?:h|hh|hpp|i|icc|tcc))$") ]
 
     def scan_local_dependencies(self):
+        """Scan the mrb build directory for dependency info."""
         curdir = os.getcwd()
         os.chdir(globals.mrb_build)
         for nm in sorted(os.listdir(".")):
@@ -153,7 +184,7 @@ class SYSTEM:
     def handle_package_build_dir(self, pkg):
         """Scan a package build directory for dependency info."""
         #print >>sys.stderr, "DEBUG:", pkg
-        pkgdepends = []
+        pkgdepends = {}
         os.chdir(pkg)
         for nm in sorted(os.listdir(".")):
             if not os.path.isdir(nm):
@@ -190,105 +221,57 @@ class SYSTEM:
                 continue
             res = None
             if globals.pat_mrb_source.search(line):
+                # Found a dependency on a local pkg.
                 # Get the package names out of the dependency line.
-                #print >>sys.stderr, "DEBUG:", line,
-                #print >>sys.stderr, "DEBUG: Found mrb_source."
                 res = globals.pat_pkg_names.match(line)
-                #res = globals.pat_pkg_subpkg_names.match(line)
                 #if res:
-                #    print >>sys.stderr, "DEBUG: res.group1():", \
-                #        res.group(1), "res.group(2):", res.group(2)
+                #    print >>sys.stderr, "DEBUG:", \
+                #        "res.group(1):", res.group(1), \
+                #        "res.group(2):", res.group(2), \
+                #        "res.group(3):", res.group(3), \
+                #        "res.group(4):", res.group(4)
             else:
+                # Not a dependency on a local pkg, check for a base pkg.
                 found = False
                 for base_pkg in sorted(self.pat_base_pkgs.keys()):
                     if self.pat_base_pkgs[base_pkg][0].search(line):
                         # Found use of a file from a base pkg.
-                        #print >>sys.stderr, "DEBUG:", line,
-                        #print >>sys.stderr, "DEBUG: Found base pkg:", base_pkg
                         res = self.pat_base_pkgs[base_pkg][1].match(line)
                         #if res:
-                        #    print >>sys.stderr, "DEBUG: res.group1():", \
-                        #        res.group(1), "res.group(2):", res.group(2)
+                        #    print >>sys.stderr, \
+                        #        "DEBUG: base pkg:", \
+                        #        "res.group(1):", res.group(1), \
+                        #        "res.group(2):", res.group(2), \
+                        #        "res.group(3):", res.group(3), \
+                        #        "res.group(4):", res.group(4)
                         found = True
                         break
                 if not found:
-                    # Did not match a local product or a base
-                    # product, skip it.
+                    # Did not match a local pkg or a base pkg, skip it.
                     continue
             if not res:
-                print >>sys.stderr, "ERROR: Match failed!"
-                print >>sys.stderr, "ERROR:", line,
+                # Note: Match failures are expected.  We are only matching
+                #       header files, source files are excluded.
                 continue
-            if res.group(1) == res.group(2):
-                # Ignore self-dependency.
-                continue
-            #print >>sys.stderr, "DEBUG: %s%s%s : %s" % \
-            #    (indent, globals.indent, res.group(1), res.group(2))
-            dep = res.group(2)
-            if dep not in pkgdepends:
-                pkgdepends.append(dep)
+            # Got dependency info, now record it.
+            dep = res.group(3)
+            if not pkgdepends.has_key(dep):
+                pkgdepends[dep] = {}
+                pkgdepends[dep][res.group(4)] = 1
+            else:
+                if not pkgdepends[dep].has_key(res.group(4)):
+                    pkgdepends[dep][res.group(4)] = 1
         inf.close()
-
-    def do_transitive_reduction(self):
-        reduced_deps = {}
-        for pkg in sorted(self.deps.keys()):
-            reduced_pkg_deps = self.deps[pkg]
-            path = [ pkg ]
-            for dep in sorted(self.deps[pkg]):
-                path.append(dep)
-                self.visit_for_transitive_reduction(dep, path, reduced_pkg_deps)
-                path.pop()
-            reduced_deps[pkg] = reduced_pkg_deps
-        self.deps = reduced_deps
-
-    def visit_for_transitive_reduction(self, pkg, path, reduced_pkg_deps):
-        #print >>sys.stderr, "DEBUG: Visiting:", pkg, "Path:", path
-        if not self.deps.has_key(pkg):
-            print >>sys.stderr, \
-                "INFO: No dependency information in database for:", pkg
-            return
-        for dep in sorted(self.deps[pkg]):
-            if dep in path:
-                print >>sys.stderr, "ERROR: Circular dependency detected!"
-                print >>sys.stderr, "ERROR: ",
-                found = False
-                for nm in path:
-                    if nm == dep:
-                        found = True
-                    if not found:
-                        continue
-                    print >>sys.stderr, nm, "->",
-                print >>sys.stderr, dep
-                return
-            if dep in reduced_pkg_deps:
-                # Remove a package reachable by transitive closure.
-                reduced_pkg_deps.remove(dep)
-            path.append(dep)
-            self.visit_for_transitive_reduction(dep, path, reduced_pkg_deps)
-            path.pop()
 
     def write_local_dependency_database(self):
         """Dump the combined project and local dependency database to disk
            as the new local dependency database."""
         outf = open(globals.dep_file_name, "w")
         for pkg in sorted(self.deps.keys()):
-            #print >>sys.stderr, "DEBUG: Begin dep line for pkg: '%s'" % (pkg,)
-            #print >>sys.stderr, "DEBUG: %s :" % (pkg,),
-            print >>outf, "%s :" % (pkg,),
-            first = True
-            for dep in sorted(self.deps[pkg]):
-                #print >>sys.stderr, "DEBUG: Adding dep: '%s'" % (dep,)
-                if first:
-                    first = False
-                    #print >>sys.stderr, "%s" % (dep,),
-                    print >>outf, "%s" % (dep,),
-                else:
-                    #print >>sys.stderr, " %s" % (dep,),
-                    print >>outf, " %s" % (dep,),
-            #print >>sys.stderr
-            print >>outf
+            for dep in sorted(self.deps[pkg].keys()):
+                for dep_file in sorted(self.deps[pkg][dep].keys()):
+                    print >>outf, "%s : %s : %s" % (pkg, dep, dep_file)
         outf.close()
-
 
 if __name__ == "__main__":
     # We are being run as a script.
