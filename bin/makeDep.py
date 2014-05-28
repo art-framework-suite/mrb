@@ -3,6 +3,12 @@
 
 """Consruct a dependency database."""
 
+
+# run this from the build directory
+# creates $MRB_BUILDDIR/.dependency_database
+# To use a temporary database as a base database, 
+# copy it to $MRB_TOP/.base_dependency_database
+
 import optparse
 import os
 import re
