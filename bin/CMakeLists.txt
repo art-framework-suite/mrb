@@ -8,10 +8,12 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   findDir.sh
 		   get_setup_list.sh
 		   gitCheckout.sh
+		   makeDep.py
 		   mrb
 		   newDev.sh
 		   newProduct.sh
 		   mrbSetEnv
+		   pullDep.py
 		   setup_products
 		   svnCheckout.sh
 		   updateDepsCM.sh

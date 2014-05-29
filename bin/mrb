@@ -39,7 +39,7 @@ export mrb_command=${mrb_bin}/mrb
 
 # Define the short list of commands
 shortComList="(newDev | gitCheckout | svnCheckout | mrbsetenv | build | install | test | mrbslp | 
-           zapBuild | newProduct | changelog | updateDepsCM | updateDepsPV )"
+           zapBuild | newProduct | changelog | updateDepsCM | updateDepsPV | checkDeps | pullDeps | makeDeps )"
 #  Adams's list:  | bumpVersion | updateDeps)"
 
 # Simple help if no argumets
@@ -93,13 +93,16 @@ Usage ${mrb_command} $shortComList [-h for help]"
    changelog (c)               Display a changelog for a package
    updateDepsCM (uc)           Update the master CMakeLists.txt file
    updateDepsPV (uv)           Update a product version in product_deps
+   makeDeps (md)               Build or update a header level dependency list
+   checkDeps (cd)              Check for missing build packages
+   pullDeps (pd)               Pull missing build packages into MRB_SOURCE
 
   Aliases ( we use aliases for these commands because they must be sourced )
 
    mrbsetenv                   Setup a development enviornment 
-                               (source $MRB_DIR/bin/mrbSetEnv)
+                               (source \$MRB_DIR/bin/mrbSetEnv)
    mrbslp                      Setup all products installed in the working localProducts_XXX directory
-                               (source $MRB_DIR/bin/setup_local_products)
+                               (source \$MRB_DIR/bin/setup_local_products)
 
 EOF
    ;;
@@ -172,6 +175,18 @@ EOF
 
    # Update product_deps and CMakeLists.txt to latest dependencies (calls &l=bin/updateDeps.sh&)
     "updateDepsPV" | "uv" ) ${mrb_bin}/updateDepsPV.sh $*
+        ;;
+
+   # build the dependency database (.product_dependency)
+    "makeDeps" | "md" ) ${mrb_bin}/makeDep.py $*
+        ;;
+
+   # check for missing build packages
+    "checkDeps" | "cd" ) ${mrb_bin}/pullDep.py -n $*
+        ;;
+
+   # pull missing build packages
+    "pullDeps" | "pd" ) ${mrb_bin}/pullDep.py $*
         ;;
 
    # Dump some debug information

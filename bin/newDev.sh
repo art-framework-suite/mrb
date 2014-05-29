@@ -77,13 +77,16 @@ function make_srcs_directory()
   MRB_SOURCE=`pwd`
   cd ${currentDir}
   echo "MRB_SOURCE is ${MRB_SOURCE} "
-  echo "NOTICE: Created srcs directory"
+  ##echo "NOTICE: Created srcs directory"
 
   # Make the main CMakeLists.txt file
   ${mrb_bin}/copy_files_to_srcs.sh ${MRB_SOURCE} || exit 1
   # this is a hack....
   cp ${MRB_DIR}/templates/dependency_list ${MRB_SOURCE}/ || exit 1;
   # end hack
+
+  # Record the mrb version
+  ups active | grep ^mrb >  ${MRB_SOURCE}/.mrbversion
 
   # If we're on MacOSX, then copy the xcodeBuild.sh file
   if ups flavor -1 | grep -q 'Darwin'; then
@@ -145,13 +148,24 @@ EOF
 
     # Display what we did (note the short HERE document)
     cat << EOF
-NOTICE: Created $dirName/setup
 
 IMPORTANT: You must type
     source $dirName/setup
 NOW and whenever you log in
+
 EOF
 
+}
+
+function copy_dependency_database() {
+    db_dir=$(printenv | grep ${MRB_PROJECTUC}_DIR | cut -f2 -d"=")
+    ##echo "copy_dependency_database: ${db_dir}"
+    if [ -e ${db_dir}/.base_dependency_database ]
+    then
+        cp -p ${db_dir}/.base_dependency_database ${MRB_INSTALL}/
+    else 
+        echo "cannot find a base dependency database for ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q $MRB_QUALS"
+    fi
 }
 
 # Set up configuration
@@ -209,11 +223,11 @@ do
 	    topDir=$OPTARG 
 	    ;;
         v   ) 
-	    echo "NOTICE: building for $OPTARG"
+	    ##echo "NOTICE: building for $OPTARG"
 	    thisVersion=$OPTARG 
 	    ;;
         q   ) 
-	    echo "NOTICE: using $OPTARG qualifiers"
+	    ##echo "NOTICE: using $OPTARG qualifiers"
 	    qualList=$OPTARG 
 	    ;;
 	:   ) 
@@ -237,7 +251,7 @@ then
    echo "ERROR: please setup ups"
    exit 1
 fi
-
+source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
 
 # report current set of flags
 if [ ${printDebug} ]
@@ -305,7 +319,9 @@ else
     MRB_QUALS=${qualList}
 fi
 
-echo "building development area for ${MRB_PROJECT} ${prjver}"
+echo
+echo "building development area for ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}"
+echo
 
 
 # Make sure we aren't off of a build or srcs directory...
@@ -364,11 +380,6 @@ then
     fi
 fi
 
-# Record the mrb version
-# But we might create more here later, so should this be in the localProducts and srcs areas?
-# FIXME: If both -T and -S have been specified, then this will be the only file in the directory!
-ups active | grep ^mrb >  ${currentDir}/.mrbversion
-
 # h3. Build area
 #  Do we need to make the @build/@ directory?
 if [ ${makeBuild} ]
@@ -394,7 +405,7 @@ then
      echo "Build directory ${buildDirName} already exists"
   else
     mkdir -p ${topDir}/${buildDirName}
-    echo "Created build directory"
+    ##echo "Created build directory"
   fi
   # get the full path to the new directory
   cd ${topDir}/${buildDirName}
@@ -476,14 +487,27 @@ if [ ${makeLP} ]; then
 
     # Make the local products directory
     mkdir -p $dirName
-    echo "NOTICE: Created local products directory $dirName"
+    ##echo "NOTICE: Created local products directory $dirName"
+
+    # Record the mrb version
+    ups active | grep ^mrb >  ${dirName}/.mrbversion
 
 
     # Copy the @.upsfiles@ directory to local products
     cp -R $project_dir/.upsfiles $dirName
-    echo "NOTICE: Copied .upsfiles to $dirName"
+    ##echo "NOTICE: Copied .upsfiles to $dirName"
 
     create_local_setup
+    
+    if [ ! -d ${MRB_PROJECTUC}_DIR ] 
+    then
+        ##echo "setup ${MRB_PROJECT} ${MRB_PROJECT_VERSION}"
+        setup -j ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q $MRB_QUALS
+        copy_dependency_database
+	unsetup -j ${MRB_PROJECT}
+    else
+        copy_dependency_database
+    fi
 
 fi
 
