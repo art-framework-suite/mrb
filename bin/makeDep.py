@@ -7,7 +7,7 @@
 # run this from the build directory
 # creates $MRB_BUILDDIR/.dependency_database
 # To use a temporary database as a base database, 
-# copy it to $MRB_TOP/.base_dependency_database
+# copy it to $MRB_INSTALL/.base_dependency_database
 
 import optparse
 import os
@@ -37,7 +37,7 @@ class GLOBALS:
         if self.mrb_source and (self.mrb_source[-1] == os.sep):
             del self.mrb_source[-1]
         self.mrb_build = os.environ.get("MRB_BUILDDIR", "")
-        self.mrb_top = os.environ.get("MRB_TOP", "")
+        self.mrb_install = os.environ.get("MRB_INSTALL", "")
         self.products = os.environ.get("PRODUCTS", "")
         tmp = self.products.split(":")
         self.product_dirs = []
@@ -50,13 +50,13 @@ class GLOBALS:
             self.mrb_source + r"/([^/]+)/(.*[.](?:h|hh|hpp|i|icc|tcc))$")
         self.dep_file_name = os.path.join(self.mrb_build, \
             ".dependency_database")
-        self.project_dep_file_name = os.path.join(self.mrb_top, \
+        self.project_dep_file_name = os.path.join(self.mrb_install, \
             ".base_dependency_database")
         #print >>sys.stderr, "DEBUG: opts:", self.opts
         #print >>sys.stderr, "DEBUG: args:", self.args
         #print >>sys.stderr, "DEBUG: MRB_SOURCE:", globals.mrb_source
         #print >>sys.stderr, "DEBUG: MRB_BUILD:", globals.mrb_build
-        #print >>sys.stderr, "DEBUG: MRB_TOP:", globals.mrb_top
+        #print >>sys.stderr, "DEBUG: MRB_INSTALL:", globals.mrb_install
         #print >>sys.stderr, "DEBUG: products:", self.products
         #print >>sys.stderr, "DEBUG: product_dirs:", self.product_dirs
         #print >>sys.stderr, "DEBUG: dep_file_name:", self.dep_file_name
