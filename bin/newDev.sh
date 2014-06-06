@@ -158,13 +158,12 @@ EOF
 }
 
 function copy_dependency_database() {
-    db_dir=$(printenv | grep ${MRB_PROJECTUC}_DIR | cut -f2 -d"=")
-    ##echo "copy_dependency_database: ${db_dir}"
-    if [ -e ${db_dir}/.base_dependency_database ]
+    prj_dir=$(printenv | grep ${1} | cut -f2 -d"=")
+    if [ -e ${prj_dir}/releaseDB/base_dependency_database ]
     then
-        cp -p ${db_dir}/.base_dependency_database ${MRB_INSTALL}/
+        cp -p ${prj_dir}/releaseDB/base_dependency_database ${MRB_INSTALL}/.base_dependency_database
     else 
-        echo "cannot find a base dependency database for ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q $MRB_QUALS"
+        echo "cannot find ${prj_dir}/releaseDB/base_dependency_database"
     fi
 }
 
@@ -492,22 +491,32 @@ if [ ${makeLP} ]; then
     # Record the mrb version
     ups active | grep ^mrb >  ${dirName}/.mrbversion
 
-
     # Copy the @.upsfiles@ directory to local products
     cp -R $project_dir/.upsfiles $dirName
     ##echo "NOTICE: Copied .upsfiles to $dirName"
+    
+    if [ -d ${MRB_PROJECTUC}_DIR ]
+    then
+        copy_dependency_database ${MRB_PROJECTUC}_DIR
+    elif [ -d ${MRB_PROJECTUC}CODE_DIR ] 
+    then
+       copy_dependency_database ${MRB_PROJECTUC}CODE_DIR
+    else      
+        ##echo "look for ${MRB_PROJECT} ${MRB_PROJECT_VERSION}"
+	if ups exist ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS} >/dev/null 2>&1; then
+            setup -j ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}
+            copy_dependency_database ${MRB_PROJECTUC}_DIR
+	    unsetup -j ${MRB_PROJECT}
+	elif ups exist ${MRB_PROJECT}code ${MRB_PROJECT_VERSION} -q ${MRB_QUALS} >/dev/null 2>&1; then
+            setup -j ${MRB_PROJECT}code ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}
+            copy_dependency_database ${MRB_PROJECTUC}CODE_DIR
+	    unsetup -j ${MRB_PROJECT}
+	else
+	   echo "WARNING: cannot find ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}"
+	fi
+    fi
 
     create_local_setup
-    
-    if [ ! -d ${MRB_PROJECTUC}_DIR ] 
-    then
-        ##echo "setup ${MRB_PROJECT} ${MRB_PROJECT_VERSION}"
-        setup -j ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q $MRB_QUALS
-        copy_dependency_database
-	unsetup -j ${MRB_PROJECT}
-    else
-        copy_dependency_database
-    fi
 
 fi
 
