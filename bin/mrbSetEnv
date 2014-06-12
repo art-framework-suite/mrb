@@ -132,6 +132,7 @@ unset setup_fail
 test -e "$CETPKG_BUILD/diag_report" && cat $CETPKG_BUILD/diag_report
 
 echo ----------------------------------------------------------------
+$MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} dummy
 
 set_ mrb_exit=true
 
