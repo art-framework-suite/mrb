@@ -164,7 +164,7 @@ function copy_dependency_database() {
         cp -p ${prj_dir}/releaseDB/base_dependency_database ${MRB_INSTALL}/.base_dependency_database
     else 
         echo "INFO: cannot find ${prj_dir}/releaseDB/base_dependency_database"
-	echo "      mrb checkDeps and pullDeps will not have commplete information"
+	echo "      mrb checkDeps and pullDeps will not have complete information"
     fi
 }
 
@@ -498,22 +498,24 @@ if [ ${makeLP} ]; then
     
     if [ -d ${MRB_PROJECTUC}_DIR ]
     then
-        copy_dependency_database ${MRB_PROJECTUC}_DIR
+        $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}_DIR
     elif [ -d ${MRB_PROJECTUC}CODE_DIR ] 
     then
-       copy_dependency_database ${MRB_PROJECTUC}CODE_DIR
+       $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}CODE_DIR
     else      
         ##echo "look for ${MRB_PROJECT} ${MRB_PROJECT_VERSION}"
 	if ups exist ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS} >/dev/null 2>&1; then
             setup -j ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}
-            copy_dependency_database ${MRB_PROJECTUC}_DIR
+            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}_DIR
 	    unsetup -j ${MRB_PROJECT}
 	elif ups exist ${MRB_PROJECT}code ${MRB_PROJECT_VERSION} -q ${MRB_QUALS} >/dev/null 2>&1; then
             setup -j ${MRB_PROJECT}code ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}
-            copy_dependency_database ${MRB_PROJECTUC}CODE_DIR
+            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}CODE_DIR
 	    unsetup -j ${MRB_PROJECT}
 	else
-	   echo "WARNING: cannot find ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}"
+            echo "INFO: cannot find ${MRB_PROJECT}/${MRB_PROJECT_VERSION}/releaseDB/base_dependency_database"
+            echo "      or ${MRB_PROJECT}code/${MRB_PROJECT_VERSION}/releaseDB/base_dependency_database"
+	    echo "      mrb checkDeps and pullDeps will not have complete information"
 	fi
     fi
 
