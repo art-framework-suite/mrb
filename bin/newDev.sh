@@ -163,7 +163,8 @@ function copy_dependency_database() {
     then
         cp -p ${prj_dir}/releaseDB/base_dependency_database ${MRB_INSTALL}/.base_dependency_database
     else 
-        echo "cannot find ${prj_dir}/releaseDB/base_dependency_database"
+        echo "INFO: cannot find ${prj_dir}/releaseDB/base_dependency_database"
+	echo "      mrb checkDeps and pullDeps will not have commplete information"
     fi
 }
 
