@@ -23,6 +23,7 @@ EOF
 MRB_SOURCE="${1}"
 MRB_INSTALL="${2}"
 prj_dir=$(printenv | grep ${3} | cut -f2 -d"=")
+if [ -z ${prj_dir} ]; then prj_dir=${3}; fi
 
 if [ -z ${MRB_SOURCE} ]
 then
@@ -49,8 +50,11 @@ then
     echo "INFO: copying ${prj_dir}/releaseDB/base_dependency_database"
     cp -p ${prj_dir}/releaseDB/base_dependency_database ${MRB_INSTALL}/.base_dependency_database
 else 
-    echo "INFO: cannot find releaseDB/base_dependency_database"
-    echo "      mrb checkDeps and pullDeps may not have complete information"
+    if [ "${3}" != "dummy" ]
+    then
+        echo "INFO: cannot find releaseDB/base_dependency_database"
+        echo "      mrb checkDeps and pullDeps may not have complete information"
+    fi
 fi
 
 exit 0
