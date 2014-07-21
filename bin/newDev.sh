@@ -486,14 +486,16 @@ if [ ${makeLP} ]; then
     fi
 
     # Make the local products directory
-    mkdir -p $dirName
+    mkdir -p $dirName || { echo "ERROR: failed to create $dirName"; exit 1; }
     ##echo "NOTICE: Created local products directory $dirName"
 
     # Record the mrb version
     ups active | grep ^mrb >  ${dirName}/.mrbversion
 
-    # Copy the @.upsfiles@ directory to local products
-    cp -R $project_dir/.upsfiles $dirName
+    # Make a @.upsfiles@ directory for local products
+    mkdir -p $dirName/.upsfiles || { echo "ERROR: failed to create $dirName/.upsfiles"; exit 1; }
+    cp $MRB_DIR/templates/dbconfig $dirName/.upsfiles/ || { echo "ERROR: failed to copy dbconfig"; exit 1; }
+    #cp -R $project_dir/.upsfiles $dirName
     ##echo "NOTICE: Copied .upsfiles to $dirName"
     
     if [ -d ${MRB_PROJECTUC}_DIR ]
