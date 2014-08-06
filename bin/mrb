@@ -11,7 +11,7 @@ function run_buildtool()
       [ $isSourced ] && return || exit 1
    fi 
    if [ ! -e $MRB_BUILDDIR/cetpkg_variable_report ]; then
-      echo "ERROR: you must \"mrbsetenv\" in $MRB_BUILDDIR"
+      echo "ERROR: you must \"mrbsetenv\" (or \". mrb s\") in $MRB_BUILDDIR"
       [ $isSourced ] && return || exit 2
    fi
    cd $MRB_BUILDDIR
@@ -128,20 +128,26 @@ EOF
   # Set up a development environment (calls &l=bin/mrbSetEnv&)
     "setEnv" | "s" )
 
-        echo 'Please use the mrbsetenv alias'
-        echo ' '
-        echo 'Usage: mrbsetenv'
-       [ $isSourced ] && return || exit 5
+		if [[ $isSourced != "yes" ]]
+		then
+			echo 'You must "source mrb setEnv"'
+			exit 5
+		fi
+		source ${mrb_bin}/mrbSetEnv
+    	[ $isSourced ] && return || exit 5
     ;;
 
   # Set up all products installed in the working localProducts_XXX
     "setup_local_products" | "slp" )
 
-        echo 'Please use the mrbslp alias'
-        echo ' '
-        echo 'Usage: mrbslp'
-        [ $isSourced ] && return || exit 5
-    ;;
+		if [[ $isSourced != "yes" ]]
+		then
+			echo 'You must "source mrb setEnv"'
+			exit 5
+		fi
+		source ${mrb_bin}/setup_local_products
+    	[ $isSourced ] && return || exit 5
+            ;;
 
    # Run buildtool 
     "build" | "b" ) run_buildtool -I $MRB_INSTALL -b $*
