@@ -5,8 +5,9 @@
 
 usage()
 {
-   echo "USAGE: `basename ${0}` <product_dir> <tag>"
-   echo "       `basename ${0}` installs mrb as a relocatable ups product"
+	echo "USAGE: `basename ${0}` [-l] <product_dir> <tag>"
+	echo "       `basename ${0}` installs mrb as a relocatable ups product"
+	echo "                       -l means to use local git (otherwise remote)"
 }
 
 get_my_dir() 
@@ -18,6 +19,24 @@ get_my_dir()
     reldir=`dirname ${0}`
     mydir=`cd ${reldir} && /bin/pwd ${pwd_P_arg}`
 }
+
+# Determine command options (just -h for help)
+while getopts ":hl" OPTION
+do
+    case $OPTION in
+        h   ) usage ; exit 0 ;;
+        l   ) echo "NOTICE: Will use local git repository" ; useLocal=true;;
+        *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
+    esac
+done
+
+# Did the user provide a product name?
+shift $((OPTIND - 1))
+if [ $# -lt 2 ]; then
+    echo "ERROR: Need product_dir and tag"
+    usage
+    exit 1
+fi
 
 
 product_dir=${1}
@@ -57,9 +76,16 @@ fi
 
 set -x
 # pull the tagged release from git
-git archive --prefix=mrb-${pkgver}/ \
-            --remote ssh://p-${package}@cdcvs.fnal.gov/cvs/projects/${package} \
-            -o ${mydir}/${package}-${pkgver}.tar ${pkgver}
+if [ "${useLocal}" == "true" ]
+then
+	git archive --prefix=mrb-${pkgver}/ \
+            	-o ${mydir}/${package}-${pkgver}.tar ${pkgver}
+else
+	git archive --prefix=mrb-${pkgver}/ \
+            	--remote ssh://p-${package}@cdcvs.fnal.gov/cvs/projects/${package} \
+            	-o ${mydir}/${package}-${pkgver}.tar ${pkgver}
+		
+fi
 mkdir -p ${pkgdir}/${pkgver}/source
 cd ${pkgdir}/${pkgver}/source
 tar xf ${mydir}/${package}-${pkgver}.tar
