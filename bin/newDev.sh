@@ -104,6 +104,10 @@ function create_local_setup()
     # copy the setup script
     cp ${MRB_DIR}/templates/local_setup  $dirName/setup
     
+    # Write in the setup
+	setupLine = "${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}" 
+	sed -i -e 's/%NNN%/${setupLine}/' $dirName/setup
+    
     # Write mrb_definitions
 
     # --- Start of HERE document for localProducts.../setup ---

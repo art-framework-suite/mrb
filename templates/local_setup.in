@@ -19,6 +19,9 @@ test $?shell$_ != 1$_ >& /dev/null && \
 # Special trick to capture the value of $_ in tcsh
 test $?shell = 1 && set dollar_underscore=`echo $_`
 
+# First, we must source the umbrella (Filled in with a template)
+setup %NNN%
+
 # Get the shell independence aliases and functions.
 source "${MRB_DIR}/bin/shell_independence"
 
