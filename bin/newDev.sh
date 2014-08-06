@@ -106,7 +106,7 @@ function create_local_setup()
     
     # Write in the setup
 	setupLine = "${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}" 
-	sed -i -e 's/%NNN%/${setupLine}/' $dirName/setup
+	sed -i -e "s/%NNN%/${setupLine}/" $dirName/setup
     
     # Write mrb_definitions
 
