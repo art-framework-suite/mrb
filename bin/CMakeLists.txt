@@ -20,6 +20,11 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   updateDepsCM.sh
 		   updateDepsPV.sh
 		   zapBuild.sh
+		   updateDeps.sh
+		   update_deps_cmakeliststxt.py
+		   update_deps_productdeps.py
+		   bumpVersion.py
+		   bumpVersion.sh
           DESTINATION ${product}/${version}/bin )
 
 INSTALL (FILES mrb_parse_deps.pm
