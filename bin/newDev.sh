@@ -88,12 +88,12 @@ function make_srcs_directory()
   # Record the mrb version
   ups active | grep ^mrb >  ${MRB_SOURCE}/.mrbversion
 
-  # If we're on MacOSX, then copy the xcodeBuild.sh file
-  if ups flavor -1 | grep -q 'Darwin'; then
-    cp ${MRB_DIR}/templates/xcodeBuild.sh ${MRB_SOURCE}/xcodeBuild.sh
-    chmod a+x ${MRB_SOURCE}/xcodeBuild.sh
-    echo "NOTICE: Created ${MRB_SOURCE}/xcodeBuild.sh"
-  fi
+#  # If we're on MacOSX, then copy the xcodeBuild.sh file
+#  if ups flavor -1 | grep -q 'Darwin'; then
+    #    cp ${MRB_DIR}/templates/xcodeBuild.sh ${MRB_SOURCE}/xcodeBuild.sh
+    #    chmod a+x ${MRB_SOURCE}/xcodeBuild.sh
+    #    echo "NOTICE: Created ${MRB_SOURCE}/xcodeBuild.sh"
+#  fi
 }
 
 function create_local_setup()
@@ -109,6 +109,7 @@ function create_local_setup()
     # --- Start of HERE document for localProducts.../setup ---
 
     # --- Comments below pertain to that file ---
+echo MRB_PROEJCT IS ${MRB_PROJECT}
     cat >> $dirName/setup << EOF
 setenv MRB_PROJECT "${MRB_PROJECT}"
 setenv MRB_PROJECT_VERSION "${MRB_PROJECT_VERSION}"
@@ -498,21 +499,26 @@ if [ ${makeLP} ]; then
     #cp -R $project_dir/.upsfiles $dirName
     ##echo "NOTICE: Copied .upsfiles to $dirName"
     
-    if [ -d ${MRB_PROJECTUC}_DIR ]
+    # Some gymnastics to get dependency database
+	MRB_PROJECTUC_DIR=${MRB_PROJECTUC}_DIR
+	MRB_PROJECTUC_CODE_DIR=${MRB_PROJECTUC}CODE_DIR
+	# Note that ${!BLA} below does double dereferencing
+    
+    if [ -d ${!MRB_PROJECTUC_DIR} ]
+    then    	
+        $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC_DIR}
+    elif [ -d ${!MRB_PROJECTUC_CODE_DIR} ] 
     then
-        $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}_DIR
-    elif [ -d ${MRB_PROJECTUC}CODE_DIR ] 
-    then
-       $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}CODE_DIR
+       $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC_CODE_DIR}
     else      
         ##echo "look for ${MRB_PROJECT} ${MRB_PROJECT_VERSION}"
 	if ups exist ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS} >/dev/null 2>&1; then
             setup -j ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}
-            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}_DIR
+            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC_DIR}
 	    unsetup -j ${MRB_PROJECT}
 	elif ups exist ${MRB_PROJECT}code ${MRB_PROJECT_VERSION} -q ${MRB_QUALS} >/dev/null 2>&1; then
             setup -j ${MRB_PROJECT}code ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}
-            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}CODE_DIR
+            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC_CODE_DIR}
 	    unsetup -j ${MRB_PROJECT}
 	else
             echo "INFO: cannot find ${MRB_PROJECT}/${MRB_PROJECT_VERSION}/releaseDB/base_dependency_database"
@@ -521,7 +527,7 @@ if [ ${makeLP} ]; then
 	fi
     fi
 
-    create_local_setup
+        create_local_setup
 
 fi
 
