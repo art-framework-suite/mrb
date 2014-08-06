@@ -37,17 +37,10 @@ mrb_bin=${MRB_DIR}/bin
 # Export this umbrella command name to subshells (should be mrb)
 export mrb_command=${mrb_bin}/mrb
 
-# Define the short list of commands
-shortComList="(newDev | gitCheckout | svnCheckout | mrbsetenv | build | install | test | mrbslp | 
-           zapBuild | newProduct | changelog | updateDepsCM | updateDepsPV | checkDeps | pullDeps | makeDeps )"
-#  Adams's list:  | bumpVersion | updateDeps)"
-
 # Simple help if no argumets
 if [ $# -lt 1 ]
 then
-  echo "Usage ${mrb_command} $shortComList [-h for help]"
-  echo "           ${mrb_command} -h   gives more information"
-
+  echo "           ${mrb_command} -h gives help information"
   [ $isSourced ] && return || exit 1
 fi
 
@@ -82,20 +75,23 @@ Usage ${mrb_command} $shortComList [-h for help]"
   
   Tools ( for help on tool, do "${mrb_command} <tool> -h" )
 
-   newDev (n)                  Start a new development area
-   gitCheckout (g)             Clone a git repository
-   svnCheckout (svn)           Checkout from a svn repository
-   build (b)                   Run buildtool
-   install (i)                 Run buildtool with install
-   test (t)                    Run buildtool with tests
-   zapBuild (z)                Delete everything in your build area
-   newProduct (p)              Create a new product from scratch
-   changelog (c)               Display a changelog for a package
-   updateDepsCM (uc)           Update the master CMakeLists.txt file
-   updateDepsPV (uv)           Update a product version in product_deps
-   makeDeps (md)               Build or update a header level dependency list
-   checkDeps (cd)              Check for missing build packages
-   pullDeps (pd)               Pull missing build packages into MRB_SOURCE
+	newDev (n)                  Start a new development area
+	gitCheckout (g)             Clone a git repository
+	svnCheckout (svn)           Checkout from a svn repository
+	setEnv (s)                  Setup an development environment (mrbSetEnv)
+	build (b)                   Run buildtool
+	install (i)                 Run buildtool with install
+	test (t)                    Run buildtool with tests
+	setup_local_products (slp)  Setup local products (mrbslp)
+	zapBuild (z)                Delete everything in your build area
+	newProduct (p)              Create a new product from scratch
+	changelog (c)               Display a changelog for a package
+	bumpVersion (bv)            Bump version number of a package
+	updateDeps (ud)             Update dependencies in CMakeLists.txt and product_deps
+	updateCM (uc)               Update the master CMakeLists.txt file
+	makeDeps (md)               Build or update a header level dependency list
+	checkDeps (cd)              Check for missing build packages
+	pullDeps (pd)               Pull missing build packages into MRB_SOURCE
 
   Aliases ( we use aliases for these commands because they must be sourced )
 
@@ -176,11 +172,15 @@ EOF
        ;;  
 
    # Update CMakeLists.txt for latest dependencies (calls &l=bin/updateDepsCM.sh&)
-    "updateDepsCM" | "uc" ) ${mrb_bin}/updateDepsCM.sh $*
+    "updateCM" | "uc" ) ${mrb_bin}/updateDepsCM.sh $*
+        ;;
+
+   # Bump the version number for package (calls &l=bin/bumpVersion.sh&)
+    "bumpVersion" | "bv" ) ${mrb_bin}/bumpVersion.sh $*
         ;;
 
    # Update product_deps and CMakeLists.txt to latest dependencies (calls &l=bin/updateDeps.sh&)
-    "updateDepsPV" | "uv" ) ${mrb_bin}/updateDepsPV.sh $*
+    "updateDeps" | "ud" ) ${mrb_bin}/updateDeps.sh $*
         ;;
 
    # build the dependency database (.product_dependency)
