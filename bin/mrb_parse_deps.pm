@@ -568,34 +568,6 @@ sub get_dependency_list {
   return %dhash;
 }
 
-sub check_product_dependencies {
-  my $prd = $_[0];
-  my $dhash_ref = $_[1];
-  my $plist = $_[2];
-  my $dfl = $_[3];
-  my $usej = "";
-  my $found_match = false;
-  ##print $dfl "check_product_dependencies: checking product $prd\n";
-  my @dkeys = keys %$dhash_ref;
-  ##print $dfl "check_product_dependencies: dhash_ref has $#dkeys keys\n";
-  # this is the list of products we are building
-  foreach $i ( 0 .. $#plist ) {
-     ##print $dfl "check_product_dependencies: param $i $plist[$i]\n";
-     @pl = split( /\,/, $dhash_ref->{$plist[$i]} );
-     ##print $dfl "check_product_dependencies: $plist[$i] uses @pl\n";
-     foreach $j ( 0 .. $#pl ) {
-	if ( $prd eq $pl[$j] ) {
-           ##print $dfl "check_product_dependencies: $plist[$i] depends on $prd\n";
-           ##print $dfl "check_product_dependencies: $prd depends on $dhash_ref->{$prd}\n";
-	   $found_match = true;
-	   if ( $dhash_ref->{$prd} eq "" ) { $found_match = false; }
-	}
-     }
-  }
-  if ( $found_match eq "true" ) { $usej = "-j"; }
-  return $usej;
-}
-
 sub get_product_depenencies {
   my $prd = $_[0];
   my $dhash_ref = $_[1];
@@ -888,7 +860,7 @@ sub product_setup_loop {
     ##print $dfile "product_setup_loop: compare $sort_pqual to $sort_ext_quals\n";
     if ( $sort_pqual eq $sort_ext_quals ) {
       $exmatch++;
-      ##print $dfile "product_setup_loop: $product matched $sort_pqual to $sort_ext_quals\n";
+      print $dfile "product_setup_loop: $product matched $sort_pqual to $sort_ext_quals\n";
       foreach $j ( 1 .. $ndeps ) {
 	$print_setup=true;
 	# are we building this product?
@@ -910,12 +882,11 @@ sub product_setup_loop {
 	  # if it is in the middle of the build list, use setup -j
 	  # if we are not building anything it depends on, use regular setup
 	  ##print $dfile "DIAGNOSTIC: checking product dependencies for $qlist[0][$j]\n";
-	  #$usejj = check_product_dependencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
 	  ($has_deps, $pdeplist) = get_product_depenencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
           my $usej = "";
 	  ##print $dfile "get_product_depenencies returned $has_deps, @pdeplist\n";
 	  if ( $has_deps eq "true" ) {
-	    ##print $dfile "DIAGNOSTIC: calling unsetup_product_dependencies with $pdeplist\n";
+	    print $dfile "DIAGNOSTIC 1: calling unsetup_product_dependencies with $pdeplist\n";
 	    unsetup_product_dependencies( $qlist[0][$j], $pdeplist, $dfile, $tfile );
 	  }
 	  if ( $qlist[$i][$j] eq "-" ) {
@@ -964,12 +935,11 @@ sub product_setup_loop {
 	  # if it is in the middle of the build list, use setup -j
 	  # if we are not building anything it depends on, use regular setup
 	  ##print $dfile "DIAGNOSTIC: checking product dependencies for $qlist[0][$j]\n";
-	  #$usejj = check_product_dependencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
 	  ($has_deps, $pdeplist) = get_product_depenencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
           my $usej = "";
 	  ##print $dfile "get_product_depenencies returned $has_deps, @pdeplist\n";
 	  if ( $has_deps eq "true" ) {
-	    ##print $dfile "DIAGNOSTIC: calling unsetup_product_dependencies with $pdeplist\n";
+	    print $dfile "DIAGNOSTIC 2: calling unsetup_product_dependencies with $pdeplist\n";
 	    unsetup_product_dependencies( $qlist[0][$j], $pdeplist, $dfile, $tfile );
 	  }
 	  if ( $qlist[$i][$j] eq "-" ) {
