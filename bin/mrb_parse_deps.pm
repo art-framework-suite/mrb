@@ -36,6 +36,9 @@
 # -nq-	this dependent product has no qualifier
 # -b-	this dependent product is only used for the build - it will not be in the table
 
+##use strict;
+##use warnings;
+
 use List::Util qw(min max); # Numeric min / max funcions.
 
 sub get_package_list {
@@ -52,7 +55,7 @@ sub get_package_list {
     if ( index($line,"#") == 0 ) {
     } elsif ( $line !~ /\w+/ ) {
     } else {
-      @words = split(/\(+/,$line);
+      my @words = split(/\(+/,$line);
       if( $words[0] eq "ADD_SUBDIRECTORY" ) {
 	@w2 = split(/\)+/,$words[1]);
 	$plist[$i] = $w2[0];
@@ -82,7 +85,7 @@ sub get_product_name {
     if ( index($line,"#") == 0 ) {
     } elsif ( $line !~ /\w+/ ) {
     } else {
-      @words = split(/\s+/,$line);
+      my @words = split(/\s+/,$line);
       if( $words[0] eq "parent" ) {
          ##print $dfile "found parent in $line\n";
 	 $pname=$words[1];
@@ -112,7 +115,7 @@ sub parse_product_list {
     } elsif ( $line !~ /\w+/ ) {
     } else {
       ##print $dfile "parse_product_list: parsing $line\n";
-      @words = split(/\s+/,$line);
+      my @words = split(/\s+/,$line);
       if( $words[0] eq "parent" ) {
 	 $prod=$words[1];
 	 $ver=$words[2];
@@ -197,7 +200,7 @@ sub parse_qualifier_list {
     } elsif ( $line !~ /\w+/ ) {
     } else {
       ##print "$line\n";
-      @words=split(/\s+/,$line);
+      my @words=split(/\s+/,$line);
       if( $words[0] eq "parent" ) {
 	 $get_phash="";
          $get_quals="";
@@ -302,7 +305,7 @@ sub find_optional_products {
     if ( index($line,"#") == 0 ) {
     } elsif ( $line !~ /\w+/ ) {
     } else {
-      @words = split(/\s+/,$line);
+      my @words = split(/\s+/,$line);
       if( $words[0] eq "parent" ) {
 	 $get_phash="";
          $get_quals="";
@@ -381,7 +384,7 @@ sub find_only_for_build_products {
     if ( index($line,"#") == 0 ) {
     } elsif ( $line !~ /\w+/ ) {
     } else {
-      @words = split(/\s+/,$line);
+      my @words = split(/\s+/,$line);
       if( $words[0] eq "only_for_build" ) {
         ++$count;
 	$ephash[$count][0] = $words[1];  
@@ -406,7 +409,7 @@ sub find_default_qual {
     if ( index($line,"#") == 0 ) {
     } elsif ( $line !~ /\w+/ ) {
     } else {
-      @words = split(/\s+/,$line);
+      my @words = split(/\s+/,$line);
       if( $words[0] eq "defaultqual" ) {
          $defq = $words[1];
       }
@@ -456,7 +459,7 @@ sub find_cetbuildtools {
     if ( index($line,"#") == 0 ) {
     } elsif ( $line !~ /\w+/ ) {
     } else {
-      @words = split(/\s+/,$line);
+      my @words = split(/\s+/,$line);
       if( $words[0] eq "only_for_build" ) {
        if( $words[1] eq "cetbuildtools" ) {
            $cver = $words[2];
@@ -512,7 +515,7 @@ sub unsetup_product_dependencies {
   my $dfl = $_[2];
   my $efl = $_[3];
   @dwords = split(/,/,$unsetlist);
-  foreach $i ( 0 .. $#dwords ) {
+  foreach my $i ( 0 .. $#dwords ) {
     ##print $dfl "unsetup_product_dependencies: unsetup $dwords[$i]\n";
     # call unsetup if the product has been setup
     my $pck = "SETUP_".uc($dwords[$i]);
@@ -548,12 +551,12 @@ sub get_dependency_list {
     if ( index($line,"#") == 0 ) {
     } elsif ( $line !~ /\w+/ ) {
     } else {
-      @words = split(/\s+/,$line);
+      my @words = split(/\s+/,$line);
       @dlist = ();
       if( $words[1] eq "-" ) {
         $dhash{ $words[0] } = "";
       } else {
-	foreach $i  ( 1 .. $#words ) {
+	foreach my $i  ( 1 .. $#words ) {
 	  $dlist[$i-1] = $words[$i];
 	}
         $dhash{ $words[0] } = join( ',', @dlist );
@@ -562,7 +565,7 @@ sub get_dependency_list {
   }
   close(DIN);
   ##my @dkeys = keys %dhash;
-  ##foreach $i ( 0 .. $#dkeys ) {
+  ##foreach my $i ( 0 .. $#dkeys ) {
   ##   print $dfl "get_dependency_list: $dkeys[$i] has $dhash{$dkeys[$i]}\n";
   ##}
   return %dhash;
@@ -615,7 +618,7 @@ sub get_lib_directory {
     if ( index($line,"#") == 0 ) {
     } elsif ( $line !~ /\w+/ ) {
     } else {
-      @words = split(/\s+/,$line);
+      my @words = split(/\s+/,$line);
       if( $words[0] eq "libdir" ) {
          if( ! $words[2] ) { $words[2] = lib; }
          if( $words[1] eq "product_dir" ) {
@@ -646,7 +649,7 @@ sub get_fcl_directory {
     if ( index($line,"#") == 0 ) {
     } elsif ( $line !~ /\w+/ ) {
     } else {
-      @words = split(/\s+/,$line);
+      my @words = split(/\s+/,$line);
       if( $words[0] eq "fcldir" ) {
          if( ! $words[2] ) { $words[2] = fcl; }
          if( $words[1] eq "product_dir" ) {
@@ -678,7 +681,7 @@ sub get_gdml_directory {
     if ( index($line,"#") == 0 ) {
     } elsif ( $line !~ /\w+/ ) {
     } else {
-      @words = split(/\s+/,$line);
+      my @words = split(/\s+/,$line);
       if( $words[0] eq "gdmldir" ) {
          if( ! $words[2] ) { $words[2] = gdml; }
          if( $words[1] eq "product_dir" ) {
@@ -703,24 +706,24 @@ sub get_gdml_directory {
 sub get_fw_directory {
   my @params = @_;
   # default fw directory (none)
-  $fwdir = "none";
+  $get_fw_directory::fwdir = "none";
   open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
   while ( $line=<PIN> ) {
     chop $line;
     if ( index($line,"#") == 0 ) {
     } elsif ( $line !~ /\w+/ ) {
     } else {
-      @words = split(/\s+/,$line);
+      my @words = split(/\s+/,$line);
       if( $words[0] eq "fwdir" ) {
          if( ! $words[2] ) { 
 	    print "ERROR: you must specify the fw subdirectory name, there is no default\n";
 	 } else {
             if( $words[1] eq "product_dir" ) {
-	       $fwdir = $params[1]."/".$words[2];
+	       $get_fw_directory::fwdir = $params[1]."/".$words[2];
             } elsif( $words[1] eq "fq_dir" ) {
-	       $fwdir = $params[1]."/".$words[2];
+	       $get_fw_directory::fwdir = $params[1]."/".$words[2];
             } elsif( $words[1] eq "-" ) {
-	       $fwdir = "none";
+	       $get_fw_directory::fwdir = "none";
 	    } else {
 	       print "ERROR: $words[1] is an invalid directory path\n";
 	       print "ERROR: directory path must be specified as either \"product_dir\" or \"fq_dir\"\n";
@@ -731,8 +734,8 @@ sub get_fw_directory {
     }
   }
   close(PIN);
-  ##print "defining executable directory $fwdir\n";
-  return ($fwdir);
+  ##print "defining executable directory $get_fw_directory::fwdir\n";
+  return ($get_fw_directory::fwdir);
 }
 
 
@@ -743,24 +746,26 @@ sub product_setup_loop {
   my $qual = $params[2];
   my $dfile = $params[3];
   my $tfile = $params[4];
+  my $default_ver, $default_qual;
+  my $compiler;
 
-  ($product, $version, $default_ver, $default_qual, %phash) = parse_product_list( $pfile, $dfile );
-  ##print $dfile "product_setup_loop: found $product $version $default_ver $default_qual\n";
+  ($product_setup_loop::product, $product_setup_loop::version, $default_ver, $default_qual, %phash) = parse_product_list( $pfile, $dfile );
+  ##print $dfile "product_setup_loop: found $product_setup_loop::product $product_setup_loop::version $default_ver $default_qual\n";
   
   # continue parsing for this package
-  ($ndeps, @qlist) = parse_qualifier_list( $loopfile, $tfile );
+  (my $ndeps, my @qlist) = parse_qualifier_list( $loopfile, $tfile );
 
   ##print $dfile "product_setup_loop: mrb_quals are $mrb_quals\n";
   ##print $dfile "product_setup_loop: $extra_qual - $dop\n";
 
-  $dq = find_default_qual( $pfile );
+  my $dq = find_default_qual( $pfile );
   if ( $dq ) {
     $qual = $dq.":";
     $qual = $qual.$dop;
   } elsif ( $simple ) {
     $qual = "-nq-";
   } else {
-    $errfl2 = $builddir."/error-".$product."-".$version;
+    my $errfl2 = $builddir."/error-".$product_setup_loop::product."-".$product_setup_loop::version;
     open(ERR2, "> $errfl2") or die "Couldn't open $errfl2";
     print ERR2 "\n";
     print ERR2 "unsetenv_ CETPKG_NAME\n";
@@ -777,7 +782,7 @@ sub product_setup_loop {
     exit 0;
   }
 
-  ##print $dfile "product_setup_loop: using qualifier $qual for $product\n";
+  ##print $dfile "product_setup_loop: using qualifier $qual for $product_setup_loop::product\n";
   my $default_fc = ( $^O eq "darwin" ) ? "-" : "gfortran";
 
   my $compiler_table =
@@ -797,8 +802,8 @@ sub product_setup_loop {
   }
   ##print $dfile "product_setup_loop: compiler is $compiler\n";
   ##print $dfile "product_setup_loop: $compiler_table->{$compiler}->{CC} $compiler_table->{$compiler}->{CXX} $compiler_table->{$compiler}->{FC}\n";
-  $cetfl = cetpkg_info_file( $product, 
-                             $version, 
+  my $cetfl = cetpkg_info_file( $product_setup_loop::product, 
+                             $product_setup_loop::version, 
 			     $default_ver, 
 			     $qual, 
 			     $type, 
@@ -809,34 +814,34 @@ sub product_setup_loop {
                           $compiler_table->{$compiler}->{FC}
 			     );
 
-  (%ohash) = find_optional_products( $pfile );
-  ($ecount, @ehash) = find_only_for_build_products( $pfile );
+  (my %ohash) = find_optional_products( $pfile );
+  (my $ecount, my @ehash) = find_only_for_build_products( $pfile );
 
-  @setup_list=( cetbuildtools, cetpkgsupport );
-  foreach $i ( 1 .. $ecount ) {
-    $print_setup=true;
-    foreach $j ( 0 .. $#setup_list ) {
+  my @setup_list=( cetbuildtools, cetpkgsupport );
+  foreach my $i ( 1 .. $ecount ) {
+    my $print_setup=true;
+    foreach my $j ( 0 .. $#setup_list ) {
       if( $ehash[$i][0] eq $setup_list[$j] ) {
         $print_setup=false;
       }
     }
     if ( $print_setup eq "true" ) {
-      print $tfile "echo Configuring $product\n";
+      print $tfile "echo Configuring $product_setup_loop::product\n";
       print $tfile "setup -B $ehash[$i][0] $ehash[$i][1]\n";
       print $tfile "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
     }
   }
 
   # are there products without listed qualifiers?
-  @pkeys = keys %phash;
-  foreach $i ( 1 .. $#pkeys ) {
-    ##print $dfile "searching for $pkeys[$i] qualifiers in $product\n";
-    $p_has_qual = 0;
-    foreach $k ( 0 .. $#setup_list ) {
+  my @pkeys = keys %phash;
+  foreach my $i ( 1 .. $#pkeys ) {
+    ##print $dfile "searching for $pkeys[$i] qualifiers in $product_setup_loop::product\n";
+    my $p_has_qual = 0;
+    foreach my $k ( 0 .. $#setup_list ) {
       if( $pkeys[$i] eq $setup_list[$k] ) {
 	     $p_has_qual++;
       } else {
-	foreach $j ( 1 .. $ndeps ) {
+	foreach my $j ( 1 .. $ndeps ) {
 	  if ( $pkeys[$i] eq $qlist[0][$j] ) {
 	     $p_has_qual++;
 	  }
@@ -853,24 +858,25 @@ sub product_setup_loop {
   ##print $dfile "product_setup_loop:  sorted set $sort_ext_quals\n";
   ##print $dfile "product_setup_loop:  sorted mrb $sort_mrb_quals\n";
   # first check for a match to the extended qualifer list 
-  $match = 0;
-  $exmatch = 0;
-  foreach $i ( 1 .. $#qlist ) {
+  my $match = 0;
+  my $exmatch = 0;
+  my $unsetup_count = 0;
+  foreach my $i ( 1 .. $#qlist ) {
     my $sort_pqual = join(":", sort { lc($a) cmp lc($b) } split(/:/,$qlist[$i][0]));
     ##print $dfile "product_setup_loop: compare $sort_pqual to $sort_ext_quals\n";
     if ( $sort_pqual eq $sort_ext_quals ) {
       $exmatch++;
-      print $dfile "product_setup_loop: $product matched $sort_pqual to $sort_ext_quals\n";
-      foreach $j ( 1 .. $ndeps ) {
-	$print_setup=true;
+      print $dfile "product_setup_loop: $product_setup_loop::product matched $sort_pqual to $sort_ext_quals\n";
+      foreach my $j ( 1 .. $ndeps ) {
+	my $print_setup=true;
 	# are we building this product?
-	for $k ( 0 .. $#productnames ) {
-	  if ( $productnames[$k] eq $qlist[0][$j] ) {
+	for my $k ( 0 .. $#product_setup_loop::productnames ) {
+	  if ( $product_setup_loop::productnames[$k] eq $qlist[0][$j] ) {
 	     $print_setup=false;
 	  }
 	}
 	# is this product already in the setup list?
-	foreach $k ( 0 .. $#setup_list ) {
+	foreach my $k ( 0 .. $#setup_list ) {
 	  if( $setup_list[$k] eq $qlist[0][$j] ) {
 	    $print_setup=false;
 	  }
@@ -882,7 +888,7 @@ sub product_setup_loop {
 	  # if it is in the middle of the build list, use setup -j
 	  # if we are not building anything it depends on, use regular setup
 	  ##print $dfile "DIAGNOSTIC: checking product dependencies for $qlist[0][$j]\n";
-	  ($has_deps, $pdeplist) = get_product_depenencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
+	  (my $has_deps, my $pdeplist) = get_product_depenencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
           my $usej = "";
 	  ##print $dfile "get_product_depenencies returned $has_deps, @pdeplist\n";
 	  if ( $has_deps eq "true" ) {
@@ -895,9 +901,9 @@ sub product_setup_loop {
 	  } elsif ( $qlist[$i][$j] eq "-b-" ) {
             print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, $usej, $tfile );
 	  } else {
-	    @qwords = split(/:/,$qlist[$i][$j]);
+	    my @qwords = split(/:/,$qlist[$i][$j]);
 	    $ql="+".$qwords[0];
-	    foreach $j ( 1 .. $#qwords ) {
+	    foreach my $j ( 1 .. $#qwords ) {
 	      $ql = $ql.":+".$qwords[$j];
 	    }
             print_setup_qual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ql, $ohash{$qlist[0][$j]}, $usej, $tfile );
@@ -906,24 +912,22 @@ sub product_setup_loop {
       }
     }
   }
-  if ( $exmatch == 0 ) {
-  # didn't find a match to the extended qual, so check against MRB_QUAL
-  foreach $i ( 1 .. $#qlist ) {
+  foreach my $i ( 1 .. $#qlist ) {
     my $sort_pqual = join(":", sort { lc($a) cmp lc($b) } split(/:/,$qlist[$i][0]));
-    ##print $dfile "product_setup_loop: compare $sort_pqual to $sort_mrb_quals\n";
-    if ( $sort_pqual eq $sort_mrb_quals ) {
-      $match++;
-      ##print $dfile "product_setup_loop: matched $sort_pqual to $sort_mrb_quals\n";
-      foreach $j ( 1 .. $ndeps ) {
-	$print_setup=true;
+    ##print $dfile "product_setup_loop: compare $sort_pqual to $sort_ext_quals\n";
+    if ( $sort_pqual eq $sort_ext_quals ) {
+      $exmatch++;
+      print $dfile "product_setup_loop: $product_setup_loop::product matched $sort_pqual to $sort_ext_quals\n";
+      foreach my $j ( 1 .. $ndeps ) {
+	my $print_setup=true;
 	# are we building this product?
-	for $k ( 0 .. $#productnames ) {
-	  if ( $productnames[$k] eq $qlist[0][$j] ) {
+	for my $k ( 0 .. $#product_setup_loop::productnames ) {
+	  if ( $product_setup_loop::productnames[$k] eq $qlist[0][$j] ) {
 	     $print_setup=false;
 	  }
 	}
 	# is this product already in the setup list?
-	foreach $k ( 0 .. $#setup_list ) {
+	foreach my $k ( 0 .. $#setup_list ) {
 	  if( $setup_list[$k] eq $qlist[0][$j] ) {
 	    $print_setup=false;
 	  }
@@ -935,7 +939,60 @@ sub product_setup_loop {
 	  # if it is in the middle of the build list, use setup -j
 	  # if we are not building anything it depends on, use regular setup
 	  ##print $dfile "DIAGNOSTIC: checking product dependencies for $qlist[0][$j]\n";
-	  ($has_deps, $pdeplist) = get_product_depenencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
+	  (my $has_deps, my $pdeplist) = get_product_depenencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
+          my $usej = "";
+	  ##print $dfile "get_product_depenencies returned $has_deps, @pdeplist\n";
+	  if ( $has_deps eq "true" ) {
+	    print $dfile "DIAGNOSTIC 3: calling unsetup_product_dependencies with $pdeplist\n";
+	    unsetup_product_dependencies( $qlist[0][$j], $pdeplist, $dfile, $tfile );
+	  }
+	  if ( $qlist[$i][$j] eq "-" ) {
+	  } elsif ( $qlist[$i][$j] eq "-nq-" ) {
+            print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, $usej, $tfile );
+	  } elsif ( $qlist[$i][$j] eq "-b-" ) {
+            print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, $usej, $tfile );
+	  } else {
+	    my @qwords = split(/:/,$qlist[$i][$j]);
+	    $ql="+".$qwords[0];
+	    foreach my $j ( 1 .. $#qwords ) {
+	      $ql = $ql.":+".$qwords[$j];
+	    }
+            print_setup_qual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ql, $ohash{$qlist[0][$j]}, $usej, $tfile );
+	  }
+	}
+      }
+    }
+  }
+  if ( $exmatch == 0 ) {
+  # didn't find a match to the extended qual, so check against MRB_QUAL
+  foreach my $i ( 1 .. $#qlist ) {
+    my $sort_pqual = join(":", sort { lc($a) cmp lc($b) } split(/:/,$qlist[$i][0]));
+    ##print $dfile "product_setup_loop: compare $sort_pqual to $sort_mrb_quals\n";
+    if ( $sort_pqual eq $sort_mrb_quals ) {
+      $match++;
+      ##print $dfile "product_setup_loop: matched $sort_pqual to $sort_mrb_quals\n";
+      foreach my $j ( 1 .. $ndeps ) {
+	my $print_setup=true;
+	# are we building this product?
+	for my $k ( 0 .. $#product_setup_loop::productnames ) {
+	  if ( $product_setup_loop::productnames[$k] eq $qlist[0][$j] ) {
+	     $print_setup=false;
+	  }
+	}
+	# is this product already in the setup list?
+	foreach my $k ( 0 .. $#setup_list ) {
+	  if( $setup_list[$k] eq $qlist[0][$j] ) {
+	    $print_setup=false;
+	  }
+	}
+	##print $dfile "should I setup $qlist[0][$j]? ${print_setup}\n";
+        if ( $print_setup eq "true" ) {
+	  push( @setup_list, $qlist[0][$j] );
+	  # is this part of my extended package list?
+	  # if it is in the middle of the build list, use setup -j
+	  # if we are not building anything it depends on, use regular setup
+	  ##print $dfile "DIAGNOSTIC: checking product dependencies for $qlist[0][$j]\n";
+	  (my $has_deps, my $pdeplist) = get_product_depenencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
           my $usej = "";
 	  ##print $dfile "get_product_depenencies returned $has_deps, @pdeplist\n";
 	  if ( $has_deps eq "true" ) {
@@ -948,9 +1005,9 @@ sub product_setup_loop {
 	  } elsif ( $qlist[$i][$j] eq "-b-" ) {
             print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, $usej, $tfile );
 	  } else {
-	    @qwords = split(/:/,$qlist[$i][$j]);
-	    $ql="+".$qwords[0];
-	    foreach $j ( 1 .. $#qwords ) {
+	    my @qwords = split(/:/,$qlist[$i][$j]);
+	    my $ql="+".$qwords[0];
+	    foreach my $j ( 1 .. $#qwords ) {
 	      $ql = $ql.":+".$qwords[$j];
 	    }
             print_setup_qual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ql, $ohash{$qlist[0][$j]}, $usej, $tfile );
@@ -967,9 +1024,9 @@ sub product_setup_loop {
        #print "this package has no dependencies\n";
      } else {
        print $tfile "\n";
-       print $tfile "echo \"ERROR: failed to find any dependent products for $product $version -q $qual\"\n";
+       print $tfile "echo \"ERROR: failed to find any dependent products for $product_setup_loop::product $product_setup_loop::version -q $qual\"\n";
        print $tfile "echo \"       The following qualifier combinations are recognized:\"\n";
-       foreach $i ( 1 .. $#qlist ) {
+       foreach my $i ( 1 .. $#qlist ) {
 	   print $tfile "echo \"         $qlist[$i][0] \"\n";
        }
        print $tfile "return 1\n";
@@ -977,7 +1034,7 @@ sub product_setup_loop {
      }
   }
 
-  return ($product, $version);
+  return ($product_setup_loop::product, $product_setup_loop::version);
 
 }
 
