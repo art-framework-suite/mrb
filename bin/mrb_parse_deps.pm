@@ -739,6 +739,20 @@ sub get_fw_directory {
 }
 
 
+sub product_unsetup_loop {
+  my @params = @_;
+  my $loopfile = $params[0];
+  my $pkgdir = $params[1];
+  my $qual = $params[2];
+  my $dfile = $params[3];
+  my $tfile = $params[4];
+  my $default_ver, $default_qual;
+  my $compiler;
+  $product_setup_loop::product = "dummy";
+  $product_setup_loop::version = "dummy";
+  return ($product_setup_loop::product, $product_setup_loop::version);
+}
+
 sub product_setup_loop {
   my @params = @_;
   my $loopfile = $params[0];
@@ -893,57 +907,6 @@ sub product_setup_loop {
 	  ##print $dfile "get_product_depenencies returned $has_deps, @pdeplist\n";
 	  if ( $has_deps eq "true" ) {
 	    print $dfile "DIAGNOSTIC 1: calling unsetup_product_dependencies with $pdeplist\n";
-	    unsetup_product_dependencies( $qlist[0][$j], $pdeplist, $dfile, $tfile );
-	  }
-	  if ( $qlist[$i][$j] eq "-" ) {
-	  } elsif ( $qlist[$i][$j] eq "-nq-" ) {
-            print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, $usej, $tfile );
-	  } elsif ( $qlist[$i][$j] eq "-b-" ) {
-            print_setup_noqual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ohash{$qlist[0][$j]}, $usej, $tfile );
-	  } else {
-	    my @qwords = split(/:/,$qlist[$i][$j]);
-	    $ql="+".$qwords[0];
-	    foreach my $j ( 1 .. $#qwords ) {
-	      $ql = $ql.":+".$qwords[$j];
-	    }
-            print_setup_qual( $qlist[0][$j], $phash{$qlist[0][$j]}, $ql, $ohash{$qlist[0][$j]}, $usej, $tfile );
-	  }
-	}
-      }
-    }
-  }
-  foreach my $i ( 1 .. $#qlist ) {
-    my $sort_pqual = join(":", sort { lc($a) cmp lc($b) } split(/:/,$qlist[$i][0]));
-    ##print $dfile "product_setup_loop: compare $sort_pqual to $sort_ext_quals\n";
-    if ( $sort_pqual eq $sort_ext_quals ) {
-      $exmatch++;
-      print $dfile "product_setup_loop: $product_setup_loop::product matched $sort_pqual to $sort_ext_quals\n";
-      foreach my $j ( 1 .. $ndeps ) {
-	my $print_setup=true;
-	# are we building this product?
-	for my $k ( 0 .. $#product_setup_loop::productnames ) {
-	  if ( $product_setup_loop::productnames[$k] eq $qlist[0][$j] ) {
-	     $print_setup=false;
-	  }
-	}
-	# is this product already in the setup list?
-	foreach my $k ( 0 .. $#setup_list ) {
-	  if( $setup_list[$k] eq $qlist[0][$j] ) {
-	    $print_setup=false;
-	  }
-	}
-	##print $dfile "should I setup $qlist[0][$j]? ${print_setup}\n";
-        if ( $print_setup eq "true" ) {
-	  push( @setup_list, $qlist[0][$j] );
-	  # is this part of my extended package list?
-	  # if it is in the middle of the build list, use setup -j
-	  # if we are not building anything it depends on, use regular setup
-	  ##print $dfile "DIAGNOSTIC: checking product dependencies for $qlist[0][$j]\n";
-	  (my $has_deps, my $pdeplist) = get_product_depenencies( $qlist[0][$j], \%deplist, \@package_list, $dfile );
-          my $usej = "";
-	  ##print $dfile "get_product_depenencies returned $has_deps, @pdeplist\n";
-	  if ( $has_deps eq "true" ) {
-	    print $dfile "DIAGNOSTIC 3: calling unsetup_product_dependencies with $pdeplist\n";
 	    unsetup_product_dependencies( $qlist[0][$j], $pdeplist, $dfile, $tfile );
 	  }
 	  if ( $qlist[$i][$j] eq "-" ) {
