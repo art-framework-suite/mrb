@@ -6,8 +6,7 @@
 #
 #  install steps:
 #  cd /path/to/build/directory
-#  source /path/to/cetbuildtools/ups/setup_for_development 
-#  cmake [-DCMAKE_INSTALL_PREFIX=/install/path] $CETBUILDTOOLS_SOURCE
+#  cmake [-DCMAKE_INSTALL_PREFIX=/install/path] /path/to/mrb
 #  make install
 #  make package (tar file for ups)
 
