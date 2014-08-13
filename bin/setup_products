@@ -20,11 +20,6 @@ my $compiler_table =
    icc => { CC => "icc", CXX => "icpc", FC => "ifort" },
   };
 
-my $builddir = $ARGV[1];
-# use this file for debugging
-my $diagfl = $builddir."/diag_report";
-open(my $dfh, "+> $diagfl") or die "Couldn't open $diagfl";
-
 if( $#ARGV < 1 ) {
     my $errfl1 = "problem_report";
     open(ERR1, "> $errfl1") or die "Couldn't open $errfl1";
@@ -37,7 +32,7 @@ if( $#ARGV < 1 ) {
     print ERR1 "unsetenv_ CETPKG_CXX\n";
     print ERR1 "unsetenv_ CETPKG_FC\n";
     print ERR1 "echo \"ERROR: directory not specified\"\n";
-    print ERR1 "echo \"USAGE: setup_products <input-directory> <build-directory> [extra qualifiers]>\"\n";
+    print ERR1 "echo \"USAGE: setup_products <input-directory> <build-directory>\"\n";
     print ERR1 "return 1\n";
     close(ERR1);
     print "$errfl1\n";
@@ -45,6 +40,11 @@ if( $#ARGV < 1 ) {
 }
 
 my $sourcedir = $ARGV[0];
+
+my $builddir = $ARGV[1];
+# use this file for debugging
+my $diagfl = $builddir."/diag_report";
+open(my $dfh, "+> $diagfl") or die "Couldn't open $diagfl";
 
 my $mrb_project = $ENV{MRB_PROJECT};
 my $mrb_version = $ENV{MRB_PROJECT_VERSION};
@@ -70,12 +70,11 @@ for my $i ( 0 .. $#qlist ) {
 
 
 my $simple = "";
-my $extra_qual;
 for my $i ( 2 .. $#ARGV ) {
     if( $ARGV[$i] eq "simple" ) {
       $simple = "true";
     } else {
-      $extra_qual = $extra_qual.$ARGV[$i].":";
+      print $dfh "setup_products debug info: ignoring $ARGV[$i]\n";
     }
 }
 
@@ -106,8 +105,7 @@ if ( $srcbase eq "ups" ) {
 } else {
     $inputdir = $sourcedir."/ups";
 }
-##print $dfh "setup_products debug info: source dir is $sourcedir\n";
-##print $dfh "setup_products debug info: extra qualifiers are $extra_qual\n";
+#print $dfh "setup_products debug info: source dir is $sourcedir\n";
 
 require mrb_parse_deps;
 
@@ -132,13 +130,8 @@ if ( $simple ) {
   print $tfh "setenv CETPKG_FC $compiler_table->{${compiler}}->{FC}\n";
 }
 
-# parse a list of dependencies
-my $dfile = $sourcedir."/dependency_list";
-my %deplist = get_dependency_list( $dfile, $dfh );
-
 # have to find the list of packages to traverse
 my $cmakefile=$sourcedir."/CMakeLists.txt";
-##print $dfh "setup_products debug info: cmakefile is $cmakefile\n";
 my @package_list = get_package_list( $cmakefile, $dfh );
 ##print $dfh "DIAGNOSTICS: packages to check: $#package_list @package_list\n";
 if ( $#package_list < 0 ) {
@@ -147,6 +140,7 @@ if ( $#package_list < 0 ) {
   print "$tmpfl\n";
   exit 0;
 }
+
 my $use_cetbver="v0_00_00";
 my @cetbver;
 my @productnames;
@@ -154,16 +148,17 @@ my @productversn;
 for my $i ( 0 .. $#package_list ) {
   my $pkg=$package_list[$i];
   my $pfile=$sourcedir."/".$pkg."/ups/product_deps";
-  ##print $dfh "setup_products debug info: checking $pfile for $pkg \n";
+  print $dfh "setup_products debug info: checking $pfile for $pkg \n";
   ($productnames[$i], $productversn[$i]) = get_product_name( $pfile, $dfh );
   $cetbver[$i] = find_cetbuildtools( $pfile );
-  ##print $dfh "setup_products debug info: cetbuildtools $cetbver[$i]\n";
+  print $dfh "setup_products debug info: cetbuildtools $cetbver[$i]\n";
   $use_cetbver = compare_versions( $use_cetbver, $cetbver[$i] );
 }
 print $tfh "setup -B cetbuildtools $use_cetbver\n";
 print $tfh "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
 print $tfh "setup -B cetpkgsupport \n";
 print $tfh "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
+
 # now check for an old build directory 
 my $old_build_dir=$ENV{OLD_MRB_BUILDDIR};
 if ( $old_build_dir ) {
@@ -171,63 +166,21 @@ if ( $old_build_dir ) {
   print $tfh "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${old_build_dir}\'`\n";
   print $tfh "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${old_build_dir}\'\`\n";
 }
-##print $dfh "setup_products debug info: product name $#productnames @productnames\n";
-##print $dfh "setup_products debug info: product version $#productversn @productversn\n";
+print $dfh "setup_products debug info: product name $#productnames @productnames\n";
+print $dfh "setup_products debug info: product version $#productversn @productversn\n";
+
 print $tfh "# unsetup products\n";
 for my $i ( 0 .. $#package_list ) {
   my $pkg=$package_list[$i];
-  my $pkgdir = $builddir."/".$pkg;
-  unless ( -e $pkgdir or mkdir $pkgdir ) { die "Couldn't create $pkgdir"; }
   my $pfile=$sourcedir."/".$pkg."/ups/product_deps";
-  ##print $dfh "setup_products debug info: checking $pfile for $pkg \n";
-  print $dfh "setup_products debug info: calling product_unsetup_loop with $pfile, $pkgdir\n";
-  (my $product, my $version) = product_unsetup_loop( $pfile, $pkgdir, $extra_qual, $dfh, $tfh );
-
-  if ( $product ne $productnames[$i] ) {
-     print $dfh "ERROR: product names do not match: $product vs $productnames[$i]\n";
-     exit 1;
-  }
-  if ( $version ne $productversn[$i] ) {
-     print $dfh "ERROR: version names do not match: $version vs $productversn[$i]\n";
-     exit 1;
-  }
+  print $dfh "setup_products debug info: checking $pfile for $pkg \n";
+  print $dfh "setup_products debug info: calling product_unsetup_loop with $pfile\n";
+  (my $product, my $version) = unsetup_dependencies( $pfile, $dop, $simple, $builddir, $dfh, $tfh );
 }
-print $tfh "# setup package dependencies\n";
-for my $i ( 0 .. $#package_list ) {
-  my $pkg=$package_list[$i];
-  my $pkgdir = $builddir."/".$pkg;
-  unless ( -e $pkgdir or mkdir $pkgdir ) { die "Couldn't create $pkgdir"; }
-  my $pfile=$sourcedir."/".$pkg."/ups/product_deps";
-  ##print $dfh "setup_products debug info: checking $pfile for $pkg \n";
-  ##print $dfh "setup_products debug info: calling product_setup_loop with $pfile, $pkgdir\n";
-  (my $product, my $version) = product_setup_loop( $pfile, $pkgdir, $extra_qual, $dfh, $tfh );
-
-  if ( $product ne $productnames[$i] ) {
-     print $dfh "ERROR: product names do not match: $product vs $productnames[$i]\n";
-     exit 1;
-  }
-  if ( $version ne $productversn[$i] ) {
-     print $dfh "ERROR: version names do not match: $version vs $productversn[$i]\n";
-     exit 1;
-  }
-}
-
-my $cetfl = cetpkg_info_file( $mrb_project, 
-                           $mrb_version, 
-			   $mrb_version, 
-			   $mrb_quals, 
-			   $type, 
-			   $sourcedir, 
-			   $builddir,
-                          $compiler_table->{$compiler}->{CC},
-                          $compiler_table->{$compiler}->{CXX},
-                          $compiler_table->{$compiler}->{FC}
-			   );
 
 # cleanup
 close($tfh);
 close($dfh);
 print "$tmpfl\n";
-
 
 exit 0;
