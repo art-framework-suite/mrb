@@ -169,13 +169,24 @@ if ( $old_build_dir ) {
 print $dfh "setup_products debug info: product name $#productnames @productnames\n";
 print $dfh "setup_products debug info: product version $#productversn @productversn\n";
 
-print $tfh "# unsetup products\n";
+print $tfh "# setup products\n";
 for my $i ( 0 .. $#package_list ) {
   my $pkg=$package_list[$i];
   my $pfile=$sourcedir."/".$pkg."/ups/product_deps";
+  $setup_products::product = "";
+  $setup_products::version = "";
   print $dfh "setup_products debug info: checking $pfile for $pkg \n";
   print $dfh "setup_products debug info: calling product_unsetup_loop with $pfile\n";
-  (my $product, my $version) = unsetup_dependencies( $pfile, $dop, $simple, $builddir, $dfh, $tfh );
+  ($setup_products::product, $setup_products::version) = product_setup_loop( $pfile, $dop, $simple, $builddir, $dfh, $tfh );
+
+  if ( $setup_products::product ne $productnames[$i] ) {
+     print $dfh "ERROR: product names do not match: $setup_products::product vs $productnames[$i]\n";
+     exit 1;
+  }
+  if ( $setup_products::version ne $productversn[$i] ) {
+     print $dfh "ERROR: version names do not match: $setup_products::version vs $productversn[$i]\n";
+     exit 1;
+  }
 }
 
 # cleanup
