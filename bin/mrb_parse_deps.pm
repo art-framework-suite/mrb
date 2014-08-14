@@ -1,20 +1,31 @@
-# parse product_deps and qualifier_deps
+# parse product_deps
 
 # product_deps format:
 
 #   parent       this_product   this_version
-#   [incdir      product_dir	include]
+#   defaultqual  qualifier
+#
+#   [incdir      product_dir    include]
 #   [fcldir      product_dir    fcl]
 #   [libdir      fq_dir	        lib]
 #   [bindir      fq_dir         bin]
+#   [fwdir       -              unspecified]
+#   [gdmldir     -              gdml]
 #
 #   product		version
-#   dependent_product	dependent_product_version [optional]
 #   dependent_product	dependent_product_version [optional]
 #
 #   qualifier dependent_product       dependent_product notes
 #   this_qual dependent_product_qual  dependent_product_qual
 #   this_qual dependent_product_qual  dependent_product_qual
+#
+# cetbuildtools v4 and later
+#   product		version
+#   dependent_product	dependent_product_version [distinguishing qualifier|-] [optional|only_for_build]
+#
+#   qualifier dependent_product1       dependent_product2	notes
+#   qual_set1 dependent_product1_qual  dependent_product2_qual	optional notes about this qualifier set
+#   qual_set2 dependent_product1_qual  dependent_product2_qual
 
 # The indir, fcldir, libdir, and bindir lines are optional
 # Use them only if your product does not conform to the defaults
@@ -352,7 +363,168 @@ sub get_qualifier_list {
   return ($qlen, @qlist);
 }
 
-sub unsetup_dependencies {
+# can we use a simple database to store this info?
+sub get_dependency_list {
+  my @params = @_;
+  my $depfile = $params[0];
+  my $dfl = $params[1];
+  my %dhash = ();
+  my @dlist = ();
+  my $line;
+  # read the dependency list and make a hash file keyed on product name
+  ##print $dfl "DIAGNOSTIC: parse dependency list\n";
+  open(DIN, "< $depfile") or die "Couldn't open $depfile";
+  while ( $line=<DIN> ) {
+    chop $line;
+    if ( index($line,"#") == 0 ) {
+    } elsif ( $line !~ /\w+/ ) {
+    } else {
+      my @words = split(/\s+/,$line);
+      @dlist = ();
+      if( $words[1] eq "-" ) {
+        $dhash{ $words[0] } = "";
+      } else {
+	foreach my $i  ( 1 .. $#words ) {
+	  $dlist[$i-1] = $words[$i];
+	}
+        $dhash{ $words[0] } = join( ',', @dlist );
+      }
+    }
+  }
+  close(DIN);
+  ##my @dkeys = keys %dhash;
+  ##foreach my $i ( 0 .. $#dkeys ) {
+  ##   print $dfl "get_dependency_list: $dkeys[$i] has $dhash{$dkeys[$i]}\n";
+  ##}
+  return %dhash;
+}
+
+sub find_default_qual {
+  my @params = @_;
+  my $defq = "";
+  my $line;
+  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
+  while ( $line=<PIN> ) {
+    chop $line;
+    if ( index($line,"#") == 0 ) {
+    } elsif ( $line !~ /\w+/ ) {
+    } else {
+      my @words = split(/\s+/,$line);
+      if( $words[0] eq "defaultqual" ) {
+         $defq = $words[1];
+      }
+    }
+  }
+  close(PIN);
+  ##print "defining library directory $libdir\n";
+  return ($find_default_qual::defq);
+}
+
+sub get_fcl_directory {
+  my @params = @_;
+  my $fcldir = "default";
+  my $line;
+  my @words;
+  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
+  while ( $line=<PIN> ) {
+    chop $line;
+    if ( index($line,"#") == 0 ) {
+    } elsif ( $line !~ /\w+/ ) {
+    } else {
+      @words = split(/\s+/,$line);
+      if( $words[0] eq "fcldir" ) {
+         if( ! $words[2] ) { $words[2] = "fcl"; }
+         if( $words[1] eq "product_dir" ) {
+	    $fcldir = "\${UPS_PROD_DIR}/".$words[2];
+         } elsif( $words[1] eq "fq_dir" ) {
+	    $fcldir = "\${\${UPS_PROD_NAME_UC}_FQ_DIR}/".$words[2];
+         } elsif( $words[1] eq "-" ) {
+	    $fcldir = "none";
+	 } else {
+	    print "ERROR: $words[1] is an invalid directory path\n";
+	    print "ERROR: directory path must be specified as either \"product_dir\" or \"fq_dir\"\n";
+	    print "ERROR: using the default fcl directory path\n";
+	 }
+      }
+    }
+  }
+  close(PIN);
+  ##print "defining executable directory $fcldir\n";
+  return ($fcldir);
+}
+
+sub get_gdml_directory {
+  my @params = @_;
+  my $gdmldir = "none";
+  my $line;
+  my @words;
+  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
+  while ( $line=<PIN> ) {
+    chop $line;
+    if ( index($line,"#") == 0 ) {
+    } elsif ( $line !~ /\w+/ ) {
+    } else {
+      @words = split(/\s+/,$line);
+      if( $words[0] eq "gdmldir" ) {
+         if( ! $words[2] ) { $words[2] = "gdml"; }
+         if( $words[1] eq "product_dir" ) {
+	    $gdmldir = "\${UPS_PROD_DIR}/".$words[2];
+         } elsif( $words[1] eq "fq_dir" ) {
+	    $gdmldir = "\${\${UPS_PROD_NAME_UC}_FQ_DIR}/".$words[2];
+         } elsif( $words[1] eq "-" ) {
+	    $gdmldir = "none";
+	 } else {
+	    print "ERROR: $words[1] is an invalid directory path\n";
+	    print "ERROR: directory path must be specified as either \"product_dir\" or \"fq_dir\"\n";
+	    print "ERROR: using the default gdml directory path\n";
+	    $gdmldir = "\${UPS_PROD_DIR}/".$words[2];
+	 }
+      }
+    }
+  }
+  close(PIN);
+  ##print "defining executable directory $gdmldir\n";
+  return ($gdmldir);
+}
+
+sub get_fw_directory {
+  my @params = @_;
+  my $fwdir = "none";
+  my $line;
+  my @words;
+  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
+  while ( $line=<PIN> ) {
+    chop $line;
+    if ( index($line,"#") == 0 ) {
+    } elsif ( $line !~ /\w+/ ) {
+    } else {
+      @words = split(/\s+/,$line);
+      if( $words[0] eq "fwdir" ) {
+         if( $words[1] eq "-" ) {
+	    $fwdir = "none";
+	 } else { 
+            if( ! $words[2] ) { 
+		  print "ERROR: the fwdir subdirectory must be specified, there is no default\n";
+	    } else {
+               if( $words[1] eq "product_dir" ) {
+		  $fwdir = "\${UPS_PROD_DIR}/".$words[2];
+               } elsif( $words[1] eq "fq_dir" ) {
+		  $fwdir = "\${\${UPS_PROD_NAME_UC}_FQ_DIR}/".$words[2];
+	       } else {
+		  print "ERROR: $words[1] is an invalid directory path\n";
+		  print "ERROR: directory path must be specified as either \"product_dir\" or \"fq_dir\"\n";
+	       }
+	    }
+	 }
+      }
+    }
+  }
+  close(PIN);
+  ##print "defining executable directory $fwdir\n";
+  return ($fwdir);
+}
+
+sub product_setup_loop {
   my @params = @_;
   my $pfile = $params[0];
   my $dop = $params[1];
@@ -373,7 +545,7 @@ sub unsetup_dependencies {
   } elsif ( $simple ) {
     $qual = "-nq-";
   } else {
-    my $errfl2 = $builddir."/error-".$product_setup_loop::product."-".$product_setup_loop::version;
+    my $errfl2 = $builddir."/error-".$product."-".$version;
     open(ERR2, "> $errfl2") or die "Couldn't open $errfl2";
     print ERR2 "\n";
     print ERR2 "unsetenv_ CETPKG_NAME\n";
@@ -389,9 +561,9 @@ sub unsetup_dependencies {
     print "$errfl2\n";
     exit 0;
   }
-  print $dfile "unsetup_dependencies: qualifier is $qual\n";
+  print $dfile "product_setup_loop: $product $version $qual\n";
 
-  return ($unsetup_dependencies::product, $unsetup_dependencies::version);
+  return ($product, $version);
 }
 
 1;
