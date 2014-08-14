@@ -52,22 +52,40 @@ my $mrb_quals = $ENV{MRB_QUALS};
 
 # determine build type from MRB_QUALS
 my @qlist=split(/:/,$mrb_quals);
-my $dop;
-my $type;
+$setup_products::dop = "undefined";
+$setup_products::type = "undefined";
 for my $i ( 0 .. $#qlist ) {
     ##print $dfh "setup_products debug info: qualifier $i $qlist[$i]\n";
     if( $qlist[$i] eq "debug" ) {
-      $dop = "debug";
-      $type = "Debug";
+      $setup_products::dop = "debug";
+      $setup_products::type = "Debug";
     } elsif( $qlist[$i] eq "opt" ) {
-      $dop = "opt";
-      $type = "Opt";
+      $setup_products::dop = "opt";
+      $setup_products::type = "Opt";
     } elsif( $qlist[$i] eq "prof" ) {
-      $dop = "prof";
-      $type = "Prof";
+      $setup_products::dop = "prof";
+      $setup_products::type = "Prof";
     }
 }
-
+if ( $setup_products::dop eq "undefined" ) {
+    my $errfl2 = "problem_report";
+    open(ERR2, "> $errfl2") or die "Couldn't open $errfl2";
+    print ERR2 "\n";
+    print ERR2 "unsetenv_ CETPKG_NAME\n";
+    print ERR2 "unsetenv_ CETPKG_VERSION\n";
+    print ERR2 "unsetenv_ CETPKG_QUAL\n";
+    print ERR2 "unsetenv_ CETPKG_TYPE\n";
+    print ERR2 "unsetenv_ CETPKG_CC\n";
+    print ERR2 "unsetenv_ CETPKG_CXX\n";
+    print ERR2 "unsetenv_ CETPKG_FC\n";
+    print ERR2 "echo \"ERROR: \"\n";
+    print ERR2 "echo \"ERROR: build type is not declared\"\n";
+    print ERR2 "echo \"ERROR: \"\n";
+    print ERR2 "return 1\n";
+    close(ERR2);
+    print "$errfl2\n";
+    exit 0;
+}
 
 my $simple = "";
 for my $i ( 2 .. $#ARGV ) {
@@ -124,10 +142,10 @@ if ( $simple ) {
   print $tfh "unsetenv_ CETPKG_FC\n";
 } else {
   print $tfh "setenv CETPKG_QUAL $mrb_quals\n";
-  print $tfh "setenv CETPKG_TYPE $type\n";
-  print $tfh "setenv CETPKG_CC $compiler_table->{${compiler}}->{CC}\n";
-  print $tfh "setenv CETPKG_CXX $compiler_table->{${compiler}}->{CXX}\n";
-  print $tfh "setenv CETPKG_FC $compiler_table->{${compiler}}->{FC}\n";
+  print $tfh "setenv CETPKG_TYPE $setup_products::type\n";
+  print $tfh "setenv CETPKG_CC $compiler_table->{$compiler}->{CC}\n";
+  print $tfh "setenv CETPKG_CXX $compiler_table->{$compiler}->{CXX}\n";
+  print $tfh "setenv CETPKG_FC $compiler_table->{$compiler}->{FC}\n";
 }
 
 # have to find the list of packages to traverse
@@ -148,36 +166,35 @@ my @productversn;
 for my $i ( 0 .. $#package_list ) {
   my $pkg=$package_list[$i];
   my $pfile=$sourcedir."/".$pkg."/ups/product_deps";
-  print $dfh "setup_products debug info: checking $pfile for $pkg \n";
+  ##print $dfh "setup_products debug info: checking $pfile for $pkg \n";
   ($productnames[$i], $productversn[$i]) = get_product_name( $pfile, $dfh );
   $cetbver[$i] = find_cetbuildtools( $pfile );
-  print $dfh "setup_products debug info: cetbuildtools $cetbver[$i]\n";
+  ##print $dfh "setup_products debug info: cetbuildtools $cetbver[$i]\n";
   $use_cetbver = compare_versions( $use_cetbver, $cetbver[$i] );
 }
 print $tfh "setup -B cetbuildtools $use_cetbver\n";
 print $tfh "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
 print $tfh "setup -B cetpkgsupport \n";
 print $tfh "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
+@setup_products::setup_list=( "cetbuildtools", "cetpkgsupport" );
 
 # now check for an old build directory 
 my $old_build_dir=$ENV{OLD_MRB_BUILDDIR};
 if ( $old_build_dir ) {
-   ##print $dfh "setup_products debug info: found old build directory $old_build_dir\n";
+  ##print $dfh "setup_products debug info: found old build directory $old_build_dir\n";
   print $tfh "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${old_build_dir}\'`\n";
   print $tfh "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${old_build_dir}\'\`\n";
 }
-print $dfh "setup_products debug info: product name $#productnames @productnames\n";
-print $dfh "setup_products debug info: product version $#productversn @productversn\n";
+##print $dfh "setup_products debug info: product names @productnames\n";
+##print $dfh "setup_products debug info: product versions @productversn\n";
 
 print $tfh "# setup products\n";
 for my $i ( 0 .. $#package_list ) {
   my $pkg=$package_list[$i];
-  my $pfile=$sourcedir."/".$pkg."/ups/product_deps";
   $setup_products::product = "";
   $setup_products::version = "";
-  print $dfh "setup_products debug info: checking $pfile for $pkg \n";
-  print $dfh "setup_products debug info: calling product_unsetup_loop with $pfile\n";
-  ($setup_products::product, $setup_products::version) = product_setup_loop( $pfile, $dop, $simple, $builddir, $dfh, $tfh );
+  ##print $dfh "setup_products debug info: calling product_setup_loop for $pkg $setup_products::dop \n";
+  ($setup_products::product, $setup_products::version) = product_setup_loop( $sourcedir, $pkg, $simple, $builddir, $dfh, $tfh );
 
   if ( $setup_products::product ne $productnames[$i] ) {
      print $dfh "ERROR: product names do not match: $setup_products::product vs $productnames[$i]\n";

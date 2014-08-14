@@ -524,24 +524,160 @@ sub get_fw_directory {
   return ($fwdir);
 }
 
+sub cetpkg_info_file {
+  ## write a file to be processed by CetCMakeEnv
+  ## add CETPKG_SOURCE and CETPKG_BUILD for ease of reference by the user
+  # if there is a cmake cache file, we could check for the install prefix
+  # cmake -N -L | grep CMAKE_INSTALL_PREFIX | cut -f2 -d=
+  my @param_names =
+    qw (name version default_version qual type source build cc cxx fc);
+  my @param_vals = @_;
+  if (scalar @param_vals != scalar @param_names) {
+    print STDERR "ERROR: cetpkg_info_file expects the following paramaters in order:\n",
+      join(", ", @param_names), ".\n";
+    print STDERR "ERROR: cetpkg_info_file found:\n",
+      join(", ", @param_vals), ".\n";
+    exit(1);
+  }
+  my $cetpkgfile = "$param_vals[6]/cetpkg_variable_report";
+  open(CPG, "> $cetpkgfile") or die "Couldn't open $cetpkgfile";
+  print CPG "\n";
+  foreach my $index (0 .. $#param_names) {
+    printf CPG "CETPKG_%s%s%s\n",
+      uc $param_names[$index], # Var name.
+        " " x (max(map { length() + 2 } @param_names) -
+               length($param_names[$index])), # Space padding.
+          $param_vals[$index]; # Value.
+  }
+  print CPG "to check cmake cached variables, use cmake -N -L\n";
+  close(CPG);
+  return($cetpkgfile);  
+}
+
+sub setup_only_for_build {
+  # we are looking for products other than cetbuildtools or cetpkgsupport
+  my @params = @_;
+  my $tfile = $params[1];
+  # find all only_for_build products
+  my $count = 0;
+  my @build_products = ();
+  my $line;
+  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
+  while ( $line=<PIN> ) {
+    chop $line;
+    if ( index($line,"#") == 0 ) {
+    } elsif ( $line !~ /\w+/ ) {
+    } else {
+      my @words = split(/\s+/,$line);
+      if( $words[0] eq "only_for_build" ) {
+        ++$count;
+	$build_products[$count][0] = $words[1];  
+	if( $words[2] eq "-" ) {
+	  $build_products[$count][1] = "";
+	} else {
+          $build_products[$count][1] = $words[2];
+	}
+      }
+    }
+  }
+  close(PIN);
+  # setup these products if they have not already been setup
+  foreach my $i ( 1 .. $count ) {
+    my $print_setup = "true";
+    foreach my $j ( 0 .. $#setup_products::setup_list ) {
+      if( $build_products[$i][0] eq $setup_products::setup_list[$j] ) {
+        $print_setup = "false";
+      }
+    }
+    if ( $print_setup eq "true" ) {
+      print $tfile "setup -B $build_products[$i][0] $build_products[$i][1]\n";
+      print $tfile "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
+    }
+  }
+}
+
+sub print_setup_noqual {
+  my @params = @_;
+  my $efl = $params[3];
+  ##print $efl "# print_setup_noqual called with $params[0] $params[1] $params[2]\n";
+  if( $params[2] eq "true" ) { 
+  print $efl "# setup of $params[0] is optional\n"; 
+  print $efl "unset have_prod\n"; 
+  print $efl "ups exist $params[0] $params[1]\n"; 
+  print $efl "test \"\$?\" = 0 && set_ have_prod=\"true\"\n"; 
+  print $efl "test \"\$have_prod\" = \"true\" || echo \"will not setup $params[0] $params[1]\"\n"; 
+  print $efl "test \"\$have_prod\" = \"true\" && setup -B $params[0] $params[1] \n";
+  print $efl "unset have_prod\n"; 
+  } else {
+  print $efl "setup -B $params[0] $params[1] \n";
+  print $efl "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
+  }
+  return 0;
+}
+
+sub print_setup_qual {
+  my @params = @_;
+  my $efl = $params[4];
+  ##print $efl "# print_setup_qual called with $params[0] $params[1] $params[2] $params[3]\n";
+  my @qwords = split(/:/,$params[2]);
+  my $ql="+".$qwords[0];
+  foreach my $j ( 1 .. $#qwords ) {
+    $ql = $ql.":+".$qwords[$j];
+  }
+  if( $params[3] eq "true" ) { 
+  print $efl "# setup of $params[0] is optional\n"; 
+  print $efl "unset have_prod\n"; 
+  print $efl "ups exist $params[0] $params[1] -q $ql\n"; 
+  print $efl "test \"\$?\" = 0 && set_ have_prod=\"true\"\n"; 
+  print $efl "test \"\$have_prod\" = \"true\" || echo \"will not setup $params[0] $params[1] -q $ql\"\n"; 
+  print $efl "test \"\$have_prod\" = \"true\" && setup -B $params[0] $params[1] -q $ql \n";
+  print $efl "unset have_prod\n"; 
+  } else {
+  print $efl "setup -B $params[0] $params[1] -q $ql\n";
+  print $efl "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
+  }
+  return 0;
+}
+
+sub compare_qual {
+  my @params = @_;
+  my @ql1 = split(/:/,$params[0]);
+  my @ql2 = split(/:/,$params[1]);
+  my $retval = 0;
+  if( $#ql1 != $#ql2 ) { return $retval; }
+  my $size = $#ql2 + 1;
+  my $qmatch = 0;
+  my $ii;
+  my $jj;
+  foreach $ii ( 0 .. $#ql1 ) {
+    foreach $jj ( 0 .. $#ql2 ) {
+      if( $ql1[$ii] eq $ql2[$jj] )  { $qmatch++; }
+    }
+  }
+  if( $qmatch == $size ) { $retval = 1; }
+  return $retval;
+}
+
 sub product_setup_loop {
   my @params = @_;
-  my $pfile = $params[0];
-  my $dop = $params[1];
+  my $sourcedir = $params[0];
+  my $pkgname = $params[1];
   my $simple = $params[2];
   my $builddir = $params[3];
   my $dfile = $params[4];
   my $tfile = $params[5];
+
+  my $pfile=$sourcedir."/".$pkgname."/ups/product_deps";
+  # make the product subdirectory now
+  my $pkgdir = $builddir."/".$pkgname;
+  unless ( -e $pkgdir or mkdir $pkgdir ) { die "Couldn't create $pkgdir"; }
+
   my ($product, $version, $default_ver, $default_qual, $have_fq) = get_parent_info( $pfile );
-  my ($plen, $plist_ref, $dqlen, $dqlist_ref) = get_product_list( $pfile );
-  my @plist=@$plist_ref;
-  my @dqlist=@$dqlist_ref;
-  my ($ndeps, @qlist) = get_qualifier_list( $pfile, $dfile );
 
   my $qual;
   if ( $default_qual ) {
     $qual = $default_qual.":";
-    $qual = $qual.$dop;
+    $qual = $qual.$setup_products::dop;
   } elsif ( $simple ) {
     $qual = "-nq-";
   } else {
@@ -561,7 +697,103 @@ sub product_setup_loop {
     print "$errfl2\n";
     exit 0;
   }
-  print $dfile "product_setup_loop: $product $version $qual\n";
+  ##print $dfile "product_setup_loop: $product $version $qual\n";
+
+  my $default_fc = ( $^O eq "darwin" ) ? "-" : "gfortran";
+  my $compiler;
+  my $compiler_table =
+    {
+     cc => { CC => "cc", CXX => "c++", FC => $default_fc },
+     gcc => { CC => "gcc", CXX => "g++", FC => "gfortran" },
+     icc => { CC => "icc", CXX => "icpc", FC => "ifort" },
+    };
+
+  if (!$compiler) {
+    my @quals = split /:/, $qual;
+    if (grep /^(e[245]|gcc4[78])$/, @quals) {
+      $compiler = "gcc";
+    } else {
+      $compiler = "cc"; # Native.
+    }
+  }
+  ##print $dfile "product_setup_loop: compiler is $compiler\n";
+  ##print $dfile "product_setup_loop: $compiler_table->{$compiler}->{CC} $compiler_table->{$compiler}->{CXX} $compiler_table->{$compiler}->{FC}\n";
+
+  my $cetfl = cetpkg_info_file( $product, 
+                        	$version, 
+				$default_ver, 
+				$qual, 
+				$setup_products::type, 
+				$sourcedir, 
+				$pkgdir,
+                        	$compiler_table->{$compiler}->{CC},
+                        	$compiler_table->{$compiler}->{CXX},
+                        	$compiler_table->{$compiler}->{FC}
+			     );
+
+  print $tfile "# Configuring $product\n";
+  setup_only_for_build( $pfile, $tfile );
+
+  # now deal with regular dependencies and their qualifiers
+  my ($plen, $plist_ref, $dqlen, $dqlist_ref) = get_product_list( $pfile );
+  my @plist=@$plist_ref;
+  my @dqlist=@$dqlist_ref;
+  my ($ndeps, @qlist) = get_qualifier_list( $pfile, $dfile );
+  # now call setup with the correct version and qualifiers
+  foreach my $i ( 1 .. $#qlist ) {
+    next if ( ! (compare_qual( $qlist[$i][0], $qual ) ) );
+    ##print $dfile "product_setup_loop: $qlist[$i][$0] matches $qual \n";
+    foreach my $j ( 1 .. $ndeps ) {
+      next if $qlist[0][$j] eq "compiler";
+      my $print_setup = "true";
+      # are we building this product?
+      foreach my $k ( 0 .. $#product_setup_loop::productnames ) {
+	if ( $product_setup_loop::productnames[$k] eq $qlist[0][$j] ) {
+	   $print_setup = "false";
+	}
+      }
+      # is this product already in the setup list?
+      foreach my $k ( 0 .. $#setup_products::setup_list ) {
+	if( $qlist[0][$j] eq $setup_products::setup_list[$k] ) {
+          $print_setup = "false";
+	}
+      }
+      ##print $dfile "product_setup_loop: setup $qlist[0][$j] $qlist[$i][$j]? ${print_setup}\n";
+      if ( $print_setup eq "true" ) {
+	push( @setup_products::setup_list, $qlist[0][$j] );
+	my $piter = -1;
+	foreach my $k ( 0 .. $plen ) {
+	  if ( $plist[$k][0] eq $qlist[0][$j] ) {
+	    $piter = $k;
+	  }
+	}
+	if ( $piter < 0 ) {
+	  my $errfl2 = $builddir."/error-".$product."-".$version;
+	  open(ERR2, "> $errfl2") or die "Couldn't open $errfl2";
+	  print ERR2 "\n";
+	  print ERR2 "unsetenv_ CETPKG_NAME\n";
+	  print ERR2 "unsetenv_ CETPKG_VERSION\n";
+	  print ERR2 "unsetenv_ CETPKG_QUAL\n";
+	  print ERR2 "unsetenv_ CETPKG_TYPE\n";
+	  print ERR2 "echo \"ERROR: no match to qualifier list for $qlist[0][$j]\"\n";
+	  print ERR2 "return 1\n";
+	  close(ERR2);
+	  print "$errfl2\n";
+	  exit 0;
+	}
+	my $is_optional = "false";
+	if (( $plist[$piter][2]) && (( $plist[$piter][2] eq "optional" ) ||  ( $plist[$piter][3] eq "optional" ))) { $is_optional = "true"; }
+	if ( $qlist[$i][$j] eq "-" ) {
+	} elsif ( $qlist[$i][$j] eq "-nq-" ) {
+          print_setup_noqual( $qlist[0][$j], $plist[$piter][1], $is_optional, $tfile );
+	} elsif ( $qlist[$i][$j] eq "-b-" ) {
+          print_setup_noqual( $qlist[0][$j], $plist[$piter][1], $is_optional, $tfile );
+	} else {
+          print_setup_qual( $qlist[0][$j], $plist[$piter][1], $qlist[$i][$j], $is_optional, $tfile );
+	}
+      }
+    }
+  }
 
   return ($product, $version);
 }
