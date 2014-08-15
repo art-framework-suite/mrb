@@ -4,11 +4,10 @@
 use File::Basename;
 use lib dirname($0);
 
+use mrb_parse_deps;
+
 $sourcedir= $ENV{MRB_SOURCE};
 $builddir = $ENV{MRB_BUILDDIR};
-
-
-require mrb_parse_deps;
 
 my $default_fc = ( $^O eq "darwin" ) ? "-" : "gfortran";
 

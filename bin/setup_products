@@ -6,6 +6,8 @@
 use File::Basename;
 use lib dirname($0);
 
+use mrb_parse_deps;
+
 use strict;
 use warnings;
 
@@ -125,8 +127,6 @@ if ( $srcbase eq "ups" ) {
 }
 #print $dfh "setup_products debug info: source dir is $sourcedir\n";
 
-require mrb_parse_deps;
-
 my $tmpfl = $builddir."/".$mrb_project."-".$mrb_version;
 ##print $dfh "setup_products debug info: opening $tmpfl for $mrb_project $mrb_version\n";
 open(my $tfh, "+> $tmpfl") or die "Couldn't open $tmpfl";
@@ -176,7 +176,7 @@ print $tfh "setup -B cetbuildtools $use_cetbver\n";
 print $tfh "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
 print $tfh "setup -B cetpkgsupport \n";
 print $tfh "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
-@setup_products::setup_list=( "cetbuildtools", "cetpkgsupport" );
+@setup_list=( "cetbuildtools", "cetpkgsupport" );
 
 # now check for an old build directory 
 my $old_build_dir=$ENV{OLD_MRB_BUILDDIR};

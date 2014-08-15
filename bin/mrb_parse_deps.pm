@@ -47,10 +47,35 @@
 # -nq-	this dependent product has no qualifier
 # -b-	this dependent product is only used for the build - it will not be in the table
 
-use List::Util qw(min max); # Numeric min / max funcions.
-
 use strict;
 use warnings;
+
+package mrb_parse_deps;
+
+use List::Util qw(min max); # Numeric min / max funcions.
+
+use Exporter 'import';
+our (@EXPORT, @setup_list);
+@EXPORT = qw( get_package_list 
+              get_product_name 
+              find_cetbuildtools 
+              compare_versions 
+              get_parent_info 
+              get_product_list 
+              get_qualifier_list 
+              get_dependency_list 
+              find_default_qual 
+              get_fcl_directory 
+              get_gdml_directory 
+              get_fw_directory 
+              cetpkg_info_file 
+              setup_only_for_build 
+              print_setup_noqual 
+              print_setup_qual 
+              compare_qual 
+              product_setup_loop 
+              @setup_list);
+
 
 sub get_package_list {
   my @params = @_;
@@ -584,8 +609,8 @@ sub setup_only_for_build {
   # setup these products if they have not already been setup
   foreach my $i ( 1 .. $count ) {
     my $print_setup = "true";
-    foreach my $j ( 0 .. $#setup_products::setup_list ) {
-      if( $build_products[$i][0] eq $setup_products::setup_list[$j] ) {
+    foreach my $j ( 0 .. $#setup_list ) {
+      if( $build_products[$i][0] eq $setup_list[$j] ) {
         $print_setup = "false";
       }
     }
@@ -753,14 +778,14 @@ sub product_setup_loop {
 	}
       }
       # is this product already in the setup list?
-      foreach my $k ( 0 .. $#setup_products::setup_list ) {
-	if( $qlist[0][$j] eq $setup_products::setup_list[$k] ) {
+      foreach my $k ( 0 .. $#setup_list ) {
+	if( $qlist[0][$j] eq $setup_list[$k] ) {
           $print_setup = "false";
 	}
       }
       ##print $dfile "product_setup_loop: setup $qlist[0][$j] $qlist[$i][$j]? ${print_setup}\n";
       if ( $print_setup eq "true" ) {
-	push( @setup_products::setup_list, $qlist[0][$j] );
+	push( @setup_list, $qlist[0][$j] );
 	my $piter = -1;
 	foreach my $k ( 0 .. $plen ) {
 	  if ( $plist[$k][0] eq $qlist[0][$j] ) {
