@@ -6,6 +6,8 @@
 use File::Basename;
 use lib dirname($0);
 
+use mrb_parse_deps;
+
 
 if( $#ARGV < 1 ) {
     $errfl1 = "problem_report";
@@ -42,8 +44,6 @@ $diagfl = $builddir."/diag_report";
 open(DIAG, ">> $diagfl") or die "Couldn't open $diagfl";
 
 $inputdir = $sourcedir."/ups";
-
-require mrb_parse_deps;
 
 $mrb_project = $ENV{MRB_PROJECT};
 $mrb_version = $ENV{MRB_PROJECT_VERSION};

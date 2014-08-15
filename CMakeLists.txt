@@ -6,8 +6,7 @@
 #
 #  install steps:
 #  cd /path/to/build/directory
-#  source /path/to/cetbuildtools/ups/setup_for_development 
-#  cmake [-DCMAKE_INSTALL_PREFIX=/install/path] $CETBUILDTOOLS_SOURCE
+#  cmake [-DCMAKE_INSTALL_PREFIX=/install/path] /path/to/mrb
 #  make install
 #  make package (tar file for ups)
 
@@ -15,7 +14,7 @@ CMAKE_MINIMUM_REQUIRED (VERSION 2.8)
 
 PROJECT (mrb)
 set (product mrb)
-set (version v1_01_03)
+set (version v1_01_04)
 
 # Throw a fatal error if cmake is invoked from within the source code directory tree
 string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" in_source)

@@ -81,6 +81,7 @@ function make_srcs_directory()
 
   # Make the main CMakeLists.txt file
   ${mrb_bin}/copy_files_to_srcs.sh ${MRB_SOURCE} || exit 1
+  if [ ${printDebug} ]; then echo "DEBUG: ran copy_files_to_srcs"; fi
   # this is a hack....
   cp ${MRB_DIR}/templates/dependency_list ${MRB_SOURCE}/ || exit 1;
   # end hack
@@ -291,6 +292,17 @@ fi
 prjdirname="${MRB_PROJECTUC}_DIR"
 prjdir="${!prjdirname}"
 MRB_PROJECT_VERSION=${prjver}
+prjcodename="${MRB_PROJECTUC}CODE_DIR"
+prjcodedir="${!prjcodename}"
+if [ ${printDebug} ]
+then
+    echo "DEBUG: MRB_PROJECTUC ${MRB_PROJECTUC}"
+    echo "DEBUG: prjver ${prjver}"
+    echo "DEBUG: prjdirname ${prjdirname}"
+    echo "DEBUG: prjdir ${prjdir}"
+    echo "DEBUG: prjcodename ${prjcodename}"
+    echo "DEBUG: prjcodedir ${prjcodedir}"
+fi
 if [ -z ${prjdir} ] && [ -z ${qualList} ]
 then
     echo "ERROR: ${MRB_PROJECT} product is not setup."
@@ -498,10 +510,18 @@ if [ ${makeLP} ]; then
     #cp -R $project_dir/.upsfiles $dirName
     ##echo "NOTICE: Copied .upsfiles to $dirName"
     
-    if [ -d ${MRB_PROJECTUC}_DIR ]
+    if [ ${printDebug} ]
+    then
+        echo
+	echo "DEBUG: MRB_SOURCE ${MRB_SOURCE}"
+	echo "DEBUG: MRB_INSTALL ${MRB_INSTALL}"
+	echo "DEBUG: prjdir ${prjdir}"
+	echo "DEBUG: prjcodedir ${prjcodedir}"
+    fi
+    if [ ! -z ${prjdir} ] && [ -d ${prjdir} ]
     then
         $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}_DIR
-    elif [ -d ${MRB_PROJECTUC}CODE_DIR ] 
+    elif [ ! -z ${prjcodedir} ] && [ -d ${prjcodedir} ] 
     then
        $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}CODE_DIR
     else      
