@@ -460,9 +460,9 @@ sub get_fcl_directory {
       if( $words[0] eq "fcldir" ) {
          if( ! $words[2] ) { $words[2] = "fcl"; }
          if( $words[1] eq "product_dir" ) {
-	    $fcldir = "\${UPS_PROD_DIR}/".$words[2];
+	    $fcldir = $params[1]."/".$words[2];
          } elsif( $words[1] eq "fq_dir" ) {
-	    $fcldir = "\${\${UPS_PROD_NAME_UC}_FQ_DIR}/".$words[2];
+	    $fcldir = $params[1]."/".$words[2];
          } elsif( $words[1] eq "-" ) {
 	    $fcldir = "none";
 	 } else {
@@ -493,16 +493,16 @@ sub get_gdml_directory {
       if( $words[0] eq "gdmldir" ) {
          if( ! $words[2] ) { $words[2] = "gdml"; }
          if( $words[1] eq "product_dir" ) {
-	    $gdmldir = "\${UPS_PROD_DIR}/".$words[2];
+	    $gdmldir = $params[1]."/".$words[2];
          } elsif( $words[1] eq "fq_dir" ) {
-	    $gdmldir = "\${\${UPS_PROD_NAME_UC}_FQ_DIR}/".$words[2];
+	    $gdmldir = $params[1]."/".$words[2];
          } elsif( $words[1] eq "-" ) {
 	    $gdmldir = "none";
 	 } else {
 	    print "ERROR: $words[1] is an invalid directory path\n";
 	    print "ERROR: directory path must be specified as either \"product_dir\" or \"fq_dir\"\n";
 	    print "ERROR: using the default gdml directory path\n";
-	    $gdmldir = "\${UPS_PROD_DIR}/".$words[2];
+	    $gdmldir = $params[1]."/".$words[2];
 	 }
       }
     }
@@ -532,9 +532,9 @@ sub get_fw_directory {
 		  print "ERROR: the fwdir subdirectory must be specified, there is no default\n";
 	    } else {
                if( $words[1] eq "product_dir" ) {
-		  $fwdir = "\${UPS_PROD_DIR}/".$words[2];
+		  $fwdir = $params[1]."/".$words[2];
                } elsif( $words[1] eq "fq_dir" ) {
-		  $fwdir = "\${\${UPS_PROD_NAME_UC}_FQ_DIR}/".$words[2];
+		  $fwdir = $params[1]."/".$words[2];
 	       } else {
 		  print "ERROR: $words[1] is an invalid directory path\n";
 		  print "ERROR: directory path must be specified as either \"product_dir\" or \"fq_dir\"\n";
