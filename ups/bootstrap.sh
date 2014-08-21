@@ -82,7 +82,7 @@ then
             	-o ${mydir}/${package}-${pkgver}.tar ${pkgver}
 else
 	git archive --prefix=mrb-${pkgver}/ \
-            	--remote ssh://p-${package}@cdcvs.fnal.gov/cvs/projects/${package} \
+            	--remote http://cdcvs.fnal.gov/projects/${package} \
             	-o ${mydir}/${package}-${pkgver}.tar ${pkgver}
 		
 fi
