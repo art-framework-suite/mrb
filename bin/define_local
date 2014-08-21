@@ -107,6 +107,8 @@ for $i ( 0 .. $#package_list ) {
   # pretend this is a product
   $product_uc = uc($product);
   print TSET "setenv  ${product_uc}_VERSION $version\n";
+  print TSET "setenv  ${product_uc}_FQ $qual\n";
+  
   # dropit -esf will remove any existing instances of the path and then prepend the path
   # unfortunately, tcsh complains if the variable is not already set, so we have to check
   if ( $ENV{LD_LIBRARY_PATH} ne '' ) {
