@@ -16,7 +16,7 @@ function run_buildtool()
    fi
    cd $MRB_BUILDDIR
    echo "calling buildtool $*"
-   buildtool $*
+   buildtool $* || exit $?
 }
 
 # setEnv must be sourced in order to affect your environment
