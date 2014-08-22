@@ -43,7 +43,7 @@ if pwd | egrep -q '/build[^/]*$';
     echo "Removing everything in ${MRB_BUILDDIR}"
     rm -rf *
     echo 'You must now run the following:'
-    echo '    mrbsetenv'
+    echo '    source mrb setEnv'
 
   else
     echo "ERROR: ${MRB_BUILDDIR} does not point to a directory that starts with build"
