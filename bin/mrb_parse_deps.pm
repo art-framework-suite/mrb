@@ -151,6 +151,8 @@ sub find_cetbuildtools {
        if( $words[1] eq "cetbuildtools" ) {
            $cver = $words[2];
 	}
+      } elsif( $words[0] eq "cetbuildtools" ) {
+        $cver = $words[1];
       }
     }
   }
@@ -735,7 +737,7 @@ sub product_setup_loop {
 
   if (!$compiler) {
     my @quals = split /:/, $qual;
-    if (grep /^(e[245]|gcc4[78])$/, @quals) {
+    if (grep /^(e|gcc)\d+$/, @quals) {
       $compiler = "gcc";
     } else {
       $compiler = "cc"; # Native.
@@ -807,7 +809,9 @@ sub product_setup_loop {
 	  exit 0;
 	}
 	my $is_optional = "false";
-	if (( $plist[$piter][2]) && (( $plist[$piter][2] eq "optional" ) ||  ( $plist[$piter][3] eq "optional" ))) { $is_optional = "true"; }
+	# old and new style
+	if (( $plist[$piter][2]) && ( $plist[$piter][2] eq "optional" )) { $is_optional = "true"; }
+	if (( $plist[$piter][3]) && ( $plist[$piter][3] eq "optional" )) { $is_optional = "true"; }
 	if ( $qlist[$i][$j] eq "-" ) {
 	} elsif ( $qlist[$i][$j] eq "-nq-" ) {
           print_setup_noqual( $qlist[0][$j], $plist[$piter][1], $is_optional, $tfile );

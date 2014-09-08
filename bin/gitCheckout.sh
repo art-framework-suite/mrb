@@ -190,6 +190,16 @@ then
 	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
 	clone_init_cmake $code
     done
+elif [ "${REP}" == "artdaq_core" ]
+then
+    # this special case needs to become generic
+    if [ -z ${destinationDir} ]
+    then
+        destinationDir=artdaq_core
+    fi
+    gitCommand="git clone ssh://p-artdaq@cdcvs.fnal.gov/cvs/projects/artdaq-core ${destinationDir}"
+    gitCommandRO="git clone http://cdcvs.fnal.gov/projects/artdaq-core ${destinationDir}"
+    clone_init_cmake $repbase ${destinationDir}
 elif [ "${have_path}" == "true" ]
 then
     if [ "${useRO}" == "true" ]
