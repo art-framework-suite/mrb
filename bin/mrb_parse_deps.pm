@@ -737,7 +737,7 @@ sub product_setup_loop {
 
   if (!$compiler) {
     my @quals = split /:/, $qual;
-    if (grep /^(e[245]|gcc4[78])$/, @quals) {
+    if (grep /^(e|gcc)\d+$/, @quals) {
       $compiler = "gcc";
     } else {
       $compiler = "cc"; # Native.
