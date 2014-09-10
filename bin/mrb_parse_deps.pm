@@ -632,7 +632,7 @@ sub print_setup_noqual {
   print $efl "unset have_prod\n"; 
   print $efl "ups exist $params[0] $params[1]\n"; 
   print $efl "test \"\$?\" = 0 && set_ have_prod=\"true\"\n"; 
-  print $efl "test \"\$have_prod\" = \"true\" || echo \"will not setup $params[0] $params[1]\"\n"; 
+  print $efl "test \"\$have_prod\" = \"true\" || echo \"no optional setup of $params[0] $params[1]\"\n"; 
   print $efl "test \"\$have_prod\" = \"true\" && setup -B $params[0] $params[1] \n";
   print $efl "unset have_prod\n"; 
   } else {
@@ -656,7 +656,7 @@ sub print_setup_qual {
   print $efl "unset have_prod\n"; 
   print $efl "ups exist $params[0] $params[1] -q $ql\n"; 
   print $efl "test \"\$?\" = 0 && set_ have_prod=\"true\"\n"; 
-  print $efl "test \"\$have_prod\" = \"true\" || echo \"will not setup $params[0] $params[1] -q $ql\"\n"; 
+  print $efl "test \"\$have_prod\" = \"true\" || echo \"no optional setup of $params[0] $params[1] -q $ql\"\n"; 
   print $efl "test \"\$have_prod\" = \"true\" && setup -B $params[0] $params[1] -q $ql \n";
   print $efl "unset have_prod\n"; 
   } else {
@@ -812,6 +812,10 @@ sub product_setup_loop {
 	# old and new style
 	if (( $plist[$piter][2]) && ( $plist[$piter][2] eq "optional" )) { $is_optional = "true"; }
 	if (( $plist[$piter][3]) && ( $plist[$piter][3] eq "optional" )) { $is_optional = "true"; }
+	# setup is optional if this package is going to be built
+	for my $ip ( 0 .. $#setup_products::package_list ) {
+	  if ( $qlist[0][$j] eq $setup_products::package_list[$ip] ) { $is_optional = "true"; }
+	}
 	if ( $qlist[$i][$j] eq "-" ) {
 	} elsif ( $qlist[$i][$j] eq "-nq-" ) {
           print_setup_noqual( $qlist[0][$j], $plist[$piter][1], $is_optional, $tfile );
