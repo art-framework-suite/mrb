@@ -812,11 +812,13 @@ sub product_setup_loop {
 	# old and new style
 	if (( $plist[$piter][2]) && ( $plist[$piter][2] eq "optional" )) { $is_optional = "true"; }
 	if (( $plist[$piter][3]) && ( $plist[$piter][3] eq "optional" )) { $is_optional = "true"; }
-	# setup is optional if this package is going to be built
+	# are we going to build this package?
+	my $no_package_setup = "false";
 	for my $ip ( 0 .. $#setup_products::package_list ) {
-	  if ( $qlist[0][$j] eq $setup_products::package_list[$ip] ) { $is_optional = "true"; }
+	  if ( $qlist[0][$j] eq $setup_products::package_list[$ip] ) { $no_package_setup = "true"; }
 	}
 	if ( $qlist[$i][$j] eq "-" ) {
+	} elsif ( $no_package_setup eq "true" ) {
 	} elsif ( $qlist[$i][$j] eq "-nq-" ) {
           print_setup_noqual( $qlist[0][$j], $plist[$piter][1], $is_optional, $tfile );
 	} elsif ( $qlist[$i][$j] eq "-b-" ) {
