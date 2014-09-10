@@ -150,9 +150,9 @@ if ( $simple ) {
 
 # have to find the list of packages to traverse
 my $cmakefile=$sourcedir."/CMakeLists.txt";
-my @package_list = get_package_list( $cmakefile, $dfh );
+@setup_products::package_list = get_package_list( $cmakefile, $dfh );
 ##print $dfh "DIAGNOSTICS: packages to check: $#package_list @package_list\n";
-if ( $#package_list < 0 ) {
+if ( $#setup_products::package_list < 0 ) {
   print $dfh "DIAGNOSTICS: there are no packages in $sourcedir\n";
   print $dfh "DIAGNOSTICS: nothing to build\n";
   print "$tmpfl\n";
@@ -163,8 +163,8 @@ my $use_cetbver="v0_00_00";
 my @cetbver;
 my @productnames;
 my @productversn;
-for my $i ( 0 .. $#package_list ) {
-  my $pkg=$package_list[$i];
+for my $i ( 0 .. $#setup_products::package_list ) {
+  my $pkg=$setup_products::package_list[$i];
   my $pfile=$sourcedir."/".$pkg."/ups/product_deps";
   ##print $dfh "setup_products debug info: checking $pfile for $pkg \n";
   ($productnames[$i], $productversn[$i]) = get_product_name( $pfile, $dfh );
@@ -189,8 +189,8 @@ if ( $old_build_dir ) {
 ##print $dfh "setup_products debug info: product versions @productversn\n";
 
 print $tfh "# setup products\n";
-for my $i ( 0 .. $#package_list ) {
-  my $pkg=$package_list[$i];
+for my $i ( 0 .. $#setup_products::package_list ) {
+  my $pkg=$setup_products::package_list[$i];
   $setup_products::product = "";
   $setup_products::version = "";
   ##print $dfh "setup_products debug info: calling product_setup_loop for $pkg $setup_products::dop \n";
