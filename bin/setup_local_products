@@ -98,6 +98,9 @@ echo local product directory is $MRB_INSTALL
 # Remove build directory from FHICL_FILE_PATH
 tnotnull FHICL_FILE_PATH && setenv FHICL_FILE_PATH `dropit -p $FHICL_FILE_PATH $MRB_BUILDDIR`
 
+# Remove build directory from PATH
+tnotnull PATH   && setenv PATH   `dropit -p $PATH   $MRB_BUILDDIR`
+
 # Remove build area LIBRARY_PATH
 tnotnull LD_LIBRARY_PATH   && setenv LD_LIBRARY_PATH   `dropit -p $LD_LIBRARY_PATH   $MRB_BUILDDIR`
 tnotnull DYLD_LIBRARY_PATH && setenv DYLD_LIBRARY_PATH `dropit -p $DYLD_LIBRARY_PATH $MRB_BUILDDIR`

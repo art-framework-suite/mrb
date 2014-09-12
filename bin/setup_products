@@ -182,6 +182,7 @@ print $tfh "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n";
 my $old_build_dir=$ENV{OLD_MRB_BUILDDIR};
 if ( $old_build_dir ) {
   ##print $dfh "setup_products debug info: found old build directory $old_build_dir\n";
+  print $tfh "setenv  PATH \`dropit -p \${PATH} \'${old_build_dir}\'`\n";
   print $tfh "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${old_build_dir}\'`\n";
   print $tfh "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${old_build_dir}\'\`\n";
 }
