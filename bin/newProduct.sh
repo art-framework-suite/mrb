@@ -106,7 +106,19 @@ function createFiles() {
 
   # @source/CMakeLists.txt@ file from &l=templates/product/CMakeLists.txt_src&
   mkdir $PRODNAME
-  sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/CMakeLists.txt_src > $PRODNAME/CMakeLists.txt
+  #sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/CMakeLists.txt_src > $PRODNAME/CMakeLists.txt
+  # this is really simple, just write it
+  echo "# basic source code CMakeLists.txt" > $PRODNAME/CMakeLists.txt
+  if [ "$noflav" ]; then
+    echo "" >> $PRODNAME/CMakeLists.txt
+  else
+    echo "" >> $PRODNAME/CMakeLists.txt
+    echo "art_make( )" >> $PRODNAME/CMakeLists.txt
+    echo "" >> $PRODNAME/CMakeLists.txt
+  fi
+  echo "install_headers()" >> $PRODNAME/CMakeLists.txt
+  echo "install_source()" >> $PRODNAME/CMakeLists.txt
+  echo "install_fhicl()" >> $PRODNAME/CMakeLists.txt
 
   # @test/CMakeLists.txt@ file from &l=templates/product/CMakeLists.txt_test&
   mkdir test
@@ -117,7 +129,11 @@ function createFiles() {
   cd ups
 
   # @ups/CMakeLists.txt@ file from &l=templates/product/CMakeLists.txt_ups&
-  sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/CMakeLists.txt_ups > CMakeLists.txt
+  if [ "$noflav" ]; then
+    sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/CMakeLists.txt_ups_noflav > CMakeLists.txt
+  else
+    sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/CMakeLists.txt_ups > CMakeLists.txt
+  fi
 
   # ups files
 
