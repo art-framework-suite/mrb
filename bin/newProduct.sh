@@ -49,7 +49,7 @@ function createFiles() {
   status=$?
   if [ ${status} = 0 ]
   then
-     CETBV=v3_10_01
+     CETBV=v3_13_01
      GCCV=v4_8_2
   else
      CETBV=v3_07_11
@@ -104,9 +104,20 @@ function createFiles() {
     sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" -e "s/%%CHECK_GCC%%/$CHECK_GCC/g" < ${templateDir}/CMakeLists.txt_top > CMakeLists.txt
   fi
 
-  # @source/CMakeLists.txt@ file from &l=templates/product/CMakeLists.txt_src&
+  # @$PRODNAME/CMakeLists.txt@ file 
   mkdir $PRODNAME
-  sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/CMakeLists.txt_src > $PRODNAME/CMakeLists.txt
+  # this is really simple, just write it
+  echo "# basic source code CMakeLists.txt" > $PRODNAME/CMakeLists.txt
+  if [ "$noflav" ]; then
+    echo "" >> $PRODNAME/CMakeLists.txt
+  else
+    echo "" >> $PRODNAME/CMakeLists.txt
+    echo "art_make( )" >> $PRODNAME/CMakeLists.txt
+    echo "" >> $PRODNAME/CMakeLists.txt
+    echo "install_headers()" >> $PRODNAME/CMakeLists.txt
+    echo "install_source()" >> $PRODNAME/CMakeLists.txt
+  fi
+  echo "install_fhicl()" >> $PRODNAME/CMakeLists.txt
 
   # @test/CMakeLists.txt@ file from &l=templates/product/CMakeLists.txt_test&
   mkdir test
@@ -116,8 +127,18 @@ function createFiles() {
   mkdir ups
   cd ups
 
-  # @ups/CMakeLists.txt@ file from &l=templates/product/CMakeLists.txt_ups&
-  sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/CMakeLists.txt_ups > CMakeLists.txt
+  # @ups/CMakeLists.txt@ file 
+  # this is another simple file
+  echo "# create package configuration and version files" > CMakeLists.txt
+  echo "" >> CMakeLists.txt
+  echo "process_ups_files()" >> CMakeLists.txt
+  echo "" >> CMakeLists.txt
+  if [ "$noflav" ]; then
+    echo "cet_cmake_config( NO_FLAVOR )" >> CMakeLists.txt
+  else
+    echo "cet_cmake_config()" >> CMakeLists.txt
+  fi
+  echo "" >> CMakeLists.txt
 
   # ups files
 

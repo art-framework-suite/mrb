@@ -4,7 +4,7 @@
 
 CMAKE_MINIMUM_REQUIRED (VERSION 2.8)
 
-PROJECT (%%PD%%)
+project(%%PD%% NONE)
 
 # cetbuildtools contains our cmake modules
 set( CETBUILDTOOLS_VERSION $ENV{CETBUILDTOOLS_VERSION} )
@@ -25,7 +25,7 @@ cet_cmake_env( noarch )
 find_ups_product(cetbuildtools v3_07_00)
 
 # source code
-add_subdirectory(bin)
+add_subdirectory(%%PD%%)
 add_subdirectory(test)
 add_subdirectory(ups)
 
