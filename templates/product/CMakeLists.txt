@@ -1,9 +1,7 @@
 
-INSTALL (FILES CMakeLists.txt_src
+INSTALL (FILES CMakeLists.txt_top
 	       CMakeLists.txt_test
-	       CMakeLists.txt_top
 	       CMakeLists.txt_top_noflav
-	       CMakeLists.txt_ups
 	       product-config.cmake.in.template
 	       product_deps
 	       product_deps_noflav
