@@ -207,6 +207,7 @@ for my $i ( 0 .. $#setup_products::package_list ) {
   }
 }
 
+my $onlyForBuild="cetbuildtools;";
 my $cetfl = cetpkg_info_file( $mrb_project, 
                               $mrb_version, 
 			      $mrb_version, 
@@ -216,7 +217,8 @@ my $cetfl = cetpkg_info_file( $mrb_project,
 			      $builddir,
                               $compiler_table->{$compiler}->{CC},
                               $compiler_table->{$compiler}->{CXX},
-                              $compiler_table->{$compiler}->{FC}
+                              $compiler_table->{$compiler}->{FC},
+			      $onlyForBuild
 			   );
 
 # cleanup
