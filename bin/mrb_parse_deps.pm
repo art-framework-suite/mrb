@@ -557,7 +557,7 @@ sub cetpkg_info_file {
   # if there is a cmake cache file, we could check for the install prefix
   # cmake -N -L | grep CMAKE_INSTALL_PREFIX | cut -f2 -d=
   my @param_names =
-    qw (name version default_version qual type source build cc cxx fc);
+    qw (name version default_version qual type source build cc cxx fc only_for_build);
   my @param_vals = @_;
   if (scalar @param_vals != scalar @param_names) {
     print STDERR "ERROR: cetpkg_info_file expects the following paramaters in order:\n",
@@ -581,14 +581,14 @@ sub cetpkg_info_file {
   return($cetpkgfile);  
 }
 
-sub setup_only_for_build {
-  # we are looking for products other than cetbuildtools or cetpkgsupport
+sub get_only_for_build {
   my @params = @_;
-  my $tfile = $params[1];
+  my $dbgrpt = $params[1];
   # find all only_for_build products
   my $count = 0;
   my @build_products = ();
   my $line;
+  ##print $dbgrpt "get_only_for_build debug: $params[0] \n";
   open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
   while ( $line=<PIN> ) {
     chop $line;
@@ -598,16 +598,35 @@ sub setup_only_for_build {
       my @words = split(/\s+/,$line);
       if( $words[0] eq "only_for_build" ) {
         ++$count;
+        ##print $dbgrpt "get_only_for_build debug: found $line \n";
 	$build_products[$count][0] = $words[1];  
 	if( $words[2] eq "-" ) {
 	  $build_products[$count][1] = "";
 	} else {
           $build_products[$count][1] = $words[2];
 	}
+      } elsif( ($words[3]) && ($words[3] eq "only_for_build") ) {
+        ++$count;
+        ##print $dbgrpt "get_only_for_build debug: found $line \n";
+	$build_products[$count][0] = $words[0];  
+	if( $words[2] eq "-" ) {
+	  $build_products[$count][1] = "";
+	} else {
+          $build_products[$count][1] = $words[1];
+	}
       }
     }
   }
   close(PIN);
+  ##print $dbgrpt "get_only_for_build debug: count is $count \n";
+  return ($count, @build_products);
+}
+
+sub setup_only_for_build {
+  my @params = @_;
+  my $tfile = $params[1];
+  # we are looking for products other than cetbuildtools or cetpkgsupport
+  my ($count, @build_products) = get_only_for_build( $params[0], $params[2] );
   # setup these products if they have not already been setup
   foreach my $i ( 1 .. $count ) {
     my $print_setup = "true";
@@ -746,6 +765,12 @@ sub product_setup_loop {
   ##print $dfile "product_setup_loop: compiler is $compiler\n";
   ##print $dfile "product_setup_loop: $compiler_table->{$compiler}->{CC} $compiler_table->{$compiler}->{CXX} $compiler_table->{$compiler}->{FC}\n";
 
+  my ($nonly, @build_products) = get_only_for_build( $pfile, $dfile );
+  my $onlyForBuild="";
+  ##print $dfile "product_setup_loop debug: get_only_for_build returns $nonly\n";
+  foreach my $i ( 1 .. $nonly ) {
+      $onlyForBuild=$build_products[$i][0].";".$onlyForBuild;
+  }
   my $cetfl = cetpkg_info_file( $product, 
                         	$version, 
 				$default_ver, 
@@ -755,11 +780,12 @@ sub product_setup_loop {
 				$pkgdir,
                         	$compiler_table->{$compiler}->{CC},
                         	$compiler_table->{$compiler}->{CXX},
-                        	$compiler_table->{$compiler}->{FC}
+                        	$compiler_table->{$compiler}->{FC},
+			        $onlyForBuild
 			     );
 
   print $tfile "# Configuring $product\n";
-  setup_only_for_build( $pfile, $tfile );
+  setup_only_for_build( $pfile, $tfile, $dfile );
 
   # now deal with regular dependencies and their qualifiers
   my ($plen, $plist_ref, $dqlen, $dqlist_ref) = get_product_list( $pfile );
