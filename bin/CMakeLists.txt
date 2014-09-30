@@ -10,6 +10,7 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   get_setup_list.sh
 		   gitCheckout.sh
 		   makeDep.py
+		   makePackage.sh
 		   mrb
 		   newDev.sh
 		   newProduct.sh

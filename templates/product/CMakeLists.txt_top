@@ -1,8 +1,8 @@
 # ======================================================================
-#  larsoft main build file
+#  %%PD%% main build file
 #
 #  cd .../path/to/build/directory
-#  source .../path/to/larsoft/ups/setup_for_development <-d|-p>
+#  source .../path/to/%%PD%%/ups/setup_for_development <-d|-p>
 #  cmake [-DCMAKE_INSTALL_PREFIX=/install/path]
 #        -DCMAKE_BUILD_TYPE=$CETPKG_TYPE
 #        $CETPKG_SOURCE
@@ -37,8 +37,7 @@ cet_set_compiler_flags(DIAGS CAUTIOUS
   WERROR
   NO_UNDEFINED
   EXTRA_FLAGS -pedantic
-  EXTRA_CXX_FLAGS -std=c++11
-)
+  %%EXTRAFLAG%%
 
 cet_report_compiler_flags()
 
@@ -57,8 +56,10 @@ include(BuildPlugins)
 
 # ADD SOURCE CODE SUBDIRECTORIES HERE
 add_subdirectory(%%PD%%)
-# subdirectory for test code
+
+# tests
 add_subdirectory(test)
+
 # ups - table and config files
 add_subdirectory(ups)
 
