@@ -38,7 +38,7 @@ mrb_bin=${MRB_DIR}/bin
 export mrb_command=${mrb_bin}/mrb
 
 # Define the short list of commands
-shortComList="(newDev | gitCheckout | svnCheckout | mrbsetenv | build | install | test | mrbslp | 
+shortComList="(newDev | gitCheckout | svnCheckout | mrbsetenv | build | install | test | makePackage | mrbslp | 
            zapBuild | newProduct | changelog | updateDepsCM | updateDepsPV | checkDeps | pullDeps | makeDeps )"
 #  Adams's list:  | bumpVersion | updateDeps)"
 
@@ -88,6 +88,7 @@ Usage ${mrb_command} $shortComList [-h for help]"
    build (b)                   Run buildtool
    install (i)                 Run buildtool with install
    test (t)                    Run buildtool with tests
+   makePackage (mp)            Make distribution tarballs
    zapBuild (z)                Delete everything in your build area
    newProduct (p)              Create a new product from scratch
    changelog (c)               Display a changelog for a package
@@ -153,6 +154,10 @@ EOF
 
    # Run tests
     "test" | "t" ) run_buildtool -I $MRB_INSTALL -b -t $*
+        ;;
+
+   # install into local product area
+    "makePackage" | "mp" ) ${mrb_bin}/makePackage.sh $*
         ;;
 
    # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)
