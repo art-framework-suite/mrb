@@ -29,9 +29,9 @@ libdir  -
 bindir  product_dir    bin
 flcdir  product_dir    fcl
 
-# list products required ONLY for the build
-# any products here must NOT have qualifiers
-only_for_build  cetbuildtools   %%CETBV%%   
+product          version
+cetbuildtools   %%CETBV%%       -       only_for_build
+end_product_list
 
 # Preserve tabs and formatting in emacs and vi / vim:
 

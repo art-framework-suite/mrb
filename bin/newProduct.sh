@@ -46,8 +46,14 @@ function createFiles() {
   ##echo "DEBUG: default qualifier is $DQ"
   
   echo ${MRB_QUALS} | grep -q e5
-  status=$?
-  if [ ${status} = 0 ]
+  have_e5=$?
+  echo ${MRB_QUALS} | grep -q e6
+  have_e6=$?
+  if [ ${have_e6} = 0 ]
+  then
+     CETBV=v4_02_02
+     GCCV=v4_9_1
+  elif [ ${have_e5} = 0 ]
   then
      CETBV=v3_13_01
      GCCV=v4_8_2
