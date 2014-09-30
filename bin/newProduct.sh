@@ -53,14 +53,17 @@ function createFiles() {
   then
      CETBV=v4_02_02
      GCCV=v4_9_1
+     EXTRAFLAG=")"
   elif [ ${have_e5} = 0 ]
   then
      CETBV=v3_13_01
      GCCV=v4_8_2
+     EXTRAFLAG="EXTRA_CXX_FLAGS -std=c++11 )"
   else
      CETBV=v3_07_11
      GCCV=v4_8_1
      CHECK_GCC="cet_check_gcc()"
+     EXTRAFLAG="EXTRA_CXX_FLAGS -std=c++11 )"
   fi
   ##echo "DEBUG: cetbuildtools version is $CETBV"
   ##echo "DEBUG: gcc version is $GCCV"
@@ -107,7 +110,7 @@ function createFiles() {
   if [ "$noflav" ]; then
     sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/CMakeLists.txt_top_noflav > CMakeLists.txt
   else
-    sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" -e "s/%%CHECK_GCC%%/$CHECK_GCC/g" < ${templateDir}/CMakeLists.txt_top > CMakeLists.txt
+    sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" -e "s/%%CHECK_GCC%%/$CHECK_GCC/g" -e "s/%%EXTRAFLAG%%/$EXTRAFLAG/g" < ${templateDir}/CMakeLists.txt_top > CMakeLists.txt
   fi
 
   # @$PRODNAME/CMakeLists.txt@ file 

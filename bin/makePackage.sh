@@ -46,11 +46,16 @@ for thisprod in $product_list
 do
   thisver=`ls ${temp_install_path}/${thisprod} | grep -v version`
   thisdotver=`echo ${thisver} | sed -e 's/_/./g' | sed -e 's/^v//'`
-  flvrdir=`ls -d ${temp_install_path}/${thisprod}/${thisver}/${thisos}*`
-  thisflvr=$(basename ${flvrdir})
-  #echo ${thisprod} ${thisver} ${thisflvr}
-  tarflvr=`echo ${thisflvr} | sed -e 's/\./-/g'`
-  tarballname=${thisprod}-${thisdotver}-${tarflvr}.tar.bz2
+  if [ -e ${temp_install_path}/${thisprod}/${thisver}/${thisos}* ]
+  then
+    flvrdir=`ls -d ${temp_install_path}/${thisprod}/${thisver}/${thisos}*`
+    thisflvr=$(basename ${flvrdir})
+    #echo ${thisprod} ${thisver} ${thisflvr}
+    tarflvr=`echo ${thisflvr} | sed -e 's/\./-/g'`
+    tarballname=${thisprod}-${thisdotver}-${tarflvr}.tar.bz2
+  else
+    tarballname=${thisprod}-${thisdotver}-noarch.tar.bz2
+  fi
   echo "making ${tarballname}"
   cd ${temp_install_path}; tar cjf ${MRB_BUILDDIR}/${tarballname} ${thisprod}
 done
