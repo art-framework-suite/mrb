@@ -145,10 +145,8 @@ def bumpVersion(pkg, pdfile, whichNumber, text, newQual):
                 if fq:
                     fq = fq.split('/')[-1]
                 else:
-                    fq = os.environ.get("%s_FQ" % aProduct.upper())
-                    if not fq:
-                        quals.append('-nq-')
-                        continue
+                    quals.append('-nq-')
+                    continue
 
                 # We have FQ, try to break it up
                 parts = fq.split('.')
