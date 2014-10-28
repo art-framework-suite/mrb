@@ -51,7 +51,7 @@ function createFiles() {
   have_e6=$?
   if [ ${have_e6} = 0 ]
   then
-     CETBV=v4_02_03
+     CETBV=v4_03_00
      GCCV=v4_9_1
      EXTRAFLAG=""  # Lynn had ) here, which can't work in my template
   elif [ ${have_e5} = 0 ]
