@@ -53,7 +53,7 @@ function createFiles() {
   then
      CETBV=v4_02_03
      GCCV=v4_9_1
-     EXTRAFLAG=")"
+     EXTRAFLAG=""  # Lynn had ) here, which can't work in my template
   elif [ ${have_e5} = 0 ]
   then
      CETBV=v3_13_01
@@ -201,10 +201,10 @@ function createFiles() {
 
   echo "Complete - Product $PRODNAME was created"
 
-  echo "Your next task: "
+  echo "Your next tasks: "
   echo "                Check $PRODNAME/ups/product_deps"
   echo "                Check $PRODNAME/CMakeLists.txt file"
-  echo "                Acc code in $PRODNAME/$PRODNAME"
+  echo "                Add code in $PRODNAME/$PRODNAME"
 }
 
 # Process options
