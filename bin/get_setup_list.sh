@@ -34,12 +34,11 @@ then
    exit 1
 fi
 source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
-
 tmpfl=/tmp/`basename $localP`_setup_$$$$
-rm -f $tmpfl
-echo > $tmpfl
-echo "## checking $localP for products" >> $tmpfl
-echo "source \`${UPS_DIR}/bin/ups setup ${SETUP_UPS}\`" >> $tmpfl
+rm -f "${tmpfl}"
+echo > "${tmpfl}"
+echo "## checking $localP for products" >> "${tmpfl}"
+echo "source \`${UPS_DIR}/bin/ups setup ${SETUP_UPS}\`" >> "${tmpfl}"
 
 ups list -aK+ -z $localP | while read line
 do
@@ -49,25 +48,24 @@ do
   product=$(echo ${words[0]} | tr "\"" " ")
   version=$(echo ${words[1]} | tr "\"" " ")
   quals=$(echo ${words[3]} | tr "\"" " ")
-  product_uc=$(echo ${product} | tr '[a-z]' '[A-z]')
+  product_uc=$(echo ${product} | LANG=C tr '[a-z]' '[A-z]')
   product_setup=$(printenv | grep SETUP_${product_uc} | cut -f2 -d"=")
   if [ -z "${product_setup}" ]
   then
-     echo "# $product is not setup"  >> $tmpfl
+     echo "# $product is not setup" >> "${tmpfl}"
   else
-     echo "unsetup -j $product"  >> $tmpfl
+     echo "unsetup -j $product" >> "${tmpfl}"
   fi
   if [ -z $quals ]
   then
-      cmd="setup -B $product  $version"
+      cmd="setup -B $product $version"
   else
       pq=+`echo ${quals} | sed -e 's/:/:+/g'`
-      cmd="setup -B $product  $version -q $pq"
+      cmd="setup -B $product $version -q $pq"
   fi
-  echo "$cmd -z $localP:${PRODUCTS}" >> $tmpfl
+  echo "$cmd -z $localP:${PRODUCTS}" >> "${tmpfl}"
 done
 
-echo $tmpfl
+echo "${tmpfl}"
 
 exit 0
-

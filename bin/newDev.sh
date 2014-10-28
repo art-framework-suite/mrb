@@ -296,6 +296,17 @@ fi
 prjdirname="${MRB_PROJECTUC}_DIR"
 prjdir="${!prjdirname}"
 MRB_PROJECT_VERSION=${prjver}
+prjcodename="${MRB_PROJECTUC}CODE_DIR"
+prjcodedir="${!prjcodename}"
+if [ ${printDebug} ]
+then
+    echo "DEBUG: MRB_PROJECTUC ${MRB_PROJECTUC}"
+    echo "DEBUG: prjver ${prjver}"
+    echo "DEBUG: prjdirname ${prjdirname}"
+    echo "DEBUG: prjdir ${prjdir}"
+    echo "DEBUG: prjcodename ${prjcodename}"
+    echo "DEBUG: prjcodedir ${prjcodedir}"
+fi
 if [ -z ${prjdir} ] && [ -z ${qualList} ]
 then
     echo "ERROR: ${MRB_PROJECT} product is not setup."
@@ -502,27 +513,30 @@ if [ ${makeLP} ]; then
     cp $MRB_DIR/templates/dbconfig $dirName/.upsfiles/ || { echo "ERROR: failed to copy dbconfig"; exit 1; }
     #cp -R $project_dir/.upsfiles $dirName
     ##echo "NOTICE: Copied .upsfiles to $dirName"
-    
-    # Some gymnastics to get dependency database
-	MRB_PROJECTUC_DIR=${MRB_PROJECTUC}_DIR
-	MRB_PROJECTUC_CODE_DIR=${MRB_PROJECTUC}CODE_DIR
-	# Note that ${!BLA} below does double dereferencing
-    
-    if [ -d ${!MRB_PROJECTUC_DIR} ]
-    then    	
-        $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC_DIR}
-    elif [ -d ${!MRB_PROJECTUC_CODE_DIR} ] 
+
+    if [ ${printDebug} ]
     then
-       $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC_CODE_DIR}
+        echo
+	echo "DEBUG: MRB_SOURCE ${MRB_SOURCE}"
+	echo "DEBUG: MRB_INSTALL ${MRB_INSTALL}"
+	echo "DEBUG: prjdir ${prjdir}"
+	echo "DEBUG: prjcodedir ${prjcodedir}"
+    fi
+    if [ ! -z ${prjdir} ] && [ -d ${prjdir} ]
+    then
+        $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}_DIR
+    elif [ ! -z ${prjcodedir} ] && [ -d ${prjcodedir} ] 
+    then
+       $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}CODE_DIR
     else      
         ##echo "look for ${MRB_PROJECT} ${MRB_PROJECT_VERSION}"
 	if ups exist ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS} >/dev/null 2>&1; then
             setup -j ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}
-            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC_DIR}
+            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}_DIR
 	    unsetup -j ${MRB_PROJECT}
 	elif ups exist ${MRB_PROJECT}code ${MRB_PROJECT_VERSION} -q ${MRB_QUALS} >/dev/null 2>&1; then
             setup -j ${MRB_PROJECT}code ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}
-            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC_CODE_DIR}
+            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}CODE_DIR
 	    unsetup -j ${MRB_PROJECT}
 	else
             echo "INFO: cannot find ${MRB_PROJECT}/${MRB_PROJECT_VERSION}/releaseDB/base_dependency_database"
@@ -531,7 +545,7 @@ if [ ${makeLP} ]; then
 	fi
     fi
 
-        create_local_setup
+    create_local_setup
 
 fi
 

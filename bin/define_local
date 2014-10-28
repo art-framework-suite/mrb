@@ -6,6 +6,8 @@
 use File::Basename;
 use lib dirname($0);
 
+use mrb_parse_deps;
+
 
 if( $#ARGV < 1 ) {
     $errfl1 = "problem_report";
@@ -42,8 +44,6 @@ $diagfl = $builddir."/diag_report";
 open(DIAG, ">> $diagfl") or die "Couldn't open $diagfl";
 
 $inputdir = $sourcedir."/ups";
-
-require mrb_parse_deps;
 
 $mrb_project = $ENV{MRB_PROJECT};
 $mrb_version = $ENV{MRB_PROJECT_VERSION};
@@ -109,6 +109,11 @@ for $i ( 0 .. $#package_list ) {
   print TSET "setenv  ${product_uc}_VERSION $version\n";
   # dropit -esf will remove any existing instances of the path and then prepend the path
   # unfortunately, tcsh complains if the variable is not already set, so we have to check
+  if ( $ENV{PATH} ne '' ) {
+    print TSET "setenv  PATH \`dropit -esf -p \${PATH} \'${build_dir}/${product}/bin\'\`\n";
+  } else {
+    print TSET "setenv  PATH \'${build_dir}/${product}/bin\'\n";
+  }
   if ( $ENV{LD_LIBRARY_PATH} ne '' ) {
     print TSET "setenv  LD_LIBRARY_PATH \`dropit -esf -p \${LD_LIBRARY_PATH} \'${build_dir}/${product}/lib\'\`\n";
   } else {
