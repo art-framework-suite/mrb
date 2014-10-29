@@ -6,9 +6,6 @@ CMAKE_MINIMUM_REQUIRED (VERSION 2.8)
 # Add top level include
 include_directories ( ${PROJECT_SOURCE_DIR} )
 
-# Add ART_MAKE_PREPEND_PRODUCT_NAME
-set (ART_MAKE_PREPEND_PRODUCT_NAME TRUE)
-
 # Enable testing
 enable_testing()
 
