@@ -449,7 +449,7 @@ sub find_default_qual {
 
 sub get_fcl_directory {
   my @params = @_;
-  my $fcldir = "default";
+  my $fcldir = $params[1]."/fcl";
   my $line;
   my @words;
   open(PIN, "< $params[0]") or die "Couldn't open $params[0]";

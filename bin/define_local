@@ -148,8 +148,9 @@ for $i ( 0 .. $#package_list ) {
   }
 
 }
-# make sure we still have the local directory
-print TSET "setenv  FHICL_FILE_PATH .:\${FHICL_FILE_PATH}\n";
+# make sure we still have the local directory (and ensure the dot only appears once)
+print TSET "setenv  FHICL_FILE_PATH \`dropit -esf -p \${FHICL_FILE_PATH} \'.\'\`\n";
+#print TSET "setenv  FHICL_FILE_PATH .:\${FHICL_FILE_PATH}\n";
 
 # cleanup
 close(TSET);
