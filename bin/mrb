@@ -78,11 +78,11 @@ Usage ${mrb_command} $shortComList [-h for help]"
 	newDev (n)                  Start a new development area
 	gitCheckout (g)             Clone a git repository
 	svnCheckout (svn)           Checkout from a svn repository
-	setEnv (s)                  Setup an development environment (mrbSetEnv)
+	setEnv (s)                  Setup development environment (mrbSetEnv)
 	build (b)                   Run buildtool
 	install (i)                 Run buildtool with install
 	test (t)                    Run buildtool with tests
-	setup_local_products (slp)  Setup local products (mrbslp)
+	setup_local_products (slp)  Setup local products (mrbslp) [not local sources]
 	zapBuild (z)                Delete everything in your build area
 	newProduct (p)              Create a new product from scratch
 	changelog (c)               Display a changelog for a package
@@ -95,9 +95,10 @@ Usage ${mrb_command} $shortComList [-h for help]"
 
   Aliases ( we use aliases for these commands because they must be sourced )
 
-   mrbsetenv                   Setup a development enviornment 
+   mrbsetenv                   Setup a development enviornment and local products  [use this more often]
                                (source \$MRB_DIR/bin/mrbSetEnv)
-   mrbslp                      Setup all products installed in the working localProducts_XXX directory
+
+   mrbslp                      Setup only the products installed in the working localProducts_XXX directory
                                (source \$MRB_DIR/bin/setup_local_products)
 
 EOF
@@ -132,6 +133,20 @@ EOF
 		source ${mrb_bin}/mrbSetEnv
     	[ $isSourced ] && return || exit 5
     ;;
+  # Set up only sources  (calls &l=bin/mrbSetupLocalSources&)
+    "setup_local_sources" )
+
+		if [[ $isSourced != "yes" ]]
+		then
+			echo 'You must "source mrb setup_local_sources"'
+			exit 5
+		fi
+                # We have to deal with the insanity of the current cetpkgsupport
+                unsetup cetpkgsupport
+		source ${mrb_bin}/mrbSetupLocalSources
+                setup cetpkgsupport v1_07_01
+    	[ $isSourced ] && return || exit 5
+    ;;
 
   # Set up all products installed in the working localProducts_XXX
     "setup_local_products" | "slp" )
@@ -141,6 +156,8 @@ EOF
 			echo 'You must "source mrb setEnv"'
 			exit 5
 		fi
+                # We have to deal with the insanity of the current cetpkgsupport
+                unsetup cetpkgsupport
 		source ${mrb_bin}/setup_local_products
     	[ $isSourced ] && return || exit 5
             ;;
