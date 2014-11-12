@@ -12,7 +12,7 @@ Common:
     setupEnv()
     # add the bin directory to the path
     pathPrepend(PATH, ${UPS_PROD_DIR}/bin )
-    setupRequired(cetpkgsupport)
+    setupRequired(cetpkgsupport v1_07_01)
     # aliases for the sourced scripts
     addalias ( mrbsetenv , source ${UPS_PROD_DIR}/bin/mrbSetEnv )
     addalias ( mrbslp , source ${UPS_PROD_DIR}/bin/setup_local_products )

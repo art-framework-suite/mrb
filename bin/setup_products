@@ -174,8 +174,9 @@ for my $i ( 0 .. $#setup_products::package_list ) {
 }
 print $tfh "setup -B cetbuildtools $use_cetbver\n";
 print $tfh "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
-print $tfh "setup -B cetpkgsupport \n";
-print $tfh "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
+# No longer set up cetpkgsupport current; instead rely on cetbuildtools to set up the right version
+#print $tfh "setup -B cetpkgsupport \n";
+#print $tfh "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
 @setup_list=( "cetbuildtools", "cetpkgsupport" );
 
 # now check for an old build directory 

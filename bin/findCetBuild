@@ -84,5 +84,6 @@ for $i ( 0 .. $#package_list ) {
   print TSET "# using  THIS VERSION\n";
   print TSET "setup -B cetbuildtools $use_cetbver\n";
   print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
-print TSET "setup -B cetpkgsupport \n";
-print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
+# No longer set up current cetpkgsupport - rely on cetbuildtools to set up the right version.
+#print TSET "setup -B cetpkgsupport \n";
+#print TSET "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
