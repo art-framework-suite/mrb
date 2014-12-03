@@ -19,9 +19,9 @@ my $compiler_table =
   };
 
 $mrb_project = $ENV{MRB_PROJECT};
-$mrb_version = $ENV{MRB_PROJECT_VERSION};
+$mrb_project_version = $ENV{MRB_PROJECT_VERSION};
 $mrb_quals = $ENV{MRB_QUALS};
-$tmpfl = $builddir."/".$mrb_project."-".$mrb_version;
+$tmpfl = $builddir."/".$mrb_project."-".$mrb_project_version;
 
 if (!$compiler) {
   my @quals = split /:/, $mrb_quals;
@@ -31,13 +31,13 @@ if (!$compiler) {
     $compiler = "cc"; # Native.
   }
 }
-##print DIAG "opening $tmpfl for $mrb_project $mrb_version\n";
+##print DIAG "opening $tmpfl for $mrb_project $mrb_project_version\n";
 open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
 ##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
 print TSET "setenv UPS_OVERRIDE -B\n";
 print TSET "setenv CETPKG_NAME $mrb_project\n";
-print TSET "setenv CETPKG_VERSION $mrb_version\n";
+print TSET "setenv CETPKG_VERSION $mrb_project_version\n";
 if ( $simple ) {
   print TSET "unsetenv_ CETPKG_QUAL\n";
   print TSET "unsetenv_ CETPKG_TYPE\n";

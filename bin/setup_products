@@ -62,7 +62,7 @@ for my $i ( 2 .. $#ARGV ) {
 }
 
 my $mrb_project = $ENV{MRB_PROJECT};
-my $mrb_version = $ENV{MRB_PROJECT_VERSION};
+my $mrb_project_version = $ENV{MRB_PROJECT_VERSION};
 my $mrb_quals = $ENV{MRB_QUALS};
 
 # determine build type from MRB_QUALS
@@ -140,13 +140,13 @@ if ( $srcbase eq "ups" ) {
 }
 #print $dfh "setup_products debug info: source dir is $sourcedir\n";
 
-my $tmpfl = $builddir."/".$mrb_project."-".$mrb_version;
-##print $dfh "setup_products debug info: opening $tmpfl for $mrb_project $mrb_version\n";
+my $tmpfl = $builddir."/".$mrb_project."-".$mrb_project_version;
+##print $dfh "setup_products debug info: opening $tmpfl for $mrb_project $mrb_project_version\n";
 open(my $tfh, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
 print $tfh "setenv UPS_OVERRIDE -B\n";
 print $tfh "setenv CETPKG_NAME $mrb_project\n";
-print $tfh "setenv CETPKG_VERSION $mrb_version\n";
+print $tfh "setenv CETPKG_VERSION $mrb_project_version\n";
 if ( $simple ) {
   print $tfh "unsetenv_ CETPKG_QUAL\n";
   print $tfh "unsetenv_ CETPKG_TYPE\n";
@@ -222,8 +222,8 @@ for my $i ( 0 .. $#setup_products::package_list ) {
 
 my $onlyForBuild="cetbuildtools;";
 my $cetfl = cetpkg_info_file( $mrb_project, 
-                              $mrb_version, 
-			      $mrb_version, 
+                              $mrb_project_version, 
+			      $mrb_project_version, 
 			      $mrb_quals, 
 			      $setup_products::type, 
 			      $sourcedir, 
