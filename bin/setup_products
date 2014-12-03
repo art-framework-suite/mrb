@@ -49,7 +49,7 @@ my $diagfl = $builddir."/diag_report";
 open(my $dfh, "+> $diagfl") or die "Couldn't open $diagfl";
 
 for my $i ( 0 .. $#ARGV ) {
-   print $dfh "$i $ARGV[$i]\n";
+   print $dfh "setup_products debug info: $i $ARGV[$i]\n";
 }
 
 my $simple = "";
@@ -67,7 +67,11 @@ my $mrb_quals = $ENV{MRB_QUALS};
 
 # determine build type from MRB_QUALS
 if ( $simple ) {
-  $setup_products::dop = "simple";
+  $setup_products::dop = "";
+  $setup_products::type = "simple";
+} elsif ( $mrb_quals  = "-nq-" ) {
+  $simple = "true";
+  $setup_products::dop = "";
   $setup_products::type = "simple";
 } else {
   my @qlist=split(/:/,$mrb_quals);
