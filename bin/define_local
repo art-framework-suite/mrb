@@ -46,10 +46,10 @@ open(DIAG, ">> $diagfl") or die "Couldn't open $diagfl";
 $inputdir = $sourcedir."/ups";
 
 $mrb_project = $ENV{MRB_PROJECT};
-$mrb_version = $ENV{MRB_PROJECT_VERSION};
+$mrb_project_version = $ENV{MRB_PROJECT_VERSION};
 $mrb_quals = $ENV{MRB_QUALS};
-$tmpfl = $builddir."/".$mrb_project."-".$mrb_version."-defs";
-##print DIAG "opening $tmpfl for $mrb_project $mrb_version\n";
+$tmpfl = $builddir."/".$mrb_project."-".$mrb_project_version."-defs";
+##print DIAG "opening $tmpfl for $mrb_project $mrb_project_version\n";
 open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
 ##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
