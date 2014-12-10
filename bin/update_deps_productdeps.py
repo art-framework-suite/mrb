@@ -43,9 +43,13 @@ def updateProductDeps(f):
     for line in open(f):
 
         sline = line.strip()
+        
+        if sline == '':
+            out += line
+            continue
 
-        if sline == "":
-            if inPV:  # Blank line ends product version table
+        if sline == "end_product_list" or sline == "end_qualifier_list":
+            if inPV:
                 inPV = False
             if inPQ:
                 inPQ = False
@@ -58,6 +62,7 @@ def updateProductDeps(f):
 
         # Split line into words
         words = sline.split()
+        print sline
 
         # Are we in the product version table?
         if inPV:
