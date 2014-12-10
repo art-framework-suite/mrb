@@ -48,10 +48,6 @@ my $builddir = $ARGV[1];
 my $diagfl = $builddir."/diag_report";
 open(my $dfh, "+> $diagfl") or die "Couldn't open $diagfl";
 
-for my $i ( 0 .. $#ARGV ) {
-   print $dfh "setup_products debug info: $i $ARGV[$i]\n";
-}
-
 my $simple = "";
 for my $i ( 2 .. $#ARGV ) {
     if( $ARGV[$i] eq "simple" ) {
