@@ -1,15 +1,13 @@
 # ======================================================================
 #  %%PD%% main build file
 #
-#  cd .../path/to/build/directory
-#  source .../path/to/%%PD%%/ups/setup_for_development <-d|-p>
-#  cmake [-DCMAKE_INSTALL_PREFIX=/install/path]
-#        -DCMAKE_BUILD_TYPE=$CETPKG_TYPE
-#        $CETPKG_SOURCE
-#  make
-#  make test
-#  make install
-#  make package (builds distribution tarfile)
+#  . mrb slp   # Run if you have local products to set up
+#  . mrb s     # Needed to set up local development products
+#  mrb b       # Build
+#  mrb t       # Test (if applicable)
+#  mrb i       # Install to local products
+#  gm2 -c <fhicl_file>  # Run!
+#
 # ======================================================================
 
 
@@ -36,25 +34,17 @@ set_install_root()
 # g-2 wants the product name in the library name
 set (ART_MAKE_PREPEND_PRODUCT_NAME TRUE)
 
-if ( ${APPLE} )
-  cet_set_compiler_flags(DIAGS CAUTIOUS
-     WERROR
-     EXTRA_FLAGS -pedantic
-     %%EXTRAFLAG%%
-   )
-else()
-     cet_set_compiler_flags(DIAGS CAUTIOUS
-     WERROR
-     EXTRA_FLAGS -pedantic
-     %%EXTRAFLAG%%
-   )
-endif()
+cet_set_compiler_flags(DIAGS CAUTIOUS
+   WERROR
+   EXTRA_FLAGS -pedantic
+   %%EXTRAFLAG%%
+ )
 
 cet_report_compiler_flags()
 
 # these are minimum required versions, not the actual product versions
 find_ups_product( art v1_12_02 )
-find_ups_product( cetbuildtools v4_03_01 )
+find_ups_product( cetbuildtools v4_03_02 )
 
 %%CHECK_GCC%%
 

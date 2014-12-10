@@ -42,6 +42,7 @@ run_git_command() {
 	    then
               echo ""
               echo "NOTICE: You do not have read-write permissions for this repository"
+              echo "--->> DID YOU RUN kinit TO GET A KERBEROS TICKET? <<---"
 	      myGitCommand=$gitCommandRO
 	    fi
 	fi
