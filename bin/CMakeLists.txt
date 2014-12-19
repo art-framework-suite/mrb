@@ -14,6 +14,7 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   newDev.sh
 		   newProduct.sh
 		   mrbSetEnv
+                   mrbSetupLocalSources
 		   pullDep.py
 		   setup_products
 		   svnCheckout.sh
