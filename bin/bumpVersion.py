@@ -53,6 +53,10 @@ def bumpVersion(pkg, pdfile, whichNumber, text, newQual):
 
         sline = line.strip()
 
+        if sline == '':
+            out += line
+            continue
+
         if sline == "end_product_list" or sline == "end_qualifier_list":
             if inPV:  
                 inPV = False
