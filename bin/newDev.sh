@@ -61,7 +61,7 @@ function find_local_srcs()
     have_mrb_source="none"
     if ls -1 $srcTopDir | egrep -q '^srcs$';
       then 
-	have_mrb_source=`cd $srcTopDir/srcs; pwd`
+	have_mrb_source=`cd "$srcTopDir/srcs"; pwd`
 	if [ ${printDebug} ]; then echo "DEBUG: using srcTopDir/srcs"; fi
     fi
     if [ ${printDebug} ]; then echo "DEBUG: found local srcs directory ${have_mrb_source}"; fi
@@ -70,23 +70,23 @@ function find_local_srcs()
 function make_srcs_directory()
 {
   # Make directory
-  cd ${currentDir}
-  mkdir -p ${srcTopDir}/srcs
+  cd "${currentDir}"
+  mkdir -p "${srcTopDir}/srcs"
   # get the full path to the new directory
-  cd ${srcTopDir}/srcs
+  cd "${srcTopDir}/srcs"
   MRB_SOURCE=`pwd`
-  cd ${currentDir}
+  cd "${currentDir}"
   echo "MRB_SOURCE is ${MRB_SOURCE} "
   ##echo "NOTICE: Created srcs directory"
 
   # Make the main CMakeLists.txt file
-  ${mrb_bin}/copy_files_to_srcs.sh ${MRB_SOURCE} || exit 1
+  "${mrb_bin}/copy_files_to_srcs.sh" ${MRB_SOURCE} || exit 1
   # this is a hack....
-  cp ${MRB_DIR}/templates/dependency_list ${MRB_SOURCE}/ || exit 1;
+  cp "${MRB_DIR}/templates/dependency_list" "${MRB_SOURCE}/" || exit 1;
   # end hack
 
   # Record the mrb version
-  ups active | grep ^mrb >  ${MRB_SOURCE}/.mrbversion
+  ups active | grep ^mrb >  "${MRB_SOURCE}/.mrbversion"
 
 #  # If we're on MacOSX, then copy the xcodeBuild.sh file
 #  if ups flavor -1 | grep -q 'Darwin'; then
@@ -102,11 +102,11 @@ function create_local_setup()
     # MRB_SOURCE might be in a completely different directory tree
 
     # copy the setup script
-    cp ${MRB_DIR}/templates/local_setup  $dirName/setup
+    cp "${MRB_DIR}/templates/local_setup"  "$dirName/setup"
     
     # Write in the setup
 	setupLine="${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}" 
-	sed -i -e "s/%NNN%/${setupLine}/" $dirName/setup
+	sed -i -e "s/%NNN%/${setupLine}/" "$dirName/setup"
     
     # Write mrb_definitions
 
@@ -119,30 +119,30 @@ setenv MRB_PROJECT "${MRB_PROJECT}"
 setenv MRB_PROJECT_VERSION "${MRB_PROJECT_VERSION}"
 setenv MRB_QUALS "${MRB_QUALS}"
 setenv MRB_TOP "${fullTopDir}"
-setenv MRB_SOURCE ${MRB_SOURCE}
-setenv MRB_INSTALL \${MRB_TOP}/localProducts${dirVerQual}
+setenv MRB_SOURCE "${MRB_SOURCE}"
+setenv MRB_INSTALL "\${MRB_TOP}/localProducts${dirVerQual}"
 setenv PRODUCTS "\${MRB_INSTALL}:\${PRODUCTS}"
 
 EOF
 # --- End of HERE document for localProducts.../setup ---
 
-   cat ${MRB_DIR}/templates/local_mid  >> $dirName/setup
+   cat "${MRB_DIR}/templates/local_mid"  >> "$dirName/setup"
 
     # --- Start of HERE document for localProducts.../setup ---
 
     # --- Comments below pertain to that file ---
-    cat >> $dirName/setup << EOF
+    cat >> "$dirName/setup" << EOF
 # report the environment
 echo
 echo MRB_PROJECT=\$MRB_PROJECT
 echo MRB_PROJECT_VERSION=\$MRB_PROJECT_VERSION
 echo MRB_QUALS=\$MRB_QUALS
 echo MRB_TOP=\$MRB_TOP
-echo MRB_SOURCE=\$MRB_SOURCE
-echo MRB_BUILDDIR=\$MRB_BUILDDIR
-echo MRB_INSTALL=\$MRB_INSTALL
+echo MRB_SOURCE="\$MRB_SOURCE"
+echo MRB_BUILDDIR="\$MRB_BUILDDIR"
+echo MRB_INSTALL="\$MRB_INSTALL"
 echo
-echo PRODUCTS=\$PRODUCTS
+echo PRODUCTS="\$PRODUCTS"
 echo
 
 source "\${MRB_DIR}/bin/unset_shell_independence"
@@ -155,7 +155,7 @@ EOF
     cat << EOF
 
 IMPORTANT: You must type
-    source $dirName/setup
+    source "$dirName/setup"
 NOW and whenever you log in
 
 EOF
@@ -164,9 +164,9 @@ EOF
 
 function copy_dependency_database() {
     prj_dir=$(printenv | grep ${1} | cut -f2 -d"=")
-    if [ -e ${prj_dir}/releaseDB/base_dependency_database ]
+    if [ -e "${prj_dir}/releaseDB/base_dependency_database" ]
     then
-        cp -p ${prj_dir}/releaseDB/base_dependency_database ${MRB_INSTALL}/.base_dependency_database
+        cp -p "${prj_dir}/releaseDB/base_dependency_database" "${MRB_INSTALL}/.base_dependency_database"
     else 
         echo "INFO: cannot find ${prj_dir}/releaseDB/base_dependency_database"
 	echo "      mrb checkDeps and pullDeps will not have complete information"
@@ -251,12 +251,12 @@ done
 # Some sanity checks -
 
 # Make sure we have ups
-if [ -z ${UPS_DIR} ]
+if [ -z "${UPS_DIR}" ]
 then
    echo "ERROR: please setup ups"
    exit 1
 fi
-source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
+source `"${UPS_DIR}/bin/ups" setup ${SETUP_UPS}`
 
 # report current set of flags
 if [ ${printDebug} ]
@@ -401,7 +401,7 @@ fi
 if [ ${makeBuild} ]
 then
   # Make directories
-  cd ${currentDir}
+  cd "${currentDir}"
 
   # If we are just making a new build directory, we need to be were local products sits
   if [ ${doNewBuildDir} ]; then
@@ -424,9 +424,9 @@ then
     ##echo "Created build directory"
   fi
   # get the full path to the new directory
-  cd ${topDir}/${buildDirName}
+  cd "${topDir}/${buildDirName}"
   MRB_BUILDDIR=`pwd`
-  cd ${currentDir}
+  cd "${currentDir}"
   echo "MRB_BUILDDIR is ${MRB_BUILDDIR}"
 else
     # If we are not making the build area, then we MUST know where build lives
@@ -458,12 +458,12 @@ else
     if ls -1 $topDir | egrep -q '^srcs$';
       then 
         ok=1
-	MRB_SOURCE=`cd $topDir/srcs; pwd`
+	MRB_SOURCE=`cd "$topDir/srcs"; pwd`
 	if [ ${printDebug} ]; then echo "DEBUG: using topDir/srcs"; fi
     elif ls -1 $srcTopDir | egrep -q '^srcs$';
       then 
         ok=1
-	MRB_SOURCE=`cd $srcTopDir/srcs; pwd`
+	MRB_SOURCE=`cd "$srcTopDir/srcs"; pwd`
 	if [ ${printDebug} ]; then echo "DEBUG: using srcTopDir/srcs"; fi
     elif [ ${MRB_SOURCE} ];
       then 
@@ -488,11 +488,11 @@ if [ ${makeLP} ]; then
     dirVerQual="_${MRB_PROJECT}_${prjver}_${qualdir}"
     # Construct the name of the @local_products@ directory
     # First get the full path 
-    cd ${topDir}
+    cd "${topDir}"
     fullTopDir=`pwd`
     dirName="$fullTopDir/localProducts${dirVerQual}"
     MRB_INSTALL=${dirName}
-    cd ${currentDir}
+    cd "${currentDir}"
 
     #  Make sure the directory does not exist already
     if [ -e "$dirName" ]
@@ -502,41 +502,41 @@ if [ ${makeLP} ]; then
     fi
 
     # Make the local products directory
-    mkdir -p $dirName || { echo "ERROR: failed to create $dirName"; exit 1; }
+    mkdir -p "$dirName" || { echo "ERROR: failed to create $dirName"; exit 1; }
     ##echo "NOTICE: Created local products directory $dirName"
 
     # Record the mrb version
-    ups active | grep ^mrb >  ${dirName}/.mrbversion
+    ups active | grep ^mrb >  "${dirName}/.mrbversion"
 
     # Make a @.upsfiles@ directory for local products
-    mkdir -p $dirName/.upsfiles || { echo "ERROR: failed to create $dirName/.upsfiles"; exit 1; }
-    cp $MRB_DIR/templates/dbconfig $dirName/.upsfiles/ || { echo "ERROR: failed to copy dbconfig"; exit 1; }
+    mkdir -p "$dirName/.upsfiles" || { echo "ERROR: failed to create $dirName/.upsfiles"; exit 1; }
+    cp "$MRB_DIR/templates/dbconfig" "$dirName/.upsfiles/" || { echo "ERROR: failed to copy dbconfig"; exit 1; }
     #cp -R $project_dir/.upsfiles $dirName
     ##echo "NOTICE: Copied .upsfiles to $dirName"
 
     if [ ${printDebug} ]
     then
         echo
-	echo "DEBUG: MRB_SOURCE ${MRB_SOURCE}"
-	echo "DEBUG: MRB_INSTALL ${MRB_INSTALL}"
-	echo "DEBUG: prjdir ${prjdir}"
-	echo "DEBUG: prjcodedir ${prjcodedir}"
+        echo "DEBUG: MRB_SOURCE ${MRB_SOURCE}"
+        echo "DEBUG: MRB_INSTALL ${MRB_INSTALL}"
+        echo "DEBUG: prjdir ${prjdir}"
+        echo "DEBUG: prjcodedir ${prjcodedir}"
     fi
-    if [ ! -z ${prjdir} ] && [ -d ${prjdir} ]
+    if [ ! -z "${prjdir}" ] && [ -d "${prjdir}" ]
     then
-        $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}_DIR
-    elif [ ! -z ${prjcodedir} ] && [ -d ${prjcodedir} ] 
+        "$MRB_DIR/bin/copy_dependency_database.sh" "${MRB_SOURCE}" "${MRB_INSTALL}" "${MRB_PROJECTUC}_DIR"
+    elif [ ! -z "${prjcodedir}" ] && [ -d "${prjcodedir}" ]
     then
-       $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}CODE_DIR
+       "$MRB_DIR/bin/copy_dependency_database.sh" "${MRB_SOURCE}" "${MRB_INSTALL}" "${MRB_PROJECTUC}CODE_DIR"
     else      
         ##echo "look for ${MRB_PROJECT} ${MRB_PROJECT_VERSION}"
 	if ups exist ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS} >/dev/null 2>&1; then
             setup -j ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}
-            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}_DIR
+            "$MRB_DIR/bin/copy_dependency_database.sh" "${MRB_SOURCE}" "${MRB_INSTALL}" "${MRB_PROJECTUC}_DIR"
 	    unsetup -j ${MRB_PROJECT}
 	elif ups exist ${MRB_PROJECT}code ${MRB_PROJECT_VERSION} -q ${MRB_QUALS} >/dev/null 2>&1; then
             setup -j ${MRB_PROJECT}code ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}
-            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}CODE_DIR
+            "$MRB_DIR/bin/copy_dependency_database.sh" "${MRB_SOURCE}" "${MRB_INSTALL}" "${MRB_PROJECTUC}CODE_DIR"
 	    unsetup -j ${MRB_PROJECT}
 	else
             echo "INFO: cannot find ${MRB_PROJECT}/${MRB_PROJECT_VERSION}/releaseDB/base_dependency_database"
