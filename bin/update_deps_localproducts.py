@@ -14,7 +14,7 @@ def whatIsInLocalProducts(prodArea):
   myFlavor = subprocess.check_output('ups flavor %s' % flavorArg, shell=True)
   myFlavor = myFlavor.strip()
 
-  print '== My Flavbor is %s' % myFlavor
+  print '== My Flavor is %s' % myFlavor
 
   # Get list of products
   allProducts = subprocess.check_output('ups list -z %s -f %s -aK product:version' % (prodArea, myFlavor), shell=True)
@@ -74,7 +74,7 @@ if __name__ == '__main__':
   # figure out the sources
   srcs = whatIsInSrcs()
   
-  print '== 'Updating these sources'
+  print '== Updating these sources'
   print srcs
   
   # For each src
