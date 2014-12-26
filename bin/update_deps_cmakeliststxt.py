@@ -42,17 +42,25 @@ def update_CMakeListsTxt(f):
             varName = "%s_VERSION" % product.upper()
             newVersion = os.environ[varName]
             
-            # Get rid of any letters at the end (cmake can't handle them)
-            if not newVersion[-1].isdigit():
-            	print 'CMakeLists.txt: Dropping non-digit last character from %s %s' % (product, newVersion)
-            	newVersion = newVersion[0:-1]
+            # March through the new version string and stop copying at anything strange
+            # Look for at most two _ and start with v
+            newVersionString = newVersion[0]
+            nUnderscores = 0
+            for i in range(len(newVersion)):
+              if i == 0: continue
+              if newVersion[i] == '_':
+                nUnderscores += 1
+                if nUnderscores > 2: break
+              else:
+                if not newVersion[i].isdigit(): break
+              newVersionString += newVersion[i]
 
             if newVersion == version:
                 print 'CMakeLists.txt: No change for %s %s' % (product, version)
             else:
-                print 'CMakeLists.txt: For %s REPLACING version %s with %s' % (product,
-                 version, newVersion)
-                line = line.replace(version, newVersion)
+                print 'CMakeLists.txt: For %s REPLACING version %s with %s (full was %s)' % (product,
+                 version, newVersionString, newVersion)
+                line = line.replace(version, newVersionString)
 
         out += line
 
