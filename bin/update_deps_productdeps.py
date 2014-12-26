@@ -81,7 +81,9 @@ def updateProductDeps(f):
 
             continue
 
+        # Are we in qualifier table?
         if inPQ:
+          
             # Find the mode (debug, prof, opt)
             if words[0] == '-nq-':
                 mode = ''
@@ -96,7 +98,10 @@ def updateProductDeps(f):
                     continue
 
                 newText = quals[i]
-                if quals[i] != '-nq-':
+                if quals[i] == 'UNKNOWN':
+                    # Just use what we had before
+                    newText = words[i+1]
+                else:
                     newText += ":" + mode
                 out += newText
                 spaces = max(len(products[i]) - len(newText), 0) + \
@@ -134,7 +139,7 @@ def updateProductDeps(f):
         elif words[0] == 'qualifier':
             inPQ = True
 
-            # Get the list of porducts
+            # Get the list of products
             products = words
 
             # Determine the qualifiers
@@ -152,7 +157,8 @@ def updateProductDeps(f):
                 else:
                     fq = os.environ.get("%s_FQ" % aProduct.upper())
                     if not fq:
-                        quals.append('-nq-')
+                        # We can't find a fully qualified name, mark as unknown
+                        quals.append('UNKNOWN')
                         continue
 
                 # We have FQ, try to break it up
