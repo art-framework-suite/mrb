@@ -19,19 +19,33 @@ Usage: $fullCom
           It changes the version dependencies to match what is in product_deps. Note that this only
           updates versions, not qualifiers. If a qualifier has changed, the build will not work. This command
           is used by superbuild.
+
+      Options:
+          -p = The products area (default is $MRB_INSTALL)
 EOF
 }
 
 
+prodArea=$MRB_INSTALL
+
 # Determine command options (just -h for help)
-while getopts ":h" OPTION
+while getopts ":hp:" OPTION
 do
     case $OPTION in
         h   ) usage ; exit 0 ;;
+        p   ) prodArea=$OPTARG ;;
         *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
     esac
 done
 
-python $MRB_DIR/bin/update_deps_localproducts.py
+# Check the products area
+if [ ! -r "$prodArea" ]; then
+  echo "$prodArea" was not found
+  exit 1
+fi
+
+echo '== mrb updateLocalProdDeps'
+
+python $MRB_DIR/bin/update_deps_localproducts.py $prodArea
 
 exit 0

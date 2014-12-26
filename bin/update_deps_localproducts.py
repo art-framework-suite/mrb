@@ -4,7 +4,7 @@ import sys, os
 import subprocess
 
 
-def whatIsInLocalProducts():
+def whatIsInLocalProducts(prodArea):
 
   # Detrmine our flavor - special if Darwin
   flavorArg = ''
@@ -14,8 +14,10 @@ def whatIsInLocalProducts():
   myFlavor = subprocess.check_output('ups flavor %s' % flavorArg, shell=True)
   myFlavor = myFlavor.strip()
 
+  print '== My Flavbor is %s' % myFlavor
+
   # Get list of products
-  allProducts = subprocess.check_output('ups list -z %s -f %s -aK product:version' % (os.environ['MRB_INSTALL'], myFlavor), shell=True)
+  allProducts = subprocess.check_output('ups list -z %s -f %s -aK product:version' % prodArea, myFlavor), shell=True)
 
   # Make dictionary of products
   products = {}
@@ -59,18 +61,20 @@ def updateProductDeps(src, localProducts):
 
 
 if __name__ == '__main__':
+  
+  blah, prodArea = sys.argv
 
-  print 'Will update for products found in %s' % os.environ['MRB_INSTALL']
+  print '== Will update for products found in %s' % prodArea
   
   # figure out what is in localproducts
-  localProducts = whatIsInLocalProducts()
+  localProducts = whatIsInLocalProducts(prodArea)
   
   print localProducts.items()
 
   # figure out the sources
   srcs = whatIsInSrcs()
   
-  print 'Updating these sources'
+  print '== 'Updating these sources'
   print srcs
   
   # For each src
