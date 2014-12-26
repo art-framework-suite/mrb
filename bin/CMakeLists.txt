@@ -14,7 +14,7 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   newDev.sh
 		   newProduct.sh
 		   mrbSetEnv
-                   mrbSetupLocalSources
+       mrbSetupLocalSources
 		   pullDep.py
 		   setup_products
 		   svnCheckout.sh
@@ -22,6 +22,8 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   updateDepsPV.sh
 		   zapBuild.sh
 		   updateDeps.sh
+       updateProdDeps.sh
+       update_deps_localproducts.py
 		   update_deps_cmakeliststxt.py
 		   update_deps_productdeps.py
 		   bumpVersion.py
