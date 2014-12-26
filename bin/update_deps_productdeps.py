@@ -100,7 +100,7 @@ def updateProductDeps(f):
                 newText = quals[i]
                 if quals[i] == 'UNKNOWN':
                     # Just use what we had before
-                    newText = words[i+1]
+                    newText = words[i]
                 else:
                     newText += ":" + mode
                 out += newText
