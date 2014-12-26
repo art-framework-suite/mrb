@@ -17,7 +17,7 @@ def whatIsInLocalProducts(prodArea):
   print '== My Flavbor is %s' % myFlavor
 
   # Get list of products
-  allProducts = subprocess.check_output('ups list -z %s -f %s -aK product:version' % prodArea, myFlavor), shell=True)
+  allProducts = subprocess.check_output('ups list -z %s -f %s -aK product:version' % (prodArea, myFlavor), shell=True)
 
   # Make dictionary of products
   products = {}
