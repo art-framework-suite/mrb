@@ -175,7 +175,7 @@ for my $i ( 0 .. $#setup_products::package_list ) {
 print $tfh "setup -B cetbuildtools $use_cetbver\n";
 print $tfh "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n";
 # Have to unsetup cetpkgsupport in case setting up something next that needs it from current
-print $tfh "unsetup cetpkgsupport > /dev/null\n";
+print $tfh "unsetup cetpkgsupport >& /dev/null\n";
 # No longer set up cetpkgsupport current; instead rely on cetbuildtools to set up the right version
 #print $tfh "setup -B cetpkgsupport \n";
 #print $tfh "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
@@ -212,7 +212,7 @@ for my $i ( 0 .. $#setup_products::package_list ) {
 
 # Write out setup cetbuildtools again to make sure we have the right cetpkgsupport set up
 print $tfh "# Fix cetpkgsupport\n";
-print $tfh "unsetup cetpkgsupport > /dev/null\n";
+print $tfh "unsetup cetpkgsupport >& /dev/null\n";
 print $tfh "setup -B cetbuildtools $use_cetbver\n";
 
 my $onlyForBuild="cetbuildtools;";
