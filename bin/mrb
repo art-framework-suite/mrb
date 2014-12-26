@@ -90,7 +90,7 @@ Usage ${mrb_command} $shortComList [-h for help]"
 	bumpVersion (bv)            Bump version number of a package
 	updateDeps (ud)             Update dependencies in CMakeLists.txt and product_deps
 	updateCM (uc)               Update the master CMakeLists.txt file
-  updateProdDeps (upd)        Update dependencies in product_deps to reflect local products
+  updateLocalProdDeps (ulpd)  Update dependencies in product_deps to reflect local products
 	makeDeps (md)               Build or update a header level dependency list
 	checkDeps (cd)              Check for missing build packages
 	pullDeps (pd)               Pull missing build packages into MRB_SOURCE
@@ -206,7 +206,7 @@ EOF
         ;;
 
    # Update product_deps to reflect local_products (calls &l=bin/updateProdDeps.sh&)
-    "updateProdDeps" | "upd" ) ${mrb_bin}/updateProdDeps.sh $*
+    "updateLocalProdDeps" | "ulpd" ) ${mrb_bin}/updateProdDeps.sh $*
         ;;
 
    # build the dependency database (.product_dependency)
