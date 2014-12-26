@@ -82,6 +82,7 @@ Usage ${mrb_command} $shortComList [-h for help]"
 	build (b)                   Run buildtool
 	install (i)                 Run buildtool with install
 	test (t)                    Run buildtool with tests
+  superbuild (sb)             Run superbuild on the Jenkins buildmaster
 	setup_local_products (slp)  Setup local products (mrbslp) [not local sources]
 	zapBuild (z)                Delete everything in your build area
 	newProduct (p)              Create a new product from scratch
@@ -89,6 +90,7 @@ Usage ${mrb_command} $shortComList [-h for help]"
 	bumpVersion (bv)            Bump version number of a package
 	updateDeps (ud)             Update dependencies in CMakeLists.txt and product_deps
 	updateCM (uc)               Update the master CMakeLists.txt file
+  updateProdDeps (upd)        Update dependencies in product_deps to reflect local products
 	makeDeps (md)               Build or update a header level dependency list
 	checkDeps (cd)              Check for missing build packages
 	pullDeps (pd)               Pull missing build packages into MRB_SOURCE
@@ -174,6 +176,9 @@ EOF
     "test" | "t" ) run_buildtool -I $MRB_INSTALL -b -t $*
         ;;
 
+   # Run superbuild
+    "superbuild" | "sb" ) ${mrb_bin}/superbuild $*
+
    # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)
     "zapBuild" | "z" ) ${mrb_bin}/zapBuild.sh $*
         ;;
@@ -198,6 +203,10 @@ EOF
 
    # Update product_deps and CMakeLists.txt to latest dependencies (calls &l=bin/updateDeps.sh&)
     "updateDeps" | "ud" ) ${mrb_bin}/updateDeps.sh $*
+        ;;
+
+   # Update product_deps to reflect local_products (calls &l=bin/updateProdDeps.sh&)
+    "updateProdDeps" | "upd" ) ${mrb_bin}/updateProdDeps.sh $*
         ;;
 
    # build the dependency database (.product_dependency)
