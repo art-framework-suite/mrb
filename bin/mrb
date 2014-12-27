@@ -182,7 +182,7 @@ EOF
         ;;
 
    # Run superbuild
-    "superbuild" | "sb" ) ${mrb_bin}/superbuild $*
+    "superbuild" | "sb" ) ${mrb_bin}/superbuild.sh $*
         ;;
 
    # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)
