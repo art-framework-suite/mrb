@@ -12,7 +12,7 @@ class BasePlugin:
   def handleInPV(self, line, words):
     return line
 
-  def handleInPQ(self, line, words, products, quals):
+  def handleInPQ(self, line, words, products, quals, sepspace):
     out = ''
     
     # Find the mode (debug, prof, opt)
@@ -98,7 +98,7 @@ def alterProductDeps(f, Plugin):
 
     # Are we in qualifier table?
     if inPQ:
-      out += Plugin.handleInPQ(line, words, products, quals)
+      out += Plugin.handleInPQ(line, words, products, quals, sepspace)
       continue
 
     # Look for the parent line

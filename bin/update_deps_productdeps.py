@@ -33,7 +33,7 @@ def getNewVersion(product):
 
 class UpdateProductDepsPlugin(BasePlugin):
   def __init__(self):
-    BasicPlugin.__init__(self)
+    BasePlugin.__init__(self)
 
   def handleInPV(self, line, words):
     product = words[0]
