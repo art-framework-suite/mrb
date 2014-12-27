@@ -3,6 +3,8 @@
 
 # Plugin is a class that has methods that are run at certain times as seen below
 
+import os, sys, string
+
 class BasePlugin:
   def __init__(self):
     pass
@@ -26,16 +28,16 @@ class BasePlugin:
           out += words[-1]
         continue
         
-        newText = quals[i]
-        if quals[i] == 'UNKNOWN':
-          # Just use what we had before
-          newText = words[i]
-        else:
-          newText += ":" + mode
-        out += newText
-        spaces = max(len(products[i]) - len(newText), 0) + \
-          sepspace - max(0, len(newText) - len(products[i]))
-        out += ' ' * spaces
+      newText = quals[i]
+      if quals[i] == 'UNKNOWN':
+        # Just use what we had before
+        newText = words[i]
+      else:
+        newText += ":" + mode
+      out += newText
+      spaces = max(len(products[i]) - len(newText), 0) + \
+        sepspace - max(0, len(newText) - len(products[i]))
+      out += ' ' * spaces
 
     out += '\n'
     return out
@@ -91,7 +93,6 @@ def alterProductDeps(f, Plugin):
 
     # Are we in the product version table?
     if inPV:
-    
       out += Plugin.handleInPV(line, words)
       continue
 
