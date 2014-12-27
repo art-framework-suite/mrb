@@ -6,25 +6,27 @@ import os
 import sys
 import string
 
+from alterProductDeps import *
+
 def incrementVersion(old, whichNumber, text):
 
-    words = old[1:].split("_")
+  words = old[1:].split("_")
 
-    oldText = '--none--'
-    if len(words) > 3:
-        oldText = words[3]
-    
-    numbers = [ int(x) for x in words[:3] ]
+  oldText = '--none--'
+  if len(words) > 3:
+    oldText = words[3]
+  
+  numbers = [ int(x) for x in words[:3] ]
 
-    if whichNumber == "--last--":
-        numbers[2] += 1
-    elif whichNumber == "--middle--":
-        numbers[1] += 1
-        numbers[2] = 0
-    elif whichNumber == "--first--":
-        numbers[0] += 1
-        numbers[1] = 0
-        numbers[2] = 0
+  if whichNumber == "--last--":
+      numbers[2] += 1
+  elif whichNumber == "--middle--":
+      numbers[1] += 1
+      numbers[2] = 0
+  elif whichNumber == "--first--":
+      numbers[0] += 1
+      numbers[1] = 0
+      numbers[2] = 0
 
     # Put this back together
     newVersion = 'v{}_{:=02}_{:=02}'.format(numbers[0], numbers[1], numbers[2])
@@ -36,148 +38,39 @@ def incrementVersion(old, whichNumber, text):
         newVersion = newVersion + "_" + oldText
     
     return newVersion
-      
 
-def bumpVersion(pkg, pdfile, whichNumber, text, newQual):
-    out = ''
 
-    inPV = False
-    inPQ = False
-    quals = []
-    oldQual = ""
-    products = []
-    sepspace = 8
+class BumpVersionPlugin(BasePlugin):
+  def __init__(self, whichNumber, text, newQual ):
+    BasePlugin.__init__(self)
+    self.whichNumber = whichNumber
+    self.text = text
+    self.newQual = newQual
 
-    # Read the lines of the file
-    for line in open(pdfile):
+  def handleParent(self, line, words):
+    newVersion = incrementVersion(words[2], self.whichNumber, self.text)
+    print 'Updating product %s from version %s to %s' % \
+            (words[1], words[2], newVersion)
+    line = 'parent %s %s\n' % (words[1], newVersion)
+    return line
 
-        sline = line.strip()
+  def handleDefaultqual(self, line, words):
+    if self.newQual != '--none--':
+      print 'Updating default qualifier from %s to %s' % (words[1], self.newQual)
+      line = 'defaultqual %s\n' % (self.newQual)
+    return line
 
-        if sline == '':
-            out += line
-            continue
-
-        if sline == "end_product_list" or sline == "end_qualifier_list":
-            if inPV:  
-                inPV = False
-            if inPQ:
-                inPQ = False
-            out += line
-            continue
-
-        if sline[0] == "#":
-            out += line
-            continue
-
-        # Split line into words
-        words = sline.split()
-
-        # Are we in the product version table?
-        if inPV:
-            out += line
-            continue
-
-        if inPQ:
-            # Find the mode (debug, prof, opt)
-            if words[0] == '-nq-':
-                mode = ''
-            else:
-                mode = words[0].split(':')[1]
-
-            # Write out the qualifiers, adding appropriate spaces
-            for i in range(len(products)):
-                if products[i] == 'notes':
-                    if len(words) > i:
-                        out += words[-1]
-                    continue
-
-                newText = quals[i]
-                if quals[i] != '-nq-':
-                    newText += ":" + mode
-                out += newText
-                spaces = max(len(products[i]) - len(newText), 0) + \
-                    sepspace - max(0, len(newText) - len(products[i]))
-                out += ' ' * spaces
-            out += '\n'
-            continue
-
-        # Look for the parent line
-        if words[0] == "parent":
-            newVersion = incrementVersion(words[2], whichNumber, text)
-            print 'Updating product %s from version %s to %s' % \
-                (words[1], words[2], newVersion)
-            line = 'parent %s %s\n' % (words[1], newVersion)
-            out += line
-
-        # Look for defaultqual
-        elif words[0] == 'defaultqual':
-            oldQual = words[1]
-            if newQual != '--none--':
-                print 'Updating default qualifier from %s to %s' % (words[1], newQual)
-                line = 'defaultqual %s\n' % (newQual)
-            out += line
-
-        # Look for the product version table
-        elif words[0] == 'product' and words[1] == 'version':
-            inPV = True
-            out += line
-
-        # Look for only_for_build
-        elif words[0] == 'only_for_build':
-            out += line
-
-        # Look for the qualifier table
-        elif words[0] == 'qualifier':
-            inPQ = True
-
-            # Get the list of products
-            products = words
-
-            # Determine the qualifiers
-            for aProduct in products:
-                if aProduct == 'qualifier':
-                    if newQual != '--none--':
-                        quals.append(newQual)
-                    else:
-                        quals.append(oldQual)
-                    continue
-                if aProduct == 'notes':
-                    continue
-
-                # Try _FQ_DIR
-                fq = os.environ.get("%s_FQ_DIR" % aProduct.upper())
-                if fq:
-                    fq = fq.split('/')[-1]
-                else:
-                    quals.append('-nq-')
-                    continue
-
-                # We have FQ, try to break it up
-                parts = fq.split('.')
-                if not parts[-1] in ('debug', 'prof', 'opt'):
-                    parts = fq.split("-")
-
-                if parts[-1] in ('debug', 'prof', 'opt'):
-                    prodQual = parts[-2]
-                else:
-                    prodQual = parts[-1]
-
-                quals.append(prodQual)
-
-            print 'Products: ' + string.join(products, ', ')
-            print 'New Qual: ' + string.join(quals, ', ')
-
-            out += string.join(products, ' ' * sepspace) + '\n'
-
-        else:
-            out += line
-
-    return out
-
+  def handleQualifier(self, oldQual):
+    if self.newQual != '--none--':
+      return self.newQual
+    else:
+      return oldQual
 
 if __name__ == '__main__':
 
-    blah, pkg, pdfile, whichNumber, text, qual = sys.argv
+  blah, pkg, pdfile, whichNumber, text, qual = sys.argv
 
-    out = bumpVersion(pkg, pdfile, whichNumber, text, qual)
-    open(pdfile, 'w').write(out)
+  p = BumpVersionPlugin(whichNumber, text, newQual)
+  out = alterProductDeps(pdfile, p)
+
+  open(pdfile, 'w').write(out)
