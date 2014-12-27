@@ -28,16 +28,16 @@ def incrementVersion(old, whichNumber, text):
       numbers[1] = 0
       numbers[2] = 0
 
-    # Put this back together
-    newVersion = 'v{}_{:=02}_{:=02}'.format(numbers[0], numbers[1], numbers[2])
+  # Put this back together
+  newVersion = 'v{}_{:=02}_{:=02}'.format(numbers[0], numbers[1], numbers[2])
 
-    # Add text if necessary
-    if text != '--none--' and text != '--blank--':
-        newVersion = newVersion + "_" + text
-    elif oldText != '--none--' and text != '--blank--':
-        newVersion = newVersion + "_" + oldText
-    
-    return newVersion
+  # Add text if necessary
+  if text != '--none--' and text != '--blank--':
+      newVersion = newVersion + "_" + text
+  elif oldText != '--none--' and text != '--blank--':
+      newVersion = newVersion + "_" + oldText
+  
+  return newVersion
 
 
 class BumpVersionPlugin(BasePlugin):

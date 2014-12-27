@@ -46,7 +46,7 @@ class BasePlugin:
   def handleDefaultqual(self, line, words):
     return line
 
-  def handleOnlyForBuild(self, line, words)
+  def handleOnlyForBuild(self, line, words):
     return line
 
   def handleQualifier(self, oldQual):
