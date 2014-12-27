@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
   blah, pkg, pdfile, whichNumber, text, qual = sys.argv
 
-  p = BumpVersionPlugin(whichNumber, text, newQual)
+  p = BumpVersionPlugin(whichNumber, text, qual)
   out = alterProductDeps(pdfile, p)
 
   open(pdfile, 'w').write(out)

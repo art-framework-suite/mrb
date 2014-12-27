@@ -31,7 +31,7 @@ def getNewVersion(product):
     return newVersion
 
 
-class UpdateProductDepsPlugin(BasicPlugin):
+class UpdateProductDepsPlugin(BasePlugin):
   def __init__(self):
     BasicPlugin.__init__(self)
 
