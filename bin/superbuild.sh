@@ -23,7 +23,6 @@ Options (not recommended unless you know what you are doing):
   -v     = gm2 version (e.g. v5_00_00)  [Default is to figure this out from your dev area]
   -q     = gm2 qualifiers (e.g. e6:prof) [Default is to figure this out from your dev area]
   -s     = srcs list:  prod1:branch1:prod2:branch2:... [Default is to figure this out from your dev area]
-  -S     = Tar up srcs and ship it to the build facility to build with
   -P     = Tar up local products and ship it to the build facility to build against
   -R     = Build for a release (**not** for general use)
 
@@ -82,7 +81,7 @@ do
         v   ) gm2ver=$OPTARG;;
         q   ) gm2qual=$OPTARG;;
         s   ) srcs=$OPTARG;;
-        S   ) doSrcsTar=true;;
+        U   ) doSrcsTar=true;;
         P   ) doProdTar=true;;
         R   ) doRelease=true;;
         *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
