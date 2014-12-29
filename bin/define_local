@@ -126,11 +126,9 @@ for $i ( 0 .. $#package_list ) {
   }
   if ( "${fcl_directory}" ne "none" ) {
     ##print DIAG "$product: add ---${fcl_directory}---\n";
-    if ( $ENV{FHICL_FILE_PATH} ne '' ) {
-      print TSET "setenv  FHICL_FILE_PATH \`dropit -esf -p \${FHICL_FILE_PATH} \'${build_dir}/${fcl_directory}\'\`\n";
-    } else {
-      print TSET "setenv  FHICL_FILE_PATH \'${build_dir}/${fcl_directory}\'\n";
-    }
+     # Note - this previously just set FHICL_FILE_PATH if it wasn't already set - the problem with that
+     # was then the last product to get set up would be the only one
+     print TSET "setenv  FHICL_FILE_PATH \`dropit -esf -p \${FHICL_FILE_PATH} \'${build_dir}/${fcl_directory}\'\`\n";
   }
   if ( "${gdml_directory}" ne "none" ) {
     if ( $ENV{FW_SEARCH_PATH} ne '' ) {
