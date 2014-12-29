@@ -24,6 +24,8 @@ Options (not recommended unless you know what you are doing):
   -q     = gm2 qualifiers (e.g. e6:prof) [Default is to figure this out from your dev area]
   -s     = srcs list:  prod1:branch1:prod2:branch2:... [Default is to figure this out from your dev area]
   -P     = Tar up local products and ship it to the build facility to build against
+  -b     = Get a products tar file from the build master (e.g. from a previous build)
+                   E.g. gm2-superbuild2-copyout/19/artifact/superbuild_19.tgz
   -R     = Build for a release (**not** for general use)
 
 EOF
@@ -73,14 +75,16 @@ srcs='--none--'
 doSrcsTar=false
 doProdTar=false
 doRelease=false
+prodFromBM='--none--'
 
-while getopts ":hv:q:s:UPR" OPTION
+while getopts ":hv:q:s:b:UPR" OPTION
 do
     case $OPTION in
         h   ) usage ; exit 0 ;;
         v   ) gm2ver=$OPTARG;;
         q   ) gm2qual=$OPTARG;;
         s   ) srcs=$OPTARG;;
+        b   ) prodFromBM=$OPTARG;;
         U   ) doSrcsTar=true;;
         P   ) doProdTar=true;;
         R   ) doRelease=true;;
@@ -98,6 +102,19 @@ fi
 
 # Capture the product name
 token=$1
+
+# Do some consistency checks
+# Can't do -s and -U
+if [ "$srcs" != '--none--' ] && [ "$doSrcsTar" == "true" ]; then
+  echo "Cannot specify both -s and -U"
+  exit 2
+fi
+
+# Can't do -P and -b
+if [ "$prodFromBM" != '--none--' ] && [ "$doProdTar" == "true" ]; then
+echo "Cannot specify both -b and -P"
+exit 2
+fi
 
 # Determine the gm2 version and qualifier
 if [ "$gm2ver" == "--none--" ]; then
@@ -130,12 +147,18 @@ if [ "$doProdTar" == "true" ]; then
   tar cvzf $MRB_TOP/superbuild_prod.tgz * .upsfiles
 fi
 
+# Blank out prodFromBM if necessary
+if [ "$prodFromBM" == "--none--"]; then
+  prodFromBM=""
+fi
+
 # Create the curl string
 jsonstring="{\"parameter\": [ {\"name\":\"GM2VERSION\", \"value\":\"$gm2ver\"},
                               {\"name\":\"GM2QUALS\", \"value\":\"$gm2qual\"},
                               {\"name\":\"SRCSTOBUILD\", \"value\":\"$srcs\"},
                               {\"name\":\"WHO\", \"value\":\"$USER\"},
                               {\"name\":\"FROM\", \"value\":\"$HOSTNAME\"},
+                              {\"name\":\"PRODUCTSFROMBUILDMASTER\", \"value\":\"$prodFromBM\"},
                               {\"name\":\"FORRELEASE\", \"value\":\"$doRelease\"} "
 filestring="--none--"
 
