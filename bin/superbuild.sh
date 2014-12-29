@@ -145,7 +145,7 @@ if [ "$doSrcsTar" == "true" ]; then
 fi
 
 if [ "$doProdTar" == "true" ]; then
-  jsonstring="${jsonstring}, {\"name\":\"PRODTGZ\", \"file\":\"file1\"} "
+  jsonstring="${jsonstring}, {\"name\":\"PRODUCTSTGZ\", \"file\":\"file1\"} "
   filestring="--form file1=@$MRB_TOP/superbuild_prod.tgz "
 fi
 
