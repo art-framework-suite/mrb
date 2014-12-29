@@ -17,9 +17,10 @@ Perform a superbuild on Fermilab build facility.
 Default operation is for you to commit and push all code in srcs. Superbuild will then
 download those branches from git and will build.
 
-Normally, you would give no options.
+Normally, you would give no options (you do have to give the password)
 
 Options (not recommended unless you know what you are doing):
+  -j     = Specify jenkins project (default is gm2_superbuild2)
   -v     = gm2 version (e.g. v5_00_00)  [Default is to figure this out from your dev area]
   -q     = gm2 qualifiers (e.g. e6:prof) [Default is to figure this out from your dev area]
   -s     = srcs list:  prod1:branch1:prod2:branch2:... [Default is to figure this out from your dev area]
@@ -72,15 +73,17 @@ determineSrcs() {
 gm2ver='--none--'
 gm2qual='--none--'
 srcs='--none--'
+jenkinsProject='gm2-superbuild2'
 doSrcsTar=false
 doProdTar=false
 doRelease=false
 prodFromBM='--none--'
 
-while getopts ":hv:q:s:b:UPR" OPTION
+while getopts ":hv:q:s:b:j:UPR" OPTION
 do
     case $OPTION in
         h   ) usage ; exit 0 ;;
+        j   ) jenkinsProject=$OPTARG;;
         v   ) gm2ver=$OPTARG;;
         q   ) gm2qual=$OPTARG;;
         s   ) srcs=$OPTARG;;
@@ -174,7 +177,7 @@ fi
 
 jsonstring="${jsonstring} ]}"
 
-com="curl -X POST https://buildmaster.fnal.gov/job/gm2-superbuild2/build?token=$token
+com="curl -X POST https://buildmaster.fnal.gov/job/${jenkinsProject}/build?token=$token
           --form json='${jsonstring}' "
 
 
@@ -192,7 +195,7 @@ bash /tmp/doSuperbuildCurl.sh
 rm -f /tmp/doSuperbuildCurl.sh
 echo '-----------------'
 echo 'If there was no output, then your build is queued/running.'
-echo 'See https://buildmaster.fnal.gov/job/gm2-superbuild2 for your job status.'
-echo 'See https://buildmaster.fnal.gov/job/gm2-superbuild2-copyout for job artifacts.'
+echo "See https://buildmaster.fnal.gov/job/${jenkinsProject} for your job status."
+echo "See https://buildmaster.fnal.gov/job/${jenkinsProject}-copyout (perhaps) for job artifacts."
 
 exit 0
