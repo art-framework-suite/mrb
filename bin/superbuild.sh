@@ -148,7 +148,7 @@ if [ "$doProdTar" == "true" ]; then
 fi
 
 # Blank out prodFromBM if necessary
-if [ "$prodFromBM" == "--none--"]; then
+if [ "$prodFromBM" == "--none--" ]; then
   prodFromBM=""
 fi
 
