@@ -74,7 +74,7 @@ doSrcsTar=false
 doProdTar=false
 doRelease=false
 
-while getopts ":hv:q:s:SPR" OPTION
+while getopts ":hv:q:s:UPR" OPTION
 do
     case $OPTION in
         h   ) usage ; exit 0 ;;
