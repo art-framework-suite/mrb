@@ -28,9 +28,9 @@ if( $#ARGV < 1 ) {
     exit 0;
 }
 
-$sourcedir = $ARGV[0];
-$builddir = $ARGV[1];
-$simple = "";
+my $sourcedir = $ARGV[0];
+my $builddir = $ARGV[1];
+my $simple = "";
 for $i ( 2 .. $#ARGV ) {
     if( $ARGV[$i] eq "simple" ) {
       $simple = "true";
@@ -45,22 +45,22 @@ open(DIAG, ">> $diagfl") or die "Couldn't open $diagfl";
 
 $inputdir = $sourcedir."/ups";
 
-$mrb_project = $ENV{MRB_PROJECT};
-$mrb_project_version = $ENV{MRB_PROJECT_VERSION};
-$mrb_quals = $ENV{MRB_QUALS};
-$tmpfl = $builddir."/".$mrb_project."-".$mrb_project_version."-defs";
+my $mrb_project = $ENV{MRB_PROJECT};
+my $mrb_project_version = $ENV{MRB_PROJECT_VERSION};
+my $mrb_quals = $ENV{MRB_QUALS};
+my $tmpfl = $builddir."/".$mrb_project."-".$mrb_project_version."-defs";
 ##print DIAG "opening $tmpfl for $mrb_project $mrb_project_version\n";
 open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
 ##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
 
 # parse a list of dependencies
-$dfile = $sourcedir."/dependency_list";
-%deplist = get_dependency_list( $dfile, DIAG );
+my $dfile = $sourcedir."/dependency_list";
+my %deplist = get_dependency_list( $dfile, DIAG );
 
 # have to find the list of packages to traverse
-$cmakefile=$sourcedir."/CMakeLists.txt";
-@package_list = get_package_list( $cmakefile, DIAG );
+my $cmakefile=$sourcedir."/CMakeLists.txt";
+my @package_list = get_package_list( $cmakefile, DIAG );
 ##print DIAG "DIAGNOSTICS: packages to check: @package_list\n";
 if ( $#package_list < 0 ) {
   print DIAG "DIAGNOSTICS: there are no packages in $sourcedir\n";
@@ -69,8 +69,8 @@ if ( $#package_list < 0 ) {
   exit 0;
 }
 for $i ( 0 .. $#package_list ) {
-  $pkg=$package_list[$i];
-  $pfile=$sourcedir."/".$pkg."/ups/product_deps";
+  my $pkg=$package_list[$i];
+  my $pfile=$sourcedir."/".$pkg."/ups/product_deps";
   ##print DIAG "checking $pfile for $pkg \n";
   ($productnames[$i], $productversn[$i]) = get_product_name( $pfile, DIAG );
   $productdefaultquals[$i] = find_default_qual( $pfile );
@@ -82,8 +82,8 @@ print TSET "# unsetup products we are building\n";
 ##print DIAG "DIAGNOSTICS: packages to check: @package_list\n";
 for $i ( 0 .. $#package_list ) {
   # call unsetup if the $productnames[$i] has been setup
-  $psetup = "SETUP_".uc($productnames[$i]);
-  $is_setup=$ENV{$psetup};
+  my $psetup = "SETUP_".uc($productnames[$i]);
+  my $is_setup=$ENV{$psetup};
   ##print DIAG "DIAGNOSTICS: $psetup for $productnames[$i] is $is_setup\n";
   if ( $is_setup ) {
     print TSET "unsetup -j $productnames[$i]\n";
@@ -94,18 +94,18 @@ for $i ( 0 .. $#package_list ) {
 print TSET "# set package variables\n";
 my $build_dir = $ENV{MRB_BUILDDIR};
 for $i ( 0 .. $#package_list ) {
-  $pkg=$package_list[$i];
-  $pfile=$sourcedir."/".$pkg."/ups/product_deps";
+  my $pkg=$package_list[$i];
+  my $pfile=$sourcedir."/".$pkg."/ups/product_deps";
   ##print DIAG "checking $pfile for $pkg \n";
-  $product = $productnames[$i];
-  $version = $productversn[$i];
-  $qual    = $productdefaultquals[$i]; 
+  my $product = $productnames[$i];
+  my $version = $productversn[$i];
+  my $qual    = $productdefaultquals[$i]; 
 
-  $fcl_directory = get_fcl_directory( $pfile, $product );
-  $gdml_directory = get_gdml_directory( $pfile, $product );
-  $fw_directory = get_fw_directory( $pfile, $product );
+  my $fcl_directory = get_fcl_directory( $pfile, $product );
+  my $gdml_directory = get_gdml_directory( $pfile, $product );
+  my $fw_directory = get_fw_directory( $pfile, $product );
   # pretend this is a product
-  $product_uc = uc($product);
+  my $product_uc = uc($product);
   print TSET "setenv  ${product_uc}_VERSION $version\n";
   # dropit -esf will remove any existing instances of the path and then prepend the path
   # unfortunately, tcsh complains if the variable is not already set, so we have to check
