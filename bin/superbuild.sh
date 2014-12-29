@@ -124,7 +124,7 @@ else
 fi
 
 # Tar up the products if necessary
-if [ "doProdTar" == "true" ]; then
+if [ "$doProdTar" == "true" ]; then
   cd $MRB_INSTALL
   echo 'Tarring products'
   tar cvzf $MRB_TOP/superbuild_prod.tgz * .upsfiles
