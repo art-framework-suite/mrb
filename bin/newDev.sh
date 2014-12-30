@@ -475,7 +475,12 @@ if [ ${makeLP} ]; then
 
     # Construct the version and qualifier string
     qualdir=`echo ${MRB_QUALS} | sed s'/:/_/g'`
-    dirVerQual="_${MRB_PROJECT}_${prjver}_${qualdir}"
+    if [ "$MRB_QUALS" = "-nq-" ]
+    then
+      dirVerQual="_${MRB_PROJECT}_${prjver}"
+    else
+      dirVerQual="_${MRB_PROJECT}_${prjver}_${qualdir}"
+    fi
     # Construct the name of the @local_products@ directory
     # First get the full path 
     cd ${topDir}
