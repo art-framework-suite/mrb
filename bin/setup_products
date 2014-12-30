@@ -211,7 +211,7 @@ for my $i ( 0 .. $#setup_products::package_list ) {
   my $pkg=$setup_products::package_list[$i];
   $setup_products::product = "";
   $setup_products::version = "";
-  print $dfh "setup_products debug info: calling product_setup_loop for $pkg $setup_products::dop \n";
+  ##print $dfh "setup_products debug info: calling product_setup_loop for $pkg $setup_products::dop \n";
   ($setup_products::product, $setup_products::version) = product_setup_loop( $sourcedir, $pkg, $simple, $builddir, $dfh, $tfh );
 
   if ( $setup_products::product ne $productnames[$i] ) {

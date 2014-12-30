@@ -645,17 +645,20 @@ sub setup_only_for_build {
 sub print_setup_noqual {
   my @params = @_;
   my $efl = $params[3];
-  ##print $efl "# print_setup_noqual called with $params[0] $params[1] $params[2]\n";
+  my $dfl = $params[4];
+  my $thisqual = $params[1];
+  if( $params[1] eq "-" ) {  $thisqual = ""; }
+  ##print $dfl "print_setup_noqual debug info: called with $params[0] $params[1] $params[2]\n";
   if( $params[2] eq "true" ) { 
   print $efl "# setup of $params[0] is optional\n"; 
   print $efl "unset have_prod\n"; 
-  print $efl "ups exist $params[0] $params[1]\n"; 
+  print $efl "ups exist $params[0] $thisqual\n"; 
   print $efl "test \"\$?\" = 0 && set_ have_prod=\"true\"\n"; 
-  print $efl "test \"\$have_prod\" = \"true\" || echo \"no optional setup of $params[0] $params[1]\"\n"; 
-  print $efl "test \"\$have_prod\" = \"true\" && setup -B $params[0] $params[1] \n";
+  print $efl "test \"\$have_prod\" = \"true\" || echo \"no optional setup of $params[0] $thisqual\"\n"; 
+  print $efl "test \"\$have_prod\" = \"true\" && setup -B $params[0] $thisqual \n";
   print $efl "unset have_prod\n"; 
   } else {
-  print $efl "setup -B $params[0] $params[1] \n";
+  print $efl "setup -B $params[0] $thisqual \n";
   print $efl "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
   }
   return 0;
@@ -664,7 +667,10 @@ sub print_setup_noqual {
 sub print_setup_qual {
   my @params = @_;
   my $efl = $params[4];
-  ##print $efl "# print_setup_qual called with $params[0] $params[1] $params[2] $params[3]\n";
+  my $dfl = $params[5];
+  my $thisqual = $params[1];
+  if( $params[1] eq "-" ) {  $thisqual = ""; }
+  ##print $dfl "print_setup_qual debug info: called with $params[0] $params[1] $params[2] $params[3]\n";
   my @qwords = split(/:/,$params[2]);
   my $ql="+".$qwords[0];
   foreach my $j ( 1 .. $#qwords ) {
@@ -673,13 +679,13 @@ sub print_setup_qual {
   if( $params[3] eq "true" ) { 
   print $efl "# setup of $params[0] is optional\n"; 
   print $efl "unset have_prod\n"; 
-  print $efl "ups exist $params[0] $params[1] -q $ql\n"; 
+  print $efl "ups exist $params[0] $thisqual -q $ql\n"; 
   print $efl "test \"\$?\" = 0 && set_ have_prod=\"true\"\n"; 
-  print $efl "test \"\$have_prod\" = \"true\" || echo \"no optional setup of $params[0] $params[1] -q $ql\"\n"; 
-  print $efl "test \"\$have_prod\" = \"true\" && setup -B $params[0] $params[1] -q $ql \n";
+  print $efl "test \"\$have_prod\" = \"true\" || echo \"no optional setup of $params[0] $thisqual -q $ql\"\n"; 
+  print $efl "test \"\$have_prod\" = \"true\" && setup -B $params[0] $thisqual -q $ql \n";
   print $efl "unset have_prod\n"; 
   } else {
-  print $efl "setup -B $params[0] $params[1] -q $ql\n";
+  print $efl "setup -B $params[0] $thisqual -q $ql\n";
   print $efl "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
   }
   return 0;
@@ -721,11 +727,11 @@ sub product_setup_loop {
   my ($product, $version, $default_ver, $default_qual, $have_fq) = get_parent_info( $pfile );
 
   my $qual;
-  if ( $default_qual ) {
-    $qual = $default_qual.":";
-    $qual = $qual.$setup_products::dop;
-  } elsif ( $simple ) {
+  # logic problem here - we might not want the default qualifier
+  if ( $simple eq "true" ) {
     $qual = "-nq-";
+  } elsif ( $default_qual ) {
+    $qual = $default_qual.":".$setup_products::dop;
   } else {
     my $errfl2 = $builddir."/error-".$product."-".$version;
     open(ERR2, "> $errfl2") or die "Couldn't open $errfl2";
@@ -794,8 +800,9 @@ sub product_setup_loop {
   my ($ndeps, @qlist) = get_qualifier_list( $pfile, $dfile );
   # now call setup with the correct version and qualifiers
   foreach my $i ( 1 .. $#qlist ) {
+    ##print $dfile "product_setup_loop: compare $qlist[$i][0] to $qual \n";
     next if ( ! (compare_qual( $qlist[$i][0], $qual ) ) );
-    ##print $dfile "product_setup_loop: $qlist[$i][$0] matches $qual \n";
+    ##print $dfile "product_setup_loop: $qlist[$i][0] matches $qual \n";
     foreach my $j ( 1 .. $ndeps ) {
       next if $qlist[0][$j] eq "compiler";
       my $print_setup = "true";
@@ -846,11 +853,11 @@ sub product_setup_loop {
 	if ( $qlist[$i][$j] eq "-" ) {
 	} elsif ( $no_package_setup eq "true" ) {
 	} elsif ( $qlist[$i][$j] eq "-nq-" ) {
-          print_setup_noqual( $qlist[0][$j], $plist[$piter][1], $is_optional, $tfile );
+          print_setup_noqual( $qlist[0][$j], $plist[$piter][1], $is_optional, $tfile, $dfile );
 	} elsif ( $qlist[$i][$j] eq "-b-" ) {
-          print_setup_noqual( $qlist[0][$j], $plist[$piter][1], $is_optional, $tfile );
+          print_setup_noqual( $qlist[0][$j], $plist[$piter][1], $is_optional, $tfile, $dfile );
 	} else {
-          print_setup_qual( $qlist[0][$j], $plist[$piter][1], $qlist[$i][$j], $is_optional, $tfile );
+          print_setup_qual( $qlist[0][$j], $plist[$piter][1], $qlist[$i][$j], $is_optional, $tfile, $dfile );
 	}
       }
     }
