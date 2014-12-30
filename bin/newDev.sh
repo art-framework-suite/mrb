@@ -89,12 +89,6 @@ function make_srcs_directory()
   # Record the mrb version
   ups active | grep ^mrb >  ${MRB_SOURCE}/.mrbversion
 
-##  # If we're on MacOSX, then copy the xcodeBuild.sh file
-##  if ups flavor -1 | grep -q 'Darwin'; then
-##    cp ${MRB_DIR}/templates/xcodeBuild.sh ${MRB_SOURCE}/xcodeBuild.sh
-##    chmod a+x ${MRB_SOURCE}/xcodeBuild.sh
-##    echo "NOTICE: Created ${MRB_SOURCE}/xcodeBuild.sh"
-##  fi
 }
 
 function create_local_setup()
