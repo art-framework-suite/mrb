@@ -570,11 +570,13 @@ sub cetpkg_info_file {
   open(CPG, "> $cetpkgfile") or die "Couldn't open $cetpkgfile";
   print CPG "\n";
   foreach my $index (0 .. $#param_names) {
+    my $pval = $param_vals[$index];
+    if( $param_vals[$index] eq "simple" ) { $pval = "-"; }
     printf CPG "CETPKG_%s%s%s\n",
       uc $param_names[$index], # Var name.
         " " x (max(map { length() + 2 } @param_names) -
                length($param_names[$index])), # Space padding.
-          $param_vals[$index]; # Value.
+          $pval; # Value.
   }
   print CPG "to check cmake cached variables, use cmake -N -L\n";
   close(CPG);
