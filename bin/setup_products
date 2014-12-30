@@ -11,17 +11,6 @@ use mrb_parse_deps;
 use strict;
 use warnings;
 
-my $default_fc = ( $^O eq "darwin" ) ? "-" : "gfortran";
-
-# the default compiler is gcc
-my $compiler = "gcc";
-my $compiler_table =
-  {
-   cc => { CC => "cc", CXX => "c++", FC => $default_fc },
-   gcc => { CC => "gcc", CXX => "g++", FC => "gfortran" },
-   icc => { CC => "icc", CXX => "icpc", FC => "ifort" },
-  };
-
 if( $#ARGV < 1 ) {
     my $errfl1 = "problem_report";
     open(ERR1, "> $errfl1") or die "Couldn't open $errfl1";
@@ -61,6 +50,24 @@ my $mrb_project = $ENV{MRB_PROJECT};
 my $mrb_project_version = $ENV{MRB_PROJECT_VERSION};
 my $mrb_quals = $ENV{MRB_QUALS};
 #print $dfh "setup_products debug info: mrb_quals is $mrb_quals \n";
+
+# determine the compiler based on mrb_quals
+my $default_fc = ( $^O eq "darwin" ) ? "-" : "gfortran";
+my $compiler;
+if (!$compiler) {
+  my @quals = split /:/, $mrb_quals;
+  if (grep /^(e|gcc)\d+$/, @quals) {
+    $compiler = "gcc";
+  } else {
+    $compiler = "cc"; # Native.
+  }
+}
+my $compiler_table =
+  {
+   cc => { CC => "cc", CXX => "c++", FC => $default_fc },
+   gcc => { CC => "gcc", CXX => "g++", FC => "gfortran" },
+   icc => { CC => "icc", CXX => "icpc", FC => "ifort" },
+  };
 
 # determine build type from MRB_QUALS
 if ( $simple eq "true" ) {
@@ -204,7 +211,7 @@ for my $i ( 0 .. $#setup_products::package_list ) {
   my $pkg=$setup_products::package_list[$i];
   $setup_products::product = "";
   $setup_products::version = "";
-  ##print $dfh "setup_products debug info: calling product_setup_loop for $pkg $setup_products::dop \n";
+  print $dfh "setup_products debug info: calling product_setup_loop for $pkg $setup_products::dop \n";
   ($setup_products::product, $setup_products::version) = product_setup_loop( $sourcedir, $pkg, $simple, $builddir, $dfh, $tfh );
 
   if ( $setup_products::product ne $productnames[$i] ) {
