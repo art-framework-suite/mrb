@@ -31,6 +31,7 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   bumpVersion.sh
        alterProductDeps.py
        superbuild.sh
+       xcodeIncs.sh
           DESTINATION ${product}/${version}/bin )
 
 INSTALL (FILES mrb_parse_deps.pm
