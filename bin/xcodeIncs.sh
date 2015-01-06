@@ -66,11 +66,12 @@ fi
 
 # Do the search and replace
 if [ "$doall" == "true" ]; then
-  r=$(env | grep INC | awk 'BEGIN { FS="="; ORS=" "} ; { print "\"${"$1"}\"," } ')
+  r=$(env | grep INC | sort | awk 'BEGIN { FS="="; ORS=" "} ; { print "\"${"$1"}\"," } ')
 else
-  r=$(env | grep INC | egrep -i 'art|g4|cet|message|fhicl|clhep|gm2|root_' | grep -v DIR | awk 'BEGIN { FS="="; ORS=" "} ; { print "\"${"$1"}\"," } ')
+  r=$(env | grep INC | egrep 'ART|G4|CET|MESSAGE|FHICL|CLHEP|GM2[^_]|ROOT_' | grep -v DIR | sort | awk 'BEGIN { FS="="; ORS=" "} ; { print "\"${"$1"}\"," } ')
 fi
 
+echo "Adding $r"
 sed -i '.bak' "s/\"\${MRB_SOURCE}\",/\"\${MRB_SOURCE}\",$r/" $projFile
 
 echo "Updated $projFile"
