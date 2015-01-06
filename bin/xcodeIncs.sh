@@ -16,7 +16,7 @@ Insert references to headers into an Xcode project.
 
 You must have everything set up already (e.g. do ". mrb s").
 
-You must have already added ${MRB_SOURCE} to the "Header Search Paths" in the Xcode project.
+You must have already added \${MRB_SOURCE} to the "Header Search Paths" in the Xcode project.
 
 Paths to art, geant4, cetlib, messagefacility, fhiclcpp, clhep, root, and gm2* are included.
 If you want even more (everything with an INC in the environment variable name), do "-a", but note that
@@ -58,7 +58,13 @@ xcodeprojpath=$1
 xcodeproj=$(basename $xcodeprojpath)
 projFile=${xcodeprojpath}/${xcodeproj}.xcodeproj/project.pbxproj
 
-# Do the search
+# Does the project file exist?
+if [ ! -r "$projFile" ]; then
+  echo "ERROR: $projFile does not exist"
+  exit 2
+fi
+
+# Do the search and replace
 if [ "$doall" == "true" ]; then
   r=$(env | grep INC | awk 'BEGIN { FS="="; ORS=" "} ; { print "\"${"$1"}\"," } ')
 else
