@@ -28,6 +28,7 @@ Options (not recommended unless you know what you are doing):
   -b     = Get a products tar file from the build master (e.g. from a previous build)
                    E.g. gm2-superbuild2-copyout/19/artifact/superbuild_19.tgz
   -C     = Pass an argument for building (e.g. -C "-DCSCF_EXTRA_CXX_FLAGS=-fsanitize=address" )
+  -V     = Build with VERBOSE=1 turned on (makes for very large build log)
   -R     = Build for a release (**not** for general use)
 
 EOF
@@ -78,10 +79,11 @@ jenkinsProject='gm2-superbuild2'
 doSrcsTar=false
 doProdTar=false
 doRelease=false
+doBuildVerbose=false
 prodFromBM='--none--'
 buildArgs='--none--'
 
-while getopts ":hv:q:s:b:j:C:UPR" OPTION
+while getopts ":hv:q:s:b:j:C:UPRV" OPTION
 do
     case $OPTION in
         h   ) usage ; exit 0 ;;
@@ -94,6 +96,7 @@ do
         U   ) doSrcsTar=true;;
         P   ) doProdTar=true;;
         R   ) doRelease=true;;
+        V   ) doBuildVerbose=true;;
         *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
     esac
 done
@@ -171,6 +174,7 @@ jsonstring="{\"parameter\": [ {\"name\":\"GM2VERSION\", \"value\":\"$gm2ver\"},
                               {\"name\":\"FROM\", \"value\":\"$HOSTNAME\"},
                               {\"name\":\"PRODUCTSFROMBUILDMASTER\", \"value\":\"$prodFromBM\"},
                               {\"name\":\"BUILDARGS\", \"value\":\"$buildArgs\"},
+                              {\"name\":\"BUILDVERBOSE\", \"value\":\"$doBuildVerbose\"},
                               {\"name\":\"FORRELEASE\", \"value\":\"$doRelease\"} "
 filestring="--none--"
 
