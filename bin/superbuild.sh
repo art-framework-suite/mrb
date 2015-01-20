@@ -27,6 +27,7 @@ Options (not recommended unless you know what you are doing):
   -P     = Tar up local products and ship it to the build facility to build against
   -b     = Get a products tar file from the build master (e.g. from a previous build)
                    E.g. gm2-superbuild2-copyout/19/artifact/superbuild_19.tgz
+  -C     = Pass an argument for building (e.g. -C "-DCSCF_EXTRA_CXX_FLAGS=-fsanitize=address" )
   -R     = Build for a release (**not** for general use)
 
 EOF
@@ -78,8 +79,9 @@ doSrcsTar=false
 doProdTar=false
 doRelease=false
 prodFromBM='--none--'
+buildArgs='--none--'
 
-while getopts ":hv:q:s:b:j:UPR" OPTION
+while getopts ":hv:q:s:b:j:C:UPR" OPTION
 do
     case $OPTION in
         h   ) usage ; exit 0 ;;
@@ -88,6 +90,7 @@ do
         q   ) gm2qual=$OPTARG;;
         s   ) srcs=$OPTARG;;
         b   ) prodFromBM=$OPTARG;;
+        C   ) buildArgs=$OPTARG;;
         U   ) doSrcsTar=true;;
         P   ) doProdTar=true;;
         R   ) doRelease=true;;
@@ -155,6 +158,11 @@ if [ "$prodFromBM" == "--none--" ]; then
   prodFromBM=""
 fi
 
+# Blank out buildArgs if necessary
+if [ "$buildArgs" == "--none--" ]; then
+  buildArgs=""
+fi
+
 # Create the curl string
 jsonstring="{\"parameter\": [ {\"name\":\"GM2VERSION\", \"value\":\"$gm2ver\"},
                               {\"name\":\"GM2QUALS\", \"value\":\"$gm2qual\"},
@@ -162,6 +170,7 @@ jsonstring="{\"parameter\": [ {\"name\":\"GM2VERSION\", \"value\":\"$gm2ver\"},
                               {\"name\":\"WHO\", \"value\":\"$USER\"},
                               {\"name\":\"FROM\", \"value\":\"$HOSTNAME\"},
                               {\"name\":\"PRODUCTSFROMBUILDMASTER\", \"value\":\"$prodFromBM\"},
+                              {\"name\":\"BUILDARGS\", \"value\":\"$buildArgs\"},
                               {\"name\":\"FORRELEASE\", \"value\":\"$doRelease\"} "
 filestring="--none--"
 
