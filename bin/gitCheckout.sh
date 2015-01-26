@@ -31,9 +31,9 @@ run_git_command() {
     rbase=${1}
     if [ "${useRO}" == "true" ]
     then
-        myGitCommand=$gitCommandRO
+        myGitCommand="$gitCommandRO"
     else
-	myGitCommand=$gitCommand
+	myGitCommand="$gitCommand"
 	if [ "$gitCommandRO" != "none" ]
 	then
 	    larret=`ssh p-${rbase}@cdcvs.fnal.gov "echo Hi" 2>&1`
@@ -42,7 +42,7 @@ run_git_command() {
 	    then
               echo ""
               echo "NOTICE: You do not have read-write permissions for this repository"
-	      myGitCommand=$gitCommandRO
+	      myGitCommand="$gitCommandRO"
 	    fi
 	fi
     fi
@@ -181,7 +181,8 @@ fi
 
 # Construct the git clone command
 # Special cases for larsoft
-larsoft_list="larcore larpandora lardata larevt larsim larreco larana larexamples lareventdisplay larsoft"
+larsoft_list="larcore larpandora lardata larevt larsim larreco larana larexamples lareventdisplay larsoft larbatch larutils"
+art_list="cpp0x cetlib fhiclcpp messagefacility art artextensions"
 if [ "${REP}" = "larsoft_suite" ]
 then
     for code in ${larsoft_list}
@@ -189,6 +190,21 @@ then
         gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
 	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
 	clone_init_cmake $code
+    done
+elif [ "${REP}" = "art_suite" ]
+then
+    for code in ${art_list}
+    do
+        if [ "${code}" = "fhiclcpp" ]
+	then
+          gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/fhicl-cpp $code"
+	  gitCommandRO="git clone http://cdcvs.fnal.gov/projects/fhicl-cpp $code"
+	  clone_init_cmake $code
+	else
+          gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
+	  gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
+	  clone_init_cmake $code
+	fi
     done
 elif [ "${REP}" == "artdaq_core" ]
 then
