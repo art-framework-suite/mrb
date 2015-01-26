@@ -15,6 +15,7 @@ if( $#ARGV < 1 ) {
     print ERR1 "\n";
     print ERR1 "unsetenv_ CETPKG_NAME\n";
     print ERR1 "unsetenv_ CETPKG_VERSION\n";
+    print ERR1 "unsetenv_ CETPKG_DIR\n";
     print ERR1 "unsetenv_ CETPKG_QUAL\n";
     print ERR1 "unsetenv_ CETPKG_TYPE\n";
     print ERR1 "unsetenv_ CETPKG_CC\n";
@@ -93,6 +94,7 @@ for $i ( 0 .. $#package_list ) {
 # loop again and define package variables
 print TSET "# set package variables\n";
 my $build_dir = $ENV{MRB_BUILDDIR};
+my $source_dir = $ENV{MRB_SOURCE};
 for $i ( 0 .. $#package_list ) {
   my $pkg=$package_list[$i];
   my $pfile=$sourcedir."/".$pkg."/ups/product_deps";
@@ -107,6 +109,7 @@ for $i ( 0 .. $#package_list ) {
   # pretend this is a product
   my $product_uc = uc($product);
   print TSET "setenv  ${product_uc}_VERSION $version\n";
+  print TSET "setenv  ${product_uc}_DIR ${source_dir}/${product}\n";
   # dropit -esf will remove any existing instances of the path and then prepend the path
   # unfortunately, tcsh complains if the variable is not already set, so we have to check
   if ( $ENV{PATH} ne '' ) {

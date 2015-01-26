@@ -740,6 +740,7 @@ sub product_setup_loop {
     print ERR2 "\n";
     print ERR2 "unsetenv_ CETPKG_NAME\n";
     print ERR2 "unsetenv_ CETPKG_VERSION\n";
+    print ERR2 "unsetenv_ CETPKG_DIR\n";
     print ERR2 "unsetenv_ CETPKG_QUAL\n";
     print ERR2 "unsetenv_ CETPKG_TYPE\n";
     print ERR2 "echo \"ERROR: no qualifiers specified\"\n";
@@ -835,6 +836,7 @@ sub product_setup_loop {
 	  print ERR2 "\n";
 	  print ERR2 "unsetenv_ CETPKG_NAME\n";
 	  print ERR2 "unsetenv_ CETPKG_VERSION\n";
+	  print ERR2 "unsetenv_ CETPKG_DIR\n";
 	  print ERR2 "unsetenv_ CETPKG_QUAL\n";
 	  print ERR2 "unsetenv_ CETPKG_TYPE\n";
 	  print ERR2 "echo \"ERROR: no match to qualifier list for $qlist[0][$j]\"\n";
