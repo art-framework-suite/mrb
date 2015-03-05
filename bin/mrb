@@ -94,6 +94,7 @@ Usage ${mrb_command} $shortComList [-h for help]"
    changelog (c)               Display a changelog for a package
    updateDepsCM (uc)           Update the master CMakeLists.txt file
    updateDepsPV (uv)           Update a product version in product_deps
+   updateSource                Update all svn or git code in MRB_SOURCE
    makeDeps (md)               Build or update a header level dependency list
    checkDeps (cd)              Check for missing build packages
    pullDeps (pd)               Pull missing build packages into MRB_SOURCE
@@ -181,6 +182,9 @@ EOF
    # Update product_deps and CMakeLists.txt to latest dependencies (calls &l=bin/updateDeps.sh&)
     "updateDepsPV" | "uv" ) ${mrb_bin}/updateDepsPV.sh $*
         ;;
+
+   # Update svn and git code
+    "updateSource" ) ${mrb_bin}/updateSource.sh
 
    # build the dependency database (.product_dependency)
     "makeDeps" | "md" ) ${mrb_bin}/makeDep.py $*
