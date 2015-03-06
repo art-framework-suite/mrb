@@ -71,6 +71,11 @@ echo $product_list
 thisos=`get-directory-name os`
 
 myflvr=`ups flavor`
+myOS=`uname -s`
+if [ ${myOS} = "Darwin" ]
+then
+    myflvr=`ups flavor -2`
+fi
 myqualdir=`echo ${MRB_QUALS} | sed s'/:/-/g'`
 mydotver=`echo ${distribution_version} |  sed -e 's/_/./g' | sed -e 's/^v//'`
 
