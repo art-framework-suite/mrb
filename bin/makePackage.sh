@@ -42,6 +42,15 @@ echo $product_list
 
 thisos=`get-directory-name os`
 
+myflvr=`ups flavor`
+myqualdir=`echo ${MRB_QUALS} | sed s'/:/-/g'`
+mydotver=`echo ${MRB_PROJECT_VERSION} |  sed -e 's/_/./g' | sed -e 's/^v//'`
+
+manifest=${MRB_PROJECT}-${mydotver}-${myflvr}-${myqualdir}_MANIFEST.txt
+
+echo "create manifest ${manifest}"
+rm -f ${manifest}
+touch ${manifest}
 for thisprod in $product_list
 do
   thisver=`ls ${temp_install_path}/${thisprod} | grep -v version`
@@ -58,6 +67,7 @@ do
   fi
   echo "making ${tarballname}"
   cd ${temp_install_path}; tar cjf ${MRB_BUILDDIR}/${tarballname} ${thisprod}
+  printf "%-20s %-15s %-60s\n" "${thisprod}" "${thisver}" "${tarballname}" >> "${MRB_BUILDDIR}/${manifest}"
 done
 cd ${MRB_BUILDDIR}
 
