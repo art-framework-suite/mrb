@@ -185,6 +185,7 @@ EOF
 
    # Update svn and git code
     "updateSource" ) ${mrb_bin}/updateSource.sh
+        ;;
 
    # build the dependency database (.product_dependency)
     "makeDeps" | "md" ) ${mrb_bin}/makeDep.py $*
