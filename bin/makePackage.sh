@@ -14,10 +14,38 @@ fullCom="${mrb_command} $thisCom"
 function usage() 
 {
   cat 1>&2 << EOF
-Usage: $fullCom 
+Usage: $fullCom [options] [-- options for make]
   Make distribution tarballs for each product installed by this build
+  Options:
+     -n <distribution_name> = the name for the manifest (e.g., uboone, lbne, ...)
+         If unspecified, this defaults to MRB_PROJECT
+     -v <version> = the version for the manifest (vx_y_z format)
+         If unspecified, this defaults to MRB_PROJECT_VERSION
+     -j <ncores> = pass along the -j flag to make for backwards compatibility
+  -- signals the end of the options for ${thisCom}
+  
+  For instance: mrb mp -m xyz -- -j4	 
+	
 EOF
 }
+
+# set defaults
+distribution_name=${MRB_PROJECT}
+distribution_version=${MRB_PROJECT_VERSION}
+jcores=""
+
+# Determine command options (just -h for help)
+while getopts "hj:n:v:" OPTION
+do
+    case $OPTION in
+        h   ) usage ; exit 0 ;;
+        n   ) distribution_name=$OPTARG ;;
+        v   ) distribution_version=$OPTARG ;;
+	j   ) jcores="-j $OPTARG" ;;
+        *   ) echo "ERROR: Unknown option" ; usage ; exit 1 ;;
+    esac
+done
+shift $((OPTIND - 1))
 
 if [ -z ${MRB_BUILDDIR} ]
 then
@@ -31,7 +59,7 @@ temp_install_dir=${MRB_BUILDDIR}/tempinstall
 rm -rf ${temp_install_dir}
 
 # run make install
-make DESTDIR=${temp_install_dir} install $*
+make DESTDIR=${temp_install_dir} install ${jcores} $*
 
 # full path to products
 mrb_install_path=`${MRB_DIR}/bin/findDir.sh ${MRB_INSTALL}`
@@ -44,9 +72,9 @@ thisos=`get-directory-name os`
 
 myflvr=`ups flavor`
 myqualdir=`echo ${MRB_QUALS} | sed s'/:/-/g'`
-mydotver=`echo ${MRB_PROJECT_VERSION} |  sed -e 's/_/./g' | sed -e 's/^v//'`
+mydotver=`echo ${distribution_version} |  sed -e 's/_/./g' | sed -e 's/^v//'`
 
-manifest=${MRB_PROJECT}-${mydotver}-${myflvr}-${myqualdir}_MANIFEST.txt
+manifest=${distribution_name}-${mydotver}-${myflvr}-${myqualdir}_MANIFEST.txt
 
 echo "create manifest ${manifest}"
 rm -f ${manifest}
