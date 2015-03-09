@@ -20,6 +20,7 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   svnCheckout.sh
 		   updateDepsCM.sh
 		   updateDepsPV.sh
+		   updateSource.sh
 		   zapBuild.sh
           DESTINATION ${product}/${version}/bin )
 
