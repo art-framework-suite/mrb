@@ -67,7 +67,8 @@ do
    elif [ -d .git ]
    then
      echo "updating ${REP}"
-     git pull || exit 1
+     git fetch || exit 1
+     git merge || exit 1
    else
       echo "ignoring ${REP} - neither git nor svn"
    fi 
