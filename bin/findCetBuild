@@ -27,6 +27,8 @@ if (!$compiler) {
   my @quals = split /:/, $mrb_quals;
   if (grep /^(e[245]|gcc4[78])$/, @quals) {
     $compiler = "gcc";
+  } elsif (grep /^(i|icc)\d+$/, @quals) {
+    $compiler = "icc";
   } else {
     $compiler = "cc"; # Native.
   }
