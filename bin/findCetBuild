@@ -25,8 +25,10 @@ $tmpfl = $builddir."/".$mrb_project."-".$mrb_project_version;
 
 if (!$compiler) {
   my @quals = split /:/, $mrb_quals;
-  if (grep /^(e[245]|gcc4[78])$/, @quals) {
+  if (grep /^(e|gcc)\d+$/, @quals) {
     $compiler = "gcc";
+  } elsif (grep /^(i|icc)\d+$/, @quals) {
+    $compiler = "icc";
   } else {
     $compiler = "cc"; # Native.
   }

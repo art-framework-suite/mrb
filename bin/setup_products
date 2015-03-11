@@ -48,16 +48,18 @@ for my $i ( 2 .. $#ARGV ) {
 
 my $mrb_project = $ENV{MRB_PROJECT};
 my $mrb_project_version = $ENV{MRB_PROJECT_VERSION};
-my $mrb_quals = $ENV{MRB_QUALS};
-#print $dfh "setup_products debug info: mrb_quals is $mrb_quals \n";
+$setup_products::mrb_quals = $ENV{MRB_QUALS};
+##print $dfh "setup_products debug info: mrb_quals is $setup_products::mrb_quals \n";
 
 # determine the compiler based on mrb_quals
 my $default_fc = ( $^O eq "darwin" ) ? "-" : "gfortran";
 my $compiler;
 if (!$compiler) {
-  my @quals = split /:/, $mrb_quals;
+  my @quals = split /:/, $setup_products::mrb_quals;
   if (grep /^(e|gcc)\d+$/, @quals) {
     $compiler = "gcc";
+  } elsif (grep /^(i|icc)\d+$/, @quals) {
+    $compiler = "icc";
   } else {
     $compiler = "cc"; # Native.
   }
@@ -73,14 +75,14 @@ my $compiler_table =
 if ( $simple eq "true" ) {
   $setup_products::dop = "";
   $setup_products::type = "simple";
-} elsif ( $mrb_quals eq "-nq-" ) {
+} elsif ( $setup_products::mrb_quals eq "-nq-" ) {
   $simple = "true";
   $setup_products::dop = "";
   $setup_products::type = "simple";
 } else {
   $setup_products::dop = "undefined";
   $setup_products::type = "undefined";
-  my @qlist=split(/:/,$mrb_quals);
+  my @qlist=split(/:/,$setup_products::mrb_quals);
   for my $i ( 0 .. $#qlist ) {
       #print $dfh "setup_products debug info: qualifier $i $qlist[$i]\n";
       if( $qlist[$i] eq "debug" ) {
@@ -158,7 +160,7 @@ if ( $simple eq "true" ) {
   print $tfh "unsetenv_ CETPKG_CXX\n";
   print $tfh "unsetenv_ CETPKG_FC\n";
 } else {
-  print $tfh "setenv CETPKG_QUAL $mrb_quals\n";
+  print $tfh "setenv CETPKG_QUAL $setup_products::mrb_quals\n";
   print $tfh "setenv CETPKG_TYPE $setup_products::type\n";
   print $tfh "setenv CETPKG_CC $compiler_table->{$compiler}->{CC}\n";
   print $tfh "setenv CETPKG_CXX $compiler_table->{$compiler}->{CXX}\n";
@@ -228,7 +230,7 @@ my $onlyForBuild="cetbuildtools;";
 my $cetfl = cetpkg_info_file( $mrb_project, 
                               $mrb_project_version, 
 			      $mrb_project_version, 
-			      $mrb_quals, 
+			      $setup_products::mrb_quals, 
 			      $setup_products::type, 
 			      $sourcedir, 
 			      $builddir,
