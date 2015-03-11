@@ -727,30 +727,43 @@ sub product_setup_loop {
   unless ( -e $pkgdir or mkdir $pkgdir ) { die "Couldn't create $pkgdir"; }
 
   my ($product, $version, $default_ver, $default_qual, $have_fq) = get_parent_info( $pfile );
+  ##print $dfile "product_setup_loop: $product $version $default_ver $default_qual\n";
+  ##print $dfile "product_setup_loop: mrb_quals is $setup_products::mrb_quals \n";
 
   my $qual;
   # logic problem here - we might not want the default qualifier
-  if ( $simple eq "true" ) {
-    $qual = "-nq-";
-  } elsif ( $default_qual ) {
-    $qual = $default_qual.":".$setup_products::dop;
+  # use MRB_QUALS if different than the default qualifier AND if present in the qualifier matrix
+  my ($ndeps, @qlist) = get_qualifier_list( $pfile, $dfile );
+  foreach my $i ( 1 .. $#qlist ) {
+    ##print $dfile "product_setup_loop: compare $qlist[$i][0] to $setup_products::mrb_quals \n";
+    next if ( ! (compare_qual( $qlist[$i][0], $setup_products::mrb_quals ) ) );
+    ##print $dfile "product_setup_loop: $qlist[$i][0] matches MRB_QUAL $setup_products::mrb_quals \n";
+    $qual = $setup_products::mrb_quals;
+  }
+  if ( $simple eq "true" ) { $qual = "-nq-"; }
+  if ( $qual ) { 
+    ##print $dfile "product_setup_loop: qual is defined as $qual\n"; 
   } else {
-    my $errfl2 = $builddir."/error-".$product."-".$version;
-    open(ERR2, "> $errfl2") or die "Couldn't open $errfl2";
-    print ERR2 "\n";
-    print ERR2 "unsetenv_ CETPKG_NAME\n";
-    print ERR2 "unsetenv_ CETPKG_VERSION\n";
-    print ERR2 "unsetenv_ CETPKG_DIR\n";
-    print ERR2 "unsetenv_ CETPKG_QUAL\n";
-    print ERR2 "unsetenv_ CETPKG_TYPE\n";
-    print ERR2 "echo \"ERROR: no qualifiers specified\"\n";
-    print ERR2 "echo \"ERROR: add a defaultqual line to $pfile\"\n";
-    print ERR2 "echo \"ERROR: or specify the qualifier(s) on the command line\"\n";
-    print ERR2 "echo \"USAGE: setup_products <input-directory> <-d|-o|-p> <qualifiers>\"\n";
-    print ERR2 "return 1\n";
-    close(ERR2);
-    print "$errfl2\n";
-    exit 0;
+    if ( $default_qual ) {
+      $qual = $default_qual.":".$setup_products::dop;
+    } else {
+      my $errfl2 = $builddir."/error-".$product."-".$version;
+      open(ERR2, "> $errfl2") or die "Couldn't open $errfl2";
+      print ERR2 "\n";
+      print ERR2 "unsetenv_ CETPKG_NAME\n";
+      print ERR2 "unsetenv_ CETPKG_VERSION\n";
+      print ERR2 "unsetenv_ CETPKG_DIR\n";
+      print ERR2 "unsetenv_ CETPKG_QUAL\n";
+      print ERR2 "unsetenv_ CETPKG_TYPE\n";
+      print ERR2 "echo \"ERROR: no qualifiers specified\"\n";
+      print ERR2 "echo \"ERROR: add a defaultqual line to $pfile\"\n";
+      print ERR2 "echo \"ERROR: or specify the qualifier(s) on the command line\"\n";
+      print ERR2 "echo \"USAGE: setup_products <input-directory> <-d|-o|-p> <qualifiers>\"\n";
+      print ERR2 "return 1\n";
+      close(ERR2);
+      print "$errfl2\n";
+      exit 0;
+    }
   }
   ##print $dfile "product_setup_loop: $product $version $qual\n";
 
@@ -802,7 +815,7 @@ sub product_setup_loop {
   my ($plen, $plist_ref, $dqlen, $dqlist_ref) = get_product_list( $pfile );
   my @plist=@$plist_ref;
   my @dqlist=@$dqlist_ref;
-  my ($ndeps, @qlist) = get_qualifier_list( $pfile, $dfile );
+  ##my ($ndeps, @qlist) = get_qualifier_list( $pfile, $dfile );
   # now call setup with the correct version and qualifiers
   foreach my $i ( 1 .. $#qlist ) {
     ##print $dfile "product_setup_loop: compare $qlist[$i][0] to $qual \n";
