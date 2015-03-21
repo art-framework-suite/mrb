@@ -144,12 +144,7 @@ EOF
 			echo 'You must "source mrb setup_local_sources"'
 			exit 5
 		fi
-    # We have to deal with the insanity of the current cetpkgsupport
-    if [ ! -z "$SETUP_CETPKGSUPPORT" ]; then
-      unsetup cetpkgsupport
-    fi
     source ${mrb_bin}/mrbSetupLocalSources
-    setup cetpkgsupport v1_07_01
     [ $isSourced ] && return || exit 5
     ;;
 
@@ -161,10 +156,6 @@ EOF
 			echo 'You must "source mrb setEnv"'
 			exit 5
 		fi
-    # We have to deal with the insanity of the current cetpkgsupport
-    if [ ! -z "$SETUP_CETPKGSUPPORT" ]; then
-      unsetup cetpkgsupport
-    fi
 		source ${mrb_bin}/setup_local_products
     [ $isSourced ] && return || exit 5
             ;;
