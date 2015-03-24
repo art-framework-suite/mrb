@@ -48,7 +48,7 @@ for my $i ( 2 .. $#ARGV ) {
 
 my $mrb_project = $ENV{MRB_PROJECT};
 my $mrb_project_version = $ENV{MRB_PROJECT_VERSION};
-$setup_products::mrb_quals = $ENV{MRB_QUALS};
+$setup_products::mrb_quals = sort_qual ( $ENV{MRB_QUALS} );
 ##print $dfh "setup_products debug info: mrb_quals is $setup_products::mrb_quals \n";
 
 # determine the compiler based on mrb_quals

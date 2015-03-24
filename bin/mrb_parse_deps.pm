@@ -74,6 +74,7 @@ our (@EXPORT, @setup_list);
               print_setup_qual 
               compare_qual 
               product_setup_loop 
+	      sort_qual
               @setup_list);
 
 
@@ -883,6 +884,26 @@ sub product_setup_loop {
   }
 
   return ($product, $version);
+}
+
+sub sort_qual {
+  my @params = @_;
+  my @ql = split(/:/,$params[0]);
+  my $retval = 0;
+  my @tql = ();
+  my @rql = ();
+  my $dop="";
+  foreach my $ii ( 0 .. $#ql ) {
+      if(( $ql[$ii] eq "debug" ) || ( $ql[$ii] eq "opt" )   || ( $ql[$ii] eq "prof" )) {
+         $dop=$ql[$ii];
+      } else {
+         push @tql, $ql[$ii];
+      }
+  }
+  @rql = sort @tql;
+  if( $dop ) { push @rql, $dop; }
+  my $squal = join ( ":", @rql );
+  return $squal;
 }
 
 1;
