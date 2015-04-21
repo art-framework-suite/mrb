@@ -182,7 +182,7 @@ fi
 # Construct the git clone command
 # Special cases for larsoft
 larsoft_list="larcore larpandora lardata larevt larsim larreco larana larexamples lareventdisplay larsoft"
-art_list="cpp0x cetlib fhiclcpp messagefacility art artextensions"
+art_list="cpp0x cetlib fhiclcpp messagefacility art"
 if [ "${REP}" = "larsoft_suite" ]
 then
     for code in ${larsoft_list}
