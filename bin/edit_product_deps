@@ -78,6 +78,10 @@ while ( $line=<PIN> ) {
        $get_phash="";
        $get_quals="";
        print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "perllib" ) {
+       $get_phash="";
+       $get_quals="";
+       print_line ( POUT, $line, $dryrun );
     } elsif( $words[0] eq "fwdir" ) {
        $get_phash="";
        $get_quals="";
