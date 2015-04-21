@@ -95,6 +95,7 @@ for $i ( 0 .. $#package_list ) {
 print TSET "# set package variables\n";
 my $build_dir = $ENV{MRB_BUILDDIR};
 my $source_dir = $ENV{MRB_SOURCE};
+my $have_perllib = $ENV{PERL5LIB};
 for $i ( 0 .. $#package_list ) {
   my $pkg=$package_list[$i];
   my $pfile=$sourcedir."/".$pkg."/ups/product_deps";
@@ -107,6 +108,7 @@ for $i ( 0 .. $#package_list ) {
   my $gdml_directory = get_gdml_directory( $pfile, $product );
   my $perl_directory = get_perl_directory( $pfile, $product );
   my $fw_directory = get_fw_directory( $pfile, $product );
+  ##print DIAG "$pkg perl directory: $perl_directory \n";
   # pretend this is a product
   my $product_uc = uc($product);
   print TSET "setenv  ${product_uc}_VERSION $version\n";
@@ -144,9 +146,13 @@ for $i ( 0 .. $#package_list ) {
     }
   }
   if ( "${perl_directory}" ne "none" ) {
-    if ( $ENV{PERL5LIB} ne '' ) {
+    ##print DIAG "pkg have perllib: ${have_perllib}\n";
+    if ( "${have_perllib}" ne '' ) {
+      ##print DIAG "PERL5LIB is already set\n";
       print TSET "setenv  PERL5LIB \`dropit -esf -p \${PERL5LIB} \'${build_dir}/${perl_directory}\'\`\n";
     } else {
+      $have_perllib = true;
+      ##print DIAG "PERL5LIB is not yet set\n";
       print TSET "setenv  PERL5LIB \'${build_dir}/${perl_directory}\'\n";
     }
   }
