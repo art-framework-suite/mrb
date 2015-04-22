@@ -12,7 +12,7 @@ CMAKE_MINIMUM_REQUIRED (VERSION 2.8)
 
 PROJECT (mrb)
 set (product mrb)
-set (version v1_03_00_gm2)
+set (version v1_03_00a_gm2)
 
 # Throw a fatal error if cmake is invoked from within the source code directory tree
 string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" in_source)
@@ -32,7 +32,7 @@ endif ()
 STRING( REGEX REPLACE "^[v](.*)[_](.*)[_](.*)$" "\\1" VERSION_MAJOR "${version}" )
 STRING( REGEX REPLACE "^[v](.*)[_](.*)[_](.*)$" "\\2" VERSION_MINOR "${version}" )
 STRING( REGEX REPLACE "^[v](.*)[_](.*)[_](.*)$" "\\3" VERSION_PATCH "${version}" )
-set (VERSION_PATCH "00_gm2")
+set (VERSION_PATCH "00a_gm2")
 message( "${VERSION_PATCH}" )
 # a few more definitions
 set( UPSFLAVOR NULL )
