@@ -55,10 +55,6 @@ open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
 ##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
 
-# parse a list of dependencies
-my $dfile = $sourcedir."/dependency_list";
-my %deplist = get_dependency_list( $dfile, DIAG );
-
 # have to find the list of packages to traverse
 my $cmakefile=$sourcedir."/CMakeLists.txt";
 my @package_list = get_package_list( $cmakefile, DIAG );

@@ -54,10 +54,6 @@ if ( $simple ) {
   print TSET "setenv CETPKG_FC $compiler_table->{${compiler}}->{FC}\n";
 }
 
-# parse a list of dependencies
-$dfile = $sourcedir."/dependency_list";
-%deplist = get_dependency_list( $dfile, DIAG );
-
 # have to find the list of packages to traverse
 $cmakefile=$sourcedir."/CMakeLists.txt";
 @package_list = get_package_list( $cmakefile, DIAG );
