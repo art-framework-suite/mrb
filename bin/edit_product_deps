@@ -138,7 +138,7 @@ while ( $line=<PIN> ) {
     } elsif( $get_fragment ) {
        print_line ( POUT, $line, $dryrun );
     } else {
-       print "WARING: unrecognized line in $pdep: $line\n";
+       print "WARING: unrecognized line in $pdfilebak: $line\n";
        print_line ( POUT, $line, $dryrun );
     }
   }
