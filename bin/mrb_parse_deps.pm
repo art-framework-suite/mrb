@@ -64,7 +64,6 @@ our (@EXPORT, @setup_list);
               get_parent_info 
               get_product_list 
               get_qualifier_list 
-              get_dependency_list 
               find_default_qual 
               get_fcl_directory 
               get_gdml_directory 
@@ -395,42 +394,6 @@ sub get_qualifier_list {
   close(QIN);
   ##print "found $irow qualifier rows\n";
   return ($qlen, @qlist);
-}
-
-# can we use a simple database to store this info?
-sub get_dependency_list {
-  my @params = @_;
-  my $depfile = $params[0];
-  my $dfl = $params[1];
-  my %dhash = ();
-  my @dlist = ();
-  my $line;
-  # read the dependency list and make a hash file keyed on product name
-  ##print $dfl "DIAGNOSTIC: parse dependency list\n";
-  open(DIN, "< $depfile") or die "Couldn't open $depfile";
-  while ( $line=<DIN> ) {
-    chop $line;
-    if ( index($line,"#") == 0 ) {
-    } elsif ( $line !~ /\w+/ ) {
-    } else {
-      my @words = split(/\s+/,$line);
-      @dlist = ();
-      if( $words[1] eq "-" ) {
-        $dhash{ $words[0] } = "";
-      } else {
-	foreach my $i  ( 1 .. $#words ) {
-	  $dlist[$i-1] = $words[$i];
-	}
-        $dhash{ $words[0] } = join( ',', @dlist );
-      }
-    }
-  }
-  close(DIN);
-  ##my @dkeys = keys %dhash;
-  ##foreach my $i ( 0 .. $#dkeys ) {
-  ##   print $dfl "get_dependency_list: $dkeys[$i] has $dhash{$dkeys[$i]}\n";
-  ##}
-  return %dhash;
 }
 
 sub find_default_qual {

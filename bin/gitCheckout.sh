@@ -185,6 +185,15 @@ larsoft_list="larcore larpandora lardata larevt larsim larreco larana larexample
 art_list="cpp0x cetlib fhiclcpp messagefacility art"
 if [ "${REP}" = "larsoft_suite" ]
 then
+    if [ "x${useTag}" != "x" ]
+    then
+       already_set=`echo ${useTag} | grep LARSOFT_SUITE | wc -l`
+       if [ $already_set -eq 0 ]
+       then
+	 useTag=LARSOFT_SUITE_${useTag}
+	 echo "INFO: git clone will use tag ${useTag} for the larsoft suite"
+       fi
+    fi
     for code in ${larsoft_list}
     do
         gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
@@ -193,6 +202,15 @@ then
     done
 elif [ "${REP}" = "art_suite" ]
 then
+    if [ "x${useTag}" != "x" ]
+    then
+       already_set=`echo ${useTag} | grep ART_SUITE | wc -l`
+       if [ $already_set -eq 0 ]
+       then
+	 useTag=ART_SUITE_${useTag}
+	 echo "INFO: git clone will use tag ${useTag} for the art suite"
+       fi
+    fi
     for code in ${art_list}
     do
         if [ "${code}" = "fhiclcpp" ]
