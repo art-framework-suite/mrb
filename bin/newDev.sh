@@ -82,9 +82,6 @@ function make_srcs_directory()
   # Make the main CMakeLists.txt file
   ${mrb_bin}/copy_files_to_srcs.sh ${MRB_SOURCE} || exit 1
   if [ ${printDebug} ]; then echo "DEBUG: ran copy_files_to_srcs"; fi
-  # this is a hack....
-  cp ${MRB_DIR}/templates/dependency_list ${MRB_SOURCE}/ || exit 1;
-  # end hack
 
   # Record the mrb version
   ups active | grep ^mrb >  ${MRB_SOURCE}/.mrbversion
