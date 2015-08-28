@@ -41,7 +41,7 @@ cd ${MRB_BUILDDIR}
 if pwd | egrep -q '/build[^/]*$';
   then
     echo "Removing everything in ${MRB_BUILDDIR}"
-    rm -rf *
+    rm -rf * .??*
     echo 'You must now run the following:'
     echo '    mrbsetenv'
 

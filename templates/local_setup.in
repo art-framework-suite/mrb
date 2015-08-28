@@ -19,6 +19,23 @@ test $?shell$_ != 1$_ >& /dev/null && \
 # Special trick to capture the value of $_ in tcsh
 test $?shell = 1 && set dollar_underscore=`echo $_`
 
+# need to be able to check for mrb
+test $?shell = 1 && set ss="csh" || ss="sh"
+test "$ss" = "csh" && alias return exit
+
+test "$ss" = "csh" && \
+    alias tnotnull "eval '"'test $?'"\!* -eq 1' && eval '"'test -n "$'"\!*"'"'"'"
+test "$ss" = "sh" && \
+    eval 'tnotnull() { eval "test -n \"\${$1-}\"" ;}'
+
+# check for mrb
+tnotnull UPS_DIR || ( echo "" ; echo "ERROR: You MUST setup the ups product!" ; echo "" )
+tnotnull UPS_DIR || unset ss 
+tnotnull UPS_DIR || return 1
+tnotnull MRB_DIR || ( echo ""; echo "ERROR: You must first setup mrb!"; echo "" )
+tnotnull MRB_DIR || unset ss 
+tnotnull MRB_DIR || return 1
+
 # Get the shell independence aliases and functions.
 source "${MRB_DIR}/bin/shell_independence"
 
