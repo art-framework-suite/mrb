@@ -54,6 +54,15 @@ then
   exit 1
 fi
 
+# if we are using ninja, abort
+if [ -e ${MRB_BUILDDIR}/rules.ninja ]
+then
+  echo "ERROR: mrb makePackage does not currently work with the ninja genenerator."
+  echo '       rebuild with make if you need makePackage'
+  exit 1
+fi
+
+
 # define the temporary install directory and make sure it is empty
 temp_install_dir=${MRB_BUILDDIR}/tempinstall
 rm -rf ${temp_install_dir}
