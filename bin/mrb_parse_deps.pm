@@ -660,7 +660,7 @@ sub print_setup_noqual {
   print $efl "unset have_prod\n"; 
   print $efl "ups exist $params[0] $thisqual\n"; 
   print $efl "test \"\$?\" = 0 && set_ have_prod=\"true\"\n"; 
-  print $efl "test \"\$have_prod\" = \"true\" || echo \"no optional setup of $params[0] $thisqual\"\n"; 
+  print $efl "test \"\$have_prod\" = \"true\" || echo \"INFO: no optional setup of $params[0] $thisqual\"\n"; 
   print $efl "test \"\$have_prod\" = \"true\" && setup -B $params[0] $thisqual \n";
   print $efl "unset have_prod\n"; 
   } else {
@@ -687,7 +687,7 @@ sub print_setup_qual {
   print $efl "unset have_prod\n"; 
   print $efl "ups exist $params[0] $thisqual -q $ql\n"; 
   print $efl "test \"\$?\" = 0 && set_ have_prod=\"true\"\n"; 
-  print $efl "test \"\$have_prod\" = \"true\" || echo \"no optional setup of $params[0] $thisqual -q $ql\"\n"; 
+  print $efl "test \"\$have_prod\" = \"true\" || echo \"INFO: no optional setup of $params[0] $thisqual -q $ql\"\n"; 
   print $efl "test \"\$have_prod\" = \"true\" && setup -B $params[0] $thisqual -q $ql \n";
   print $efl "unset have_prod\n"; 
   } else {
