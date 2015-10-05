@@ -217,6 +217,7 @@ sub get_parent_info {
 sub get_product_list {
   my @params = @_;
   open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
+  my $dbgrpt = $params[1];
   my $get_phash="";
   my $pv="";
   my $dqiter=-1;
@@ -275,7 +276,12 @@ sub get_product_list {
       } elsif( $get_phash ) {
         if(( $words[2] ) && ($words[2]eq "-" )) { $words[2] = ""; }
 	++$piter;
-        ##print "get_product_list:  $piter  $words[0] $words[1] $words[2] $words[3]\n";
+	#print $dbgrpt "get_product_list debug info:  $piter $line has 0-$#{words} words\n";
+	##print $dbgrpt "get_product_list debug info:  $piter words:";
+	##for $i ( 0 .. $#words ) {
+	##  print $dbgrpt " $words[$i]";
+	##}
+	##print $dbgrpt "\n";
 	for $i ( 0 .. $#words ) {
 	  $plist[$piter][$i] = $words[$i];
 	}
@@ -290,7 +296,7 @@ sub get_product_list {
 	  }
 	}
       } else {
-        ##print "get_product_list: ignoring $line\n";
+        ###print $dbgrpt "get_product_list debug info: ignoring $line\n";
       }
     }
   }
@@ -654,7 +660,7 @@ sub print_setup_noqual {
   my $dfl = $params[4];
   my $thisqual = $params[1];
   if( $params[1] eq "-" ) {  $thisqual = ""; }
-  ##print $dfl "print_setup_noqual debug info: called with $params[0] $params[1] $params[2]\n";
+  #print $dfl "print_setup_noqual debug info: called with $params[0] $params[1] $params[2]\n";
   if( $params[2] eq "true" ) { 
   print $efl "# setup of $params[0] is optional\n"; 
   print $efl "unset have_prod\n"; 
@@ -676,7 +682,7 @@ sub print_setup_qual {
   my $dfl = $params[5];
   my $thisqual = $params[1];
   if( $params[1] eq "-" ) {  $thisqual = ""; }
-  ##print $dfl "print_setup_qual debug info: called with $params[0] $params[1] $params[2] $params[3]\n";
+  #print $dfl "print_setup_qual debug info: called with $params[0] $params[1] $params[2] $params[3]\n";
   my @qwords = split(/:/,$params[2]);
   my $ql="+".$qwords[0];
   foreach my $j ( 1 .. $#qwords ) {
@@ -731,22 +737,22 @@ sub product_setup_loop {
   unless ( -e $pkgdir or mkdir $pkgdir ) { die "Couldn't create $pkgdir"; }
 
   my ($product, $version, $default_ver, $default_qual, $have_fq) = get_parent_info( $pfile );
-  ##print $dfile "product_setup_loop: $product $version $default_ver $default_qual\n";
-  ##print $dfile "product_setup_loop: mrb_quals is $setup_products::mrb_quals \n";
+  #print $dfile "product_setup_loop debug info: $product $version $default_ver $default_qual\n";
+  #print $dfile "product_setup_loop debug info: mrb_quals is $setup_products::mrb_quals \n";
 
   my $qual;
   # logic problem here - we might not want the default qualifier
   # use MRB_QUALS if different than the default qualifier AND if present in the qualifier matrix
   my ($ndeps, @qlist) = get_qualifier_list( $pfile, $dfile );
   foreach my $i ( 1 .. $#qlist ) {
-    ##print $dfile "product_setup_loop: compare $qlist[$i][0] to $setup_products::mrb_quals \n";
+    #print $dfile "product_setup_loop debug info: compare $qlist[$i][0] to $setup_products::mrb_quals \n";
     next if ( ! (compare_qual( $qlist[$i][0], $setup_products::mrb_quals ) ) );
-    ##print $dfile "product_setup_loop: $qlist[$i][0] matches MRB_QUAL $setup_products::mrb_quals \n";
+    #print $dfile "product_setup_loop debug info: $qlist[$i][0] matches MRB_QUAL $setup_products::mrb_quals \n";
     $qual = $setup_products::mrb_quals;
   }
   if ( $simple eq "true" ) { $qual = "-nq-"; }
   if ( $qual ) { 
-    ##print $dfile "product_setup_loop: qual is defined as $qual\n"; 
+    #print $dfile "product_setup_loop debug info: qual is defined as $qual\n"; 
   } else {
     if ( $default_qual ) {
       $qual = $default_qual.":".$setup_products::dop;
@@ -769,7 +775,7 @@ sub product_setup_loop {
       exit 0;
     }
   }
-  ##print $dfile "product_setup_loop: $product $version $qual\n";
+  #print $dfile "product_setup_loop debug info: $product $version $qual\n";
 
   my $default_fc = ( $^O eq "darwin" ) ? "-" : "gfortran";
   my $compiler;
@@ -790,8 +796,8 @@ sub product_setup_loop {
       $compiler = "cc"; # Native.
     }
   }
-  ##print $dfile "product_setup_loop: compiler is $compiler\n";
-  ##print $dfile "product_setup_loop: $compiler_table->{$compiler}->{CC} $compiler_table->{$compiler}->{CXX} $compiler_table->{$compiler}->{FC}\n";
+  ###print $dfile "product_setup_loop debug info: compiler is $compiler\n";
+  ###print $dfile "product_setup_loop debug info: $compiler_table->{$compiler}->{CC} $compiler_table->{$compiler}->{CXX} $compiler_table->{$compiler}->{FC}\n";
 
   my ($nonly, @build_products) = get_only_for_build( $pfile, $dfile );
   my $onlyForBuild="";
@@ -816,15 +822,14 @@ sub product_setup_loop {
   setup_only_for_build( $pfile, $tfile, $dfile );
 
   # now deal with regular dependencies and their qualifiers
-  my ($plen, $plist_ref, $dqlen, $dqlist_ref) = get_product_list( $pfile );
+  my ($plen, $plist_ref, $dqlen, $dqlist_ref) = get_product_list( $pfile, $dfile );
   my @plist=@$plist_ref;
   my @dqlist=@$dqlist_ref;
-  ##my ($ndeps, @qlist) = get_qualifier_list( $pfile, $dfile );
   # now call setup with the correct version and qualifiers
   foreach my $i ( 1 .. $#qlist ) {
-    ##print $dfile "product_setup_loop: compare $qlist[$i][0] to $qual \n";
+    #print $dfile "product_setup_loop debug info: compare $qlist[$i][0] to $qual \n";
     next if ( ! (compare_qual( $qlist[$i][0], $qual ) ) );
-    ##print $dfile "product_setup_loop: $qlist[$i][0] matches $qual \n";
+    #print $dfile "product_setup_loop debug info: $qlist[$i][0] matches $qual \n";
     foreach my $j ( 1 .. $ndeps ) {
       next if $qlist[0][$j] eq "compiler";
       my $print_setup = "true";
@@ -840,13 +845,18 @@ sub product_setup_loop {
           $print_setup = "false";
 	}
       }
-      ##print $dfile "product_setup_loop: setup $qlist[0][$j] $qlist[$i][$j]? ${print_setup}\n";
+      #print $dfile "product_setup_loop debug info: setup $qlist[0][$j] $qlist[$i][$j]? ${print_setup}\n";
       if ( $print_setup eq "true" ) {
 	push( @setup_list, $qlist[0][$j] );
 	my $piter = -1;
 	foreach my $k ( 0 .. $plen ) {
 	  if ( $plist[$k][0] eq $qlist[0][$j] ) {
-	    $piter = $k;
+	    if ( $plist[$k][2] ) {
+	      #print $dfile "product_setup_loop debug info: $k $j $plist[$k][0] $plist[$k][2] matches $qlist[0][$j] \n";
+	      if( index($qual, $plist[$k][2]) >= 0 ) { $piter = $k; }
+	    } else {
+	      $piter = $k;
+	    }
 	  }
 	}
 	if ( $piter < 0 ) {
