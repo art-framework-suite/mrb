@@ -29,6 +29,7 @@ EOF
 run_git_command() {
     # First check permissions
     rbase=${1}
+    if [ "${rbase}" = "fhiclcpp" ]; then rbase="fhicl-cpp"; fi
     if [ "${useRO}" == "true" ]
     then
         myGitCommand="$gitCommandRO"
@@ -215,7 +216,7 @@ then
     do
         if [ "${code}" = "fhiclcpp" ]
 	then
-          gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/fhicl-cpp $code"
+          gitCommand="git clone ssh://p-fhicl-cpp@cdcvs.fnal.gov/cvs/projects/fhicl-cpp $code"
 	  gitCommandRO="git clone http://cdcvs.fnal.gov/projects/fhicl-cpp $code"
 	  clone_init_cmake $code
 	else
@@ -233,6 +234,16 @@ then
     fi
     gitCommand="git clone ssh://p-artdaq@cdcvs.fnal.gov/cvs/projects/artdaq-core ${destinationDir}"
     gitCommandRO="git clone http://cdcvs.fnal.gov/projects/artdaq-core ${destinationDir}"
+    clone_init_cmake $repbase ${destinationDir}
+elif [ "${REP}" == "fhiclcpp" ]
+then
+    # this special case needs to become generic
+    if [ -z ${destinationDir} ]
+    then
+        destinationDir=fhiclcpp
+    fi
+    gitCommand="git clone ssh://p-fhicl-cpp@cdcvs.fnal.gov/cvs/projects/fhicl-cpp ${destinationDir}"
+    gitCommandRO="git clone http://cdcvs.fnal.gov/projects/fhicl-cpp ${destinationDir}"
     clone_init_cmake $repbase ${destinationDir}
 elif [ "${have_path}" == "true" ]
 then
