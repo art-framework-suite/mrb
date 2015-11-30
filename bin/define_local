@@ -56,13 +56,13 @@ open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
 ##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
 my @uname = uname();
-print DIAG "uname returns $uname[0] $uname[1] $uname[2]\n";
+##print DIAG "uname returns $uname[0] $uname[1] $uname[2]\n";
 my $library_path_name = LD_LIBRARY_PATH;
 if ( $uname[0] eq "Darwin" ) {
   $library_path_name = DYLD_LIBRARY_PATH;
 }
 my $have_library_path=$ENV{${library_path_name}};
-print DIAG "${library_path_name}: ${have_library_path}\n";
+##print DIAG "${library_path_name}: ${have_library_path}\n";
 
 
 # have to find the list of packages to traverse
