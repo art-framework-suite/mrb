@@ -51,9 +51,16 @@ function createFiles() {
   have_e6=$?
   echo ${MRB_QUALS} | grep -q e7
   have_e7=$?
-  if [ ${have_e7} = 0 ]
+  echo ${MRB_QUALS} | grep -q e9
+  have_e9=$?
+  if [ ${have_e9} = 0 ]
   then
-     CETBV=v4_11_03
+     CETBV=v4_17_03
+     GCCV=v4_9_3
+     EXTRAFLAG=")"
+  elif [ ${have_e7} = 0 ]
+  then
+     CETBV=v4_14_01
      GCCV=v4_9_2
      EXTRAFLAG=")"
   elif [ ${have_e6} = 0 ]
