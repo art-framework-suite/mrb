@@ -5,6 +5,7 @@
 
 use File::Basename;
 use lib dirname($0);
+use POSIX qw(uname);
 
 use mrb_parse_deps;
 
@@ -54,6 +55,15 @@ my $tmpfl = $builddir."/".$mrb_project."-".$mrb_project_version."-defs";
 open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
 ##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
+my @uname = uname();
+##print DIAG "uname returns $uname[0] $uname[1] $uname[2]\n";
+my $library_path_name = LD_LIBRARY_PATH;
+if ( $uname[0] eq "Darwin" ) {
+  $library_path_name = DYLD_LIBRARY_PATH;
+}
+my $have_library_path=$ENV{${library_path_name}};
+##print DIAG "${library_path_name}: ${have_library_path}\n";
+
 
 # have to find the list of packages to traverse
 my $cmakefile=$sourcedir."/CMakeLists.txt";
@@ -92,6 +102,9 @@ print TSET "# set package variables\n";
 my $build_dir = $ENV{MRB_BUILDDIR};
 my $source_dir = $ENV{MRB_SOURCE};
 my $have_perllib = $ENV{PERL5LIB};
+my $have_fclpath = $ENV{FHICL_FILE_PATH};
+my $have_path = $ENV{PATH};
+my $have_fw_path = $ENV{FW_SEARCH_PATH};
 for $i ( 0 .. $#package_list ) {
   my $pkg=$package_list[$i];
   my $pfile=$sourcedir."/".$pkg."/ups/product_deps";
@@ -111,33 +124,37 @@ for $i ( 0 .. $#package_list ) {
   print TSET "setenv  ${product_uc}_DIR ${source_dir}/${product}\n";
   # dropit -esf will remove any existing instances of the path and then prepend the path
   # unfortunately, tcsh complains if the variable is not already set, so we have to check
-  if ( $ENV{PATH} ne '' ) {
+  if ( ${have_path} ne '' ) {
     print TSET "setenv  PATH \`dropit -esf -p \${PATH} \'${build_dir}/${product}/bin\'\`\n";
   } else {
+    $have_path = true;
     print TSET "setenv  PATH \'${build_dir}/${product}/bin\'\n";
   }
-  if ( $ENV{LD_LIBRARY_PATH} ne '' ) {
-    print TSET "setenv  LD_LIBRARY_PATH \`dropit -esf -p \${LD_LIBRARY_PATH} \'${build_dir}/${product}/lib\'\`\n";
+  if ( ${have_library_path} ne '' ) {
+    print TSET "setenv  ${library_path_name} \`dropit -esf -p \${${library_path_name}} \'${build_dir}/${product}/lib\'\`\n";
   } else {
-    print TSET "setenv  LD_LIBRARY_PATH \'${build_dir}/${product}/lib\'\n";
+    $have_library_path = true;
+    print TSET "setenv  ${library_path_name} \'${build_dir}/${product}/lib\'\n";
   }
-  if ( $ENV{DYLD_LIBRARY_PATH} ne '' ) {
-    print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -esf -p \${DYLD_LIBRARY_PATH} \'${build_dir}/${product}/lib\'\`\n";
-  } else {
-    print TSET "setenv  DYLD_LIBRARY_PATH \'${build_dir}/${product}/lib\'\n";
-  }
+##  if ( $ENV{DYLD_LIBRARY_PATH} ne '' ) {
+##    print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -esf -p \${DYLD_LIBRARY_PATH} \'${build_dir}/${product}/lib\'\`\n";
+##  } else {
+##    print TSET "setenv  DYLD_LIBRARY_PATH \'${build_dir}/${product}/lib\'\n";
+##  }
   if ( "${fcl_directory}" ne "none" ) {
     ##print DIAG "$product: add ---${fcl_directory}---\n";
-    if ( $ENV{FHICL_FILE_PATH} ne '' ) {
+    if ( ${have_fclpath} ne '' ) {
       print TSET "setenv  FHICL_FILE_PATH \`dropit -esf -p \${FHICL_FILE_PATH} \'${build_dir}/${fcl_directory}\'\`\n";
     } else {
+      $have_fclpath = true;
       print TSET "setenv  FHICL_FILE_PATH \'${build_dir}/${fcl_directory}\'\n";
     }
   }
   if ( "${gdml_directory}" ne "none" ) {
-    if ( $ENV{FW_SEARCH_PATH} ne '' ) {
+    if ( ${have_fw_path} ne '' ) {
       print TSET "setenv  FW_SEARCH_PATH \`dropit -esf -p \${FW_SEARCH_PATH} \'${build_dir}/${gdml_directory}\'\`\n";
     } else {
+      $have_fw_path = true;
       print TSET "setenv  FW_SEARCH_PATH \'${build_dir}/${gdml_directory}\'\n";
     }
   }
@@ -153,9 +170,10 @@ for $i ( 0 .. $#package_list ) {
     }
   }
   if ( "${fw_directory}" ne "none" ) {
-    if ( $ENV{FW_SEARCH_PATH} ne '' ) {
+    if ( ${have_fw_path} ne '' ) {
       print TSET "setenv  FW_SEARCH_PATH \`dropit -esf -p \${FW_SEARCH_PATH} \'${build_dir}/${fw_directory}\'\`\n";
     } else {
+      $have_fw_path = true;
       print TSET "setenv  FW_SEARCH_PATH \'${build_dir}/${fw_directory}\'\n";
     }
   }
