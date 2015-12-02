@@ -319,7 +319,7 @@ then
     MRB_QUALS=${project_qual}
 else
     project_dir=$(dirname ${UPS_DIR} | xargs dirname | xargs dirname )
-    MRB_QUALS=${qualList}
+    MRB_QUALS=`echo ${qualList} | sed s'/-/:/g'`
 fi
 
 echo
