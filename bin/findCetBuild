@@ -21,6 +21,10 @@ my $compiler_table =
 $mrb_project = $ENV{MRB_PROJECT};
 $mrb_version = $ENV{MRB_PROJECT_VERSION};
 $mrb_quals = $ENV{MRB_QUALS};
+$flavor_override = ""
+if (defined $ENV{UPS_FLAVOR_OVERRIDE} ) {
+  $flavor_override = $ENV{UPS_FLAVOR_OVERRIDE};
+}
 $tmpfl = $builddir."/".$mrb_project."-".$mrb_version;
 
 if (!$compiler) {
@@ -35,7 +39,7 @@ if (!$compiler) {
 open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
 ##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
-print TSET "setenv UPS_OVERRIDE -B\n";
+print TSET "setenv UPS_OVERRIDE \"$flavor_override -B\"\n";
 print TSET "setenv CETPKG_NAME $mrb_project\n";
 print TSET "setenv CETPKG_VERSION $mrb_version\n";
 if ( $simple ) {
