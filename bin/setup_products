@@ -150,7 +150,16 @@ my $tmpfl = $builddir."/".$mrb_project."-".$mrb_project_version;
 ##print $dfh "setup_products debug info: opening $tmpfl for $mrb_project $mrb_project_version\n";
 open(my $tfh, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
-print $tfh "setenv UPS_OVERRIDE -B\n";
+my $override=$ENV{UPS_OVERRIDE};
+if( $override ) {
+  if (grep /\-B/, $override) {
+    print  $tfh "# UPS_OVERRIDE is already $override\n";
+  } else {
+    print $tfh "setenv UPS_OVERRIDE \"-B $override\"\n";
+  }
+} else {
+  print $tfh "setenv UPS_OVERRIDE \"-B\"\n";
+}
 print $tfh "setenv CETPKG_NAME $mrb_project\n";
 print $tfh "setenv CETPKG_VERSION $mrb_project_version\n";
 if ( $simple eq "true" ) {

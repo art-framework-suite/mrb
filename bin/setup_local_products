@@ -123,7 +123,7 @@ else
 endif
 endifcsh_
 
-setenv UPS_OVERRIDE -B
+#setenv UPS_OVERRIDE -B
 # Now run get_setup_list.sh to get the ups setup commands
 # for the local products as a temporary script file.
 set_ cmdfile=`$db/get_setup_list.sh $*`
