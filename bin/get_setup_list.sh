@@ -41,6 +41,16 @@ echo > $tmpfl
 echo "## checking $localP for products" >> $tmpfl
 echo "source \`${UPS_DIR}/bin/ups setup ${SETUP_UPS}\`" >> $tmpfl
 
+# deal with UPS_OVERRIDE
+echo "# incoming UPS_OVERRIDE $UPS_OVERRIDE"  >> $tmpfl
+if [ -z "${UPS_OVERRIDE}" ]; then
+   new_override="-B"
+else 
+   tempover=`echo ${UPS_OVERRIDE} | sed -e 's/\-B//'`
+   new_override="-B ${tempover}"
+fi
+echo "setenv UPS_OVERRIDE \"${new_override}\""  >> $tmpfl
+
 ups list -aK+ -z $localP | while read line
 do
   ##echo "got line: $line"
