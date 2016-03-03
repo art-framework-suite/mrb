@@ -184,6 +184,8 @@ fi
 # Special cases for larsoft
 larsoft_list="larcore larpandora lardata larevt larsim larreco larana larexamples lareventdisplay larsoft"
 art_list="cpp0x cetlib fhiclcpp messagefacility art"
+critic_list="cetlib fhiclcpp messagefacility canvas art gallery critic"
+gallery_list="cetlib fhiclcpp messagefacility canvas gallery"
 if [ "${REP}" = "larsoft_suite" ]
 then
     if [ "x${useTag}" != "x" ]
@@ -213,6 +215,54 @@ then
        fi
     fi
     for code in ${art_list}
+    do
+        if [ "${code}" = "fhiclcpp" ]
+	then
+          gitCommand="git clone ssh://p-fhicl-cpp@cdcvs.fnal.gov/cvs/projects/fhicl-cpp $code"
+	  gitCommandRO="git clone http://cdcvs.fnal.gov/projects/fhicl-cpp $code"
+	  clone_init_cmake $code
+	else
+          gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
+	  gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
+	  clone_init_cmake $code
+	fi
+    done
+elif [ "${REP}" = "critic_suite" ]
+then
+    if [ "x${useTag}" != "x" ]
+    then
+       already_set=`echo ${useTag} | grep ART_SUITE | wc -l`
+       if [ $already_set -eq 0 ]
+       then
+	 useTag=ART_SUITE_${useTag}
+	 echo "INFO: git clone will use tag ${useTag} for the critic suite"
+       fi
+    fi
+    for code in ${critic_list}
+    do
+        if [ "${code}" = "fhiclcpp" ]
+	then
+          gitCommand="git clone ssh://p-fhicl-cpp@cdcvs.fnal.gov/cvs/projects/fhicl-cpp $code"
+	  gitCommandRO="git clone http://cdcvs.fnal.gov/projects/fhicl-cpp $code"
+	  clone_init_cmake $code
+	else
+          gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
+	  gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
+	  clone_init_cmake $code
+	fi
+    done
+elif [ "${REP}" = "gallery_suite" ]
+then
+    if [ "x${useTag}" != "x" ]
+    then
+       already_set=`echo ${useTag} | grep GALLERY_SUITE | wc -l`
+       if [ $already_set -eq 0 ]
+       then
+	 useTag=GALLERY_SUITE_${useTag}
+	 echo "INFO: git clone will use tag ${useTag} for the gallery suite"
+       fi
+    fi
+    for code in ${gallery_list}
     do
         if [ "${code}" = "fhiclcpp" ]
 	then
