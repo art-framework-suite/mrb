@@ -30,6 +30,8 @@ run_git_command() {
     # First check permissions
     rbase=${1}
     if [ "${rbase}" = "fhiclcpp" ]; then rbase="fhicl-cpp"; fi
+    if [ "${rbase}" = "lariatfragments" ]; then rbase="lariat-online-lariatfragments"; fi
+    if [ "${rbase}" = "lariatutil" ]; then rbase="lardbt-lariatutil"; fi
     if [ "${useRO}" == "true" ]
     then
         myGitCommand="$gitCommandRO"
@@ -38,7 +40,7 @@ run_git_command() {
 	if [ "$gitCommandRO" != "none" ]
 	then
 	    larret=`ssh p-${rbase}@cdcvs.fnal.gov "echo Hi" 2>&1`
-	    is_bad=`echo $larret | grep Permission | wc -l`
+	    is_bad=`echo $larret | egrep "Permission|authentication" | wc -l`
 	    if [ $is_bad -gt 0 ]
 	    then
               echo ""
@@ -284,6 +286,26 @@ then
     fi
     gitCommand="git clone ssh://p-artdaq@cdcvs.fnal.gov/cvs/projects/artdaq-core ${destinationDir}"
     gitCommandRO="git clone http://cdcvs.fnal.gov/projects/artdaq-core ${destinationDir}"
+    clone_init_cmake $repbase ${destinationDir}
+elif [ "${REP}" == "lariatfragments" ]
+then
+    # this special case needs to become generic
+    if [ -z ${destinationDir} ]
+    then
+        destinationDir=lariatfragments
+    fi
+    gitCommand="git clone ssh://p-lariat-online@cdcvs.fnal.gov/cvs/projects/lariat-online-lariatfragments ${destinationDir}"
+    gitCommandRO="git clone http://cdcvs.fnal.gov/projects/lariat-online-lariatfragments ${destinationDir}"
+    clone_init_cmake $repbase ${destinationDir}
+elif [ "${REP}" == "lariatutil" ]
+then
+    # this special case needs to become generic
+    if [ -z ${destinationDir} ]
+    then
+        destinationDir=lariatutil
+    fi
+    gitCommand="git clone ssh://p-lardbt@cdcvs.fnal.gov/cvs/projects/lardbt-lariatutil ${destinationDir}"
+    gitCommandRO="git clone http://cdcvs.fnal.gov/projects/lardbt-lariatutil ${destinationDir}"
     clone_init_cmake $repbase ${destinationDir}
 elif [ "${REP}" == "fhiclcpp" ]
 then
