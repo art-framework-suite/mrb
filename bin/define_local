@@ -119,7 +119,8 @@ for $i ( 0 .. $#package_list ) {
   my $perl_directory = get_perl_directory( $pfile, $product );
   my $fw_directory = get_fw_directory( $pfile, $product );
   ##print DIAG "$pkg perl directory: $perl_directory \n";
-  my $set_root_path = get_root_path( $pfile, $product );
+  my $root_path = get_root_path( $pfile, $product );
+  ##print DIAG "$pkg root path: $root_path\n";
   # pretend this is a product
   my $product_uc = uc($product);
   print TSET "setenv  ${product_uc}_VERSION $version\n";
@@ -181,10 +182,10 @@ for $i ( 0 .. $#package_list ) {
   }
   if ( "${root_path}" ne "none" ) {
     if ( ${have_root_path} ne '' ) {
-      print TSET "setenv  ROOT_INCLUDE_PATH \`dropit -esf -p \${ROOT_INCLUDE_PATH} \'${build_dir}/${root_path}\'\`\n";
+      print TSET "setenv  ROOT_INCLUDE_PATH \`dropit -esf -p \${ROOT_INCLUDE_PATH} ${root_path}\`\n";
     } else {
       $have_root_path = true;
-      print TSET "setenv  ROOT_INCLUDE_PATH \'${build_dir}/${root_path}\'\n";
+      print TSET "setenv  ROOT_INCLUDE_PATH ${root_path}\n";
     }
   }
 
