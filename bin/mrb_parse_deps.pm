@@ -69,6 +69,7 @@ our (@EXPORT, @setup_list);
               get_gdml_directory 
               get_perl_directory 
               get_fw_directory 
+	      get_root_path
               cetpkg_info_file 
               setup_only_for_build 
               print_setup_noqual 
@@ -559,6 +560,63 @@ sub get_fw_directory {
   close(PIN);
   ##print "defining executable directory $fwdir\n";
   return ($fwdir);
+}
+
+sub get_root_path {
+  my @params = @_;
+  my $incdir = "default";
+  my $fq = "true";
+  my $line;
+  my @words;
+  my $rp = "none";
+  my $extrapath = "none";
+  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
+  while ( $line=<PIN> ) {
+    chop $line;
+    if ( index($line,"#") == 0 ) {
+    } elsif ( $line !~ /\w+/ ) {
+    } elsif ( index($line,"ROOT_INCLUDE_PATH") > 0 ) {
+          #print "DEBUG: found $line\n";
+          my $cind = index($line,",");
+          if( $cind > 0 ) {
+          my $pind = index($line,")");
+          my $bind = index($line,"\$");
+          #print "DEBUG: comma at $cind $bind paren at $pind\n";
+          $extrapath = substr($line, $bind, ($pind-$bind));
+          #print "DEBUG: extracted --$extrapath--\n";
+          }
+    } else {
+      @words = split(/\s+/,$line);
+      if( $words[0] eq "incdir" ) {
+         if( ! $words[2] ) { $words[2] = "include"; }
+         if( $words[1] eq "product_dir" ) {
+	    $incdir = $params[1]."/".$words[2];
+         } elsif( $words[1] eq "fq_dir" ) {
+	    $incdir = $params[1]."/".$words[2];
+         } elsif( $words[1] eq "-" ) {
+	    $incdir = "none";
+	 } else {
+	    print "ERROR: $words[1] is an invalid directory path\n";
+	    print "ERROR: directory path must be specified as either \"product_dir\" or \"fq_dir\"\n";
+	    print "ERROR: using the default include directory path\n";
+	 }
+      } elsif( $words[0] eq "no_fq_dir" ) {
+          $fq = "";
+      }
+    }
+  }
+  close(PIN);
+  if ( $incdir ne "none" ) { $incdir = "\${MRB_SOURCE}/".$params[1]; }
+  ##print "defining executable directory $incdir\n";
+  if ( $fq ) { 
+    if( $extrapath eq "none" ) {
+    $rp = $incdir;
+    } else {
+    $rp = $incdir.":".$extrapath;
+    }
+  }
+  #print "DEBUG: return $rp\n";
+  return ($rp);
 }
 
 sub cetpkg_info_file {
