@@ -67,6 +67,7 @@ do
    echo "# ${REP} package block" >> ${cmake_include_fragment}
    echo "set(${pkgname}_not_in_ups true)" >> ${cmake_include_fragment}
    echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${REP} )" >> ${cmake_include_fragment}
+   echo "include_directories ( \$ENV{MRB_BUILDDIR}/${REP} )" >> ${cmake_include_fragment}
    echo "ADD_SUBDIRECTORY(${REP})" >> ${cmake_subdir_fragment}
    echo "NOTICE: Adding ${REP} to CMakeLists.txt file"
 done
