@@ -108,7 +108,9 @@ if ( $simple eq "true" ) {
       print ERR2 "unsetenv_ CETPKG_CXX\n";
       print ERR2 "unsetenv_ CETPKG_FC\n";
       print ERR2 "echo \"ERROR: \"\n";
-      print ERR2 "echo \"ERROR: build type is not declared\"\n";
+      print ERR2 "echo \"ERROR: build type is undefined\"\n";
+      print ERR2 "echo \"ERROR: MRB_QUALS is $setup_products::mrb_quals\"\n";
+      print ERR2 "echo \"ERROR: One of debug, opt, or prof must be specified.\"\n";
       print ERR2 "echo \"ERROR: \"\n";
       print ERR2 "return 1\n";
       close(ERR2);
