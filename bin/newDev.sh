@@ -160,6 +160,26 @@ function copy_dependency_database() {
     fi
 }
 
+function check_qualList() {
+    declare -a qualArray
+    qualArray=$(echo ${qualList} | tr : " ")
+    have_dop=false
+    for qual in ${qualArray}
+    do
+       if [[ ${qual} == debug ]]; then have_dop=${qual}; fi
+       if [[ ${qual} == opt ]]; then have_dop=${qual}; fi
+       if [[ ${qual} == prof ]]; then have_dop=${qual}; fi
+    done
+    if [[ ${have_dop} == false ]]
+    then
+       echo 
+       echo "ERROR: build type is undefined"
+       echo "ERROR: specified qualifiers are ${qualList}"
+       echo "ERROR: One of debug, opt, or prof must be specified."
+       exit 1
+    fi
+}
+
 # Set up configuration
 doForce=""
 doNewBuildDir=""
@@ -318,6 +338,7 @@ then
 
     MRB_QUALS=${project_qual}
 else
+    check_qualList
     project_dir=$(dirname ${UPS_DIR} | xargs dirname | xargs dirname )
     MRB_QUALS=`echo ${qualList} | sed s'/-/:/g'`
 fi
