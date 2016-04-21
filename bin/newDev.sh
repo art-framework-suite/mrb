@@ -169,6 +169,7 @@ function check_qualList() {
        if [[ ${qual} == debug ]]; then have_dop=${qual}; fi
        if [[ ${qual} == opt ]]; then have_dop=${qual}; fi
        if [[ ${qual} == prof ]]; then have_dop=${qual}; fi
+       if [[ ${qual} == -nq- ]]; then have_dop=${qual}; fi
     done
     if [[ ${have_dop} == false ]]
     then
@@ -319,8 +320,6 @@ then
     echo "ERROR: ${MRB_PROJECT} product is not setup."
     echo "       You must EITHER setup the desired version of ${MRB_PROJECT} OR specify the qualifiers"
     echo "       e.g., mrb newDev -v vX_YY_ZZ -q e2:debug"
-    echo "       Available versions of ${MRB_PROJECT}:"
-    ups list -aK+ ${MRB_PROJECT}
     exit 2
 fi
 # now sort out the qualifier list
@@ -340,7 +339,11 @@ then
 else
     check_qualList
     project_dir=$(dirname ${UPS_DIR} | xargs dirname | xargs dirname )
+    if [[ ${qualList} == -nq- ]]; then
+    MRB_QUALS=${qualList}
+    else
     MRB_QUALS=`echo ${qualList} | sed s'/-/:/g'`
+    fi
 fi
 
 echo
