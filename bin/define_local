@@ -187,6 +187,8 @@ for $i ( 0 .. $#package_list ) {
       $have_root_path = true;
       print TSET "setenv  ROOT_INCLUDE_PATH ${root_path}\n";
     }
+    print TSET "setenv  ROOT_INCLUDE_PATH \`dropit -esf -p \${ROOT_INCLUDE_PATH} ${build_dir}/${product}\`\n";
+    print TSET "setenv  ${product_uc}_INC ${source_dir}/${product}\n";
   }
 
 }
