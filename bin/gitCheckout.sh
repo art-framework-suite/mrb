@@ -188,6 +188,7 @@ larsoft_list="larcore larpandora lardata larevt larsim larreco larana larexample
 art_list="cpp0x cetlib fhiclcpp messagefacility art"
 critic_list="cetlib fhiclcpp messagefacility canvas art gallery critic"
 gallery_list="cetlib fhiclcpp messagefacility canvas gallery"
+larsoftobj_list="nusimdata larcoreobj lardataobj larsimobj"
 if [ "${REP}" = "larsoft_suite" ]
 then
     if [ "x${useTag}" != "x" ]
@@ -276,6 +277,23 @@ then
 	  gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
 	  clone_init_cmake $code
 	fi
+    done
+elif [ "${REP}" = "larsoftobj" ]
+then
+    if [ "x${useTag}" != "x" ]
+    then
+       already_set=`echo ${useTag} | grep LARSOFTOBJ | wc -l`
+       if [ $already_set -eq 0 ]
+       then
+	 useTag=LARSOFTOBJ_${useTag}
+	 echo "INFO: git clone will use tag ${useTag} for the gallery suite"
+       fi
+    fi
+    for code in ${larsoftobj_list}
+    do
+       gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
+       gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
+       clone_init_cmake $code
     done
 elif [ "${REP}" == "artdaq_core" ]
 then
