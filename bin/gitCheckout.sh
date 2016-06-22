@@ -188,7 +188,7 @@ larsoft_list="larcore larpandora lardata larevt larsim larreco larana larexample
 art_list="cpp0x cetlib fhiclcpp messagefacility art"
 critic_list="cetlib fhiclcpp messagefacility canvas art gallery critic"
 gallery_list="cetlib fhiclcpp messagefacility canvas gallery"
-larsoftobj_list="nusimdata larcoreobj lardataobj larsimobj"
+larsoftobj_list="nusimdata larcoreobj lardataobj larsimobj larsoftobj"
 if [ "${REP}" = "larsoft_suite" ]
 then
     if [ "x${useTag}" != "x" ]
