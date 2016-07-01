@@ -30,8 +30,8 @@ run_git_command() {
     # First check permissions
     rbase=${1}
     if [ "${rbase}" = "fhiclcpp" ]; then rbase="fhicl-cpp"; fi
-    if [ "${rbase}" = "lariatfragments" ]; then rbase="lariat-online-lariatfragments"; fi
-    if [ "${rbase}" = "lariatutil" ]; then rbase="lardbt-lariatutil"; fi
+    if [ "${rbase}" = "lariatfragments" ]; then rbase="lariat-online"; fi
+    if [ "${rbase}" = "lariatutil" ]; then rbase="lardbt"; fi
     if [ "${useRO}" == "true" ]
     then
         myGitCommand="$gitCommandRO"
