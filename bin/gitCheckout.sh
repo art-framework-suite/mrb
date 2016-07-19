@@ -278,7 +278,7 @@ then
 	  clone_init_cmake $code
 	fi
     done
-elif [ "${REP}" = "larsoftobj" ]
+elif [ "${REP}" = "larsoftobj_suite" ]
 then
     if [ "x${useTag}" != "x" ]
     then
