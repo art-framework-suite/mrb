@@ -706,12 +706,13 @@ sub setup_only_for_build {
       }
     }
     if ( $print_setup eq "true" ) {
-      print $efl "set_ setup_fail=\"false\"\n"; 
+      print $tfile "set_ setup_fail=\"false\"\n"; 
       print $tfile "setup -B $build_products[$i][0] $build_products[$i][1]\n";
       print $tfile "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
-      print $efl "test \"\$setup_fail\" =  \"true\" && echo \"ERROR: setup -B $build_products[$i][0] $build_products[$i][1] failed\"\n"; 
-      print $efl "test \"\$setup_fail\" =  \"true\" && echo \"ERROR: For more information, type \"ups depend $build_products[$i][0] $build_products[$i][1]\"\"\n"; 
-      print $efl "test \"\$setup_fail\" =  \"true\" && return 1\n"; 
+      print $tfile "test \"\$setup_fail\" =  \"true\" && echo \"ERROR: setup -B $build_products[$i][0] $build_products[$i][1] failed\"\n"; 
+      print $tfile "test \"\$setup_fail\" =  \"true\" && echo \"ERROR: For more information, type \\\"ups depend $build_products[$i][0] $build_products[$i][1]\\\"\"\n"; 
+      print $tfile "test \"\$setup_fail\" =  \"true\" && echo \"                             or \\\"ups list -aK+ $build_products[$i][0] $build_products[$i][1]\\\"\"\n"; 
+      print $tfile "test \"\$setup_fail\" =  \"true\" && return 1\n"; 
     }
   }
 }
@@ -736,7 +737,8 @@ sub print_setup_noqual {
   print $efl "setup -B $params[0] $thisqual \n";
   print $efl "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
   print $efl "test \"\$setup_fail\" =  \"true\" && echo \"ERROR: setup -B $params[0] $thisqual failed\"\n"; 
-  print $efl "test \"\$setup_fail\" =  \"true\" && echo \"ERROR: For more information, type \"ups depend $params[0] $thisqual\"\"\n"; 
+  print $efl "test \"\$setup_fail\" =  \"true\" && echo \"ERROR: For more information, type \\\"ups depend $params[0] $thisqual\\\"\"\n"; 
+  print $efl "test \"\$setup_fail\" =  \"true\" && echo \"                             or \\\"ups list -aK+ $params[0] $thisqual\\\"\"\n"; 
   print $efl "test \"\$setup_fail\" =  \"true\" && return 1\n"; 
   }
   return 0;
@@ -767,7 +769,8 @@ sub print_setup_qual {
   print $efl "setup -B $params[0] $thisqual -q $ql\n";
   print $efl "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
   print $efl "test \"\$setup_fail\" =  \"true\" && echo \"ERROR: setup -B $params[0] $thisqual -q $ql failed\"\n"; 
-  print $efl "test \"\$setup_fail\" =  \"true\" && echo \"ERROR: For more information, type \"ups depend $params[0] $thisqual -q $ql\"\"\n"; 
+  print $efl "test \"\$setup_fail\" =  \"true\" && echo \"ERROR: For more information, type \\\"ups depend $params[0] $thisqual -q $ql\\\"\"\n"; 
+  print $efl "test \"\$setup_fail\" =  \"true\" && echo \"                             or \\\"ups list -aK+ $params[0] $thisqual\\\"\"\n"; 
   print $efl "test \"\$setup_fail\" =  \"true\" && return 1\n"; 
   }
   return 0;
