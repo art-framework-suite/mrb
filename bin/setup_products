@@ -202,10 +202,17 @@ for my $i ( 0 .. $#setup_products::package_list ) {
   ##print $dfh "setup_products debug info: cetbuildtools $cetbver[$i]\n";
   $use_cetbver = compare_versions( $use_cetbver, $cetbver[$i] );
 }
+print $tfh "set_ setup_fail=\"false\"\n"; 
 print $tfh "setup -B cetbuildtools $use_cetbver\n";
 print $tfh "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
+print $tfh "test \"\$setup_fail\" =  \"true\" && echo \"ERROR: setup -B cetbuildtools $use_cetbver failed\"\n"; 
+print $tfh "test \"\$setup_fail\" =  \"true\" && echo \"ERROR: Please type \\\"unsetup cetbuildtools\\\" and \\\"unsetup cmake\\\"\"\n"; 
+print $tfh "test \"\$setup_fail\" =  \"true\" && return 1\n"; 
+print $tfh "set_ setup_fail=\"false\"\n"; 
 print $tfh "setup -B cetpkgsupport \n";
 print $tfh "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
+print $tfh "test \"\$setup_fail\" =  \"true\" && echo \"ERROR: setup -B cetpkgsupport failed\"\n"; 
+print $tfh "test \"\$setup_fail\" =  \"true\" && return 1\n"; 
 @setup_list=( "cetbuildtools", "cetpkgsupport" );
 
 # now check for an old build directory 
