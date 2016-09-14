@@ -110,8 +110,6 @@ make package
 
 ups list -aK+ ${package} ${pkgver}   -z ${product_dir}
 
-mv ${pkgdir}/${pkgver}/build/${package}-${pkgdotver}-noarch.tar.bz2 ${product_dir}/
-
 # now make the tar ball
 # set -x
 # cd ${product_dir}
