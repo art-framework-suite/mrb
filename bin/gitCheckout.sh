@@ -335,6 +335,16 @@ then
     gitCommand="git clone ssh://p-fhicl-cpp@cdcvs.fnal.gov/cvs/projects/fhicl-cpp ${destinationDir}"
     gitCommandRO="git clone http://cdcvs.fnal.gov/projects/fhicl-cpp ${destinationDir}"
     clone_init_cmake $repbase ${destinationDir}
+elif [ "${REP}" == "lbne_raw_data" ]
+then
+    # this special case needs to become generic
+    if [ -z ${destinationDir} ]
+    then
+        destinationDir=lbne_raw_data
+    fi
+    gitCommand="git clone ssh://p-lbne-raw-data@cdcvs.fnal.gov/cvs/projects/lbne-raw-data ${destinationDir}"
+    gitCommandRO="git clone http://cdcvs.fnal.gov/projects/lbne-raw-data ${destinationDir}"
+    clone_init_cmake $repbase ${destinationDir}
 elif [ "${have_path}" == "true" ]
 then
     if [ "${useRO}" == "true" ]
