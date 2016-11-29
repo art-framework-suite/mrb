@@ -184,7 +184,7 @@ fi
 
 # Construct the git clone command
 # Special cases for larsoft
-larsoft_list="larcore larpandora lardata larevt larsim larreco larana larexamples lareventdisplay larsoft"
+larsoft_list="larcore lardata larevt larsim larreco larana larexamples lareventdisplay larpandora larwirecell larsoft"
 art_list="cpp0x cetlib fhiclcpp messagefacility art"
 critic_list="cetlib fhiclcpp messagefacility canvas art gallery critic"
 gallery_list="cetlib fhiclcpp messagefacility canvas gallery"
