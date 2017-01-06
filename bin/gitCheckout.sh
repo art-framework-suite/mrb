@@ -93,11 +93,27 @@ clone_init_cmake() {
     then
        cd ${MRB_SOURCE}/$coderep
        git checkout ${useTag}
+       tagstatus=$?
+       if [[ ${tagstatus} != 0 ]]; then
+         echo
+         echo "ERROR: git checkout of $coderep ${useTag} failed"
+         echo
+         exit 1
+       fi
+       #git branch
     fi
     if [ "x${useBranch}" != "x" ]
     then
        cd ${MRB_SOURCE}/$coderep
        git checkout ${useBranch}
+       brstatus=$?
+       if [[ ${brstatus} != 0 ]]; then
+         echo
+         echo "WARNING: git checkout of $coderep ${useBranch} failed"
+         echo
+         git branch
+         echo
+       fi
     fi
     # add to CMakeLists.txt
     if grep -q \($coderep\) ${MRB_SOURCE}/CMakeLists.txt
