@@ -64,16 +64,23 @@ run_git_command() {
 
 git_flow_init() {
     myrep=$1
-    cd ${MRB_SOURCE}/$myrep
-    # this is necessary for those packages where the default branch is not master
-    echo "ready to run git flow init for $myrep"
-    git checkout master
-    git flow init -d > /dev/null
-    # make sure we are on the develop branch
-    git checkout develop
-    # just in case we are using an older git flow
-    git branch --set-upstream-to=origin/develop
-    git pull
+    # ignore the special cases
+    if [[ ${myrep} != "cetlib_except" ]] && \
+       [[ ${myrep} != "cetlib" ]] && \
+       [[ ${myrep} != "fhiclcpp" ]] && \
+       [[ ${myrep} != "messagefacility" ]]
+    then
+	cd ${MRB_SOURCE}/$myrep
+	# this is necessary for those packages where the default branch is not master
+	echo "ready to run git flow init for $myrep"
+	git checkout master
+	git flow init -d > /dev/null
+	# make sure we are on the develop branch
+	git checkout develop
+	# just in case we are using an older git flow
+	git branch --set-upstream-to=origin/develop
+	git pull
+    fi
 }
 
 clone_init_cmake() {
@@ -205,6 +212,7 @@ art_list="cetlib_except cetlib fhiclcpp messagefacility canvas art gallery criti
 critic_list="cetlib_except cetlib fhiclcpp messagefacility canvas art gallery critic"
 gallery_list="cetlib_except cetlib fhiclcpp messagefacility canvas gallery"
 larsoftobj_list="larcoreobj lardataobj larsoftobj"
+no_develop="cetlib_except cetlib fhiclcpp messagefacility"
 if [ "${REP}" = "larsoft_suite" ]
 then
     if [ "x${useTag}" != "x" ]
