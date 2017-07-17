@@ -211,7 +211,7 @@ larsoft_list="larcore lardata larevt larsim larreco larana larexamples lareventd
 art_list="cetlib_except cetlib fhiclcpp messagefacility canvas art gallery critic"
 critic_list="cetlib_except cetlib fhiclcpp messagefacility canvas art gallery critic"
 gallery_list="cetlib_except cetlib fhiclcpp messagefacility canvas gallery"
-larsoftobj_list="larcoreobj lardataobj larsoftobj"
+larsoftobj_list="larcoreobj lardataobj larcorealg larsoftobj"
 no_develop="cetlib_except cetlib fhiclcpp messagefacility"
 if [ "${REP}" = "larsoft_suite" ]
 then
