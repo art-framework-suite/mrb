@@ -69,6 +69,7 @@ our (@EXPORT, @setup_list);
               get_gdml_directory 
               get_perl_directory 
               get_fw_directory 
+	      get_setfw_list
 	      get_root_path
               cetpkg_info_file 
               setup_only_for_build 
@@ -254,6 +255,8 @@ sub get_product_list {
          $get_phash="";
       } elsif( $words[0] eq "fwdir" ) {
          $get_phash="";
+      } elsif( $words[0] eq "set_fwdir" ) {
+         $get_phash="";
       } elsif( $words[0] eq "libdir" ) {
          $get_phash="";
       } elsif( $words[0] eq "bindir" ) {
@@ -339,6 +342,8 @@ sub get_qualifier_list {
       } elsif( $words[0] eq "perllib" ) {
          $get_quals="false";
       } elsif( $words[0] eq "fwdir" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "set_fwdir" ) {
          $get_quals="false";
       } elsif( $words[0] eq "libdir" ) {
          $get_quals="false";
@@ -560,6 +565,60 @@ sub get_fw_directory {
   close(PIN);
   ##print "defining executable directory $fwdir\n";
   return ($fwdir);
+}
+
+# This list is meant to point to the source code directory
+sub get_setfw_list {
+  my @params = @_;
+  my $setfwdir = "NONE";
+  my @fwlist;
+  my @fwdirs;
+  my $fwiter=-1;
+  my $line;
+  open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
+  while ( $line=<PIN> ) {
+    chop $line;
+    if ( index($line,"#") == 0 ) {
+    } elsif ( $line !~ /\w+/ ) {
+    } else {
+      my @words = split(/\s+/,$line);
+      if( $words[0] eq "set_fwdir" ) {
+         ++$fwiter;
+         if( $words[1] eq "-" ) {
+	     $setfwdir = "NONE";
+             $fwdirs[$fwiter]="NONE";
+	 } else { 
+            if( ! $words[2] ) { 
+               if( $words[1] eq "product_dir" ) {
+		  $setfwdir = "";
+		  $fwdirs[$fwiter]=$words[1];
+               } elsif( $words[1] eq "fq_dir" ) {
+		  $setfwdir = "";
+		  $fwdirs[$fwiter]=$words[1];
+	       } else {
+		  $setfwdir = "ERROR";
+		  $fwdirs[$fwiter]="ERROR";
+	       }
+	    } else {
+	       my $fwsubdir = $words[2];
+               if( $words[1] eq "product_dir" ) {
+		  $setfwdir = "/$fwsubdir";
+		  $fwdirs[$fwiter]=$words[1];
+               } elsif( $words[1] eq "fq_dir" ) {
+		  $fwdirs[$fwiter]=$words[1];
+		  $setfwdir = "/$fwsubdir";
+	       } else {
+		  $setfwdir = "ERROR";
+		  $fwdirs[$fwiter]="ERROR";
+	       }
+	    }
+	 }
+	 $fwlist[$fwiter]=$setfwdir;
+      }
+    }
+  }
+  close(PIN);
+  return ($fwiter, \@fwlist, \@fwdirs);
 }
 
 sub get_root_path {

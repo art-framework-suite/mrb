@@ -118,6 +118,9 @@ for $i ( 0 .. $#package_list ) {
   my $gdml_directory = get_gdml_directory( $pfile, $product );
   my $perl_directory = get_perl_directory( $pfile, $product );
   my $fw_directory = get_fw_directory( $pfile, $product );
+  my ($fwlen, $fwlist_ref, $fwdir_ref) = get_setfw_list( $pfile );
+  my @fwlist=@$fwlist_ref;
+  my @fwdirs=@$fwdir_ref;
   ##print DIAG "$pkg perl directory: $perl_directory \n";
   my $root_path = get_root_path( $pfile, $product );
   ##print DIAG "$pkg root path: $root_path\n";
@@ -178,6 +181,18 @@ for $i ( 0 .. $#package_list ) {
     } else {
       $have_fw_path = true;
       print TSET "setenv  FW_SEARCH_PATH \'${build_dir}/${fw_directory}\'\n";
+    }
+  }
+  foreach $i ( 0 .. $fwlen ) {
+    if( $fwlist[$i]  eq  "ERROR" ) {
+      print DIAG "define_local: error in set_fwdir entry\n";
+    } else {
+      if ( ${have_fw_path} ne '' ) {
+	print TSET "setenv  FW_SEARCH_PATH \`dropit -esf -p \${FW_SEARCH_PATH} \'${source_dir}/${product}$fwlist[$i]\'\`\n";
+      } else {
+	$have_fw_path = true;
+	print TSET "setenv  FW_SEARCH_PATH \'${source_dir}/${product}$fwlist[$i]\'\n";
+      }
     }
   }
   if ( "${root_path}" ne "none" ) {
