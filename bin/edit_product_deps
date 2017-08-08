@@ -86,6 +86,10 @@ while ( $line=<PIN> ) {
        $get_phash="";
        $get_quals="";
        print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "set_fwdir" ) {
+       $get_phash="";
+       $get_quals="";
+       print_line ( POUT, $line, $dryrun );
     } elsif( $words[0] eq "libdir" ) {
        $get_phash="";
        $get_quals="";
