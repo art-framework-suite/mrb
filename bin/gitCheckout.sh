@@ -23,6 +23,17 @@ Usage: $fullCom [-r] [-d destination_name] [-b branch] [-t tag] <gitRepositoryNa
      
      -t <tag>              = git clone, and then git checkout this tag
 
+  Available suites:
+     art_suite: 
+       "cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io art gallery critic"
+     gallery_suite: 
+       "cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io gallery"
+     larsoft_suite: 
+       "larcore lardata larevt larsim larreco larana larexamples lareventdisplay larpandora larwirecell larsoft"
+     larsoftobj_suite: 
+       "larcoreobj lardataobj larcorealg larsoftobj"
+   
+
 EOF
 }
 
@@ -64,23 +75,16 @@ run_git_command() {
 
 git_flow_init() {
     myrep=$1
-    # ignore the special cases
-    if [[ ${myrep} != "cetlib_except" ]] && \
-       [[ ${myrep} != "cetlib" ]] && \
-       [[ ${myrep} != "fhiclcpp" ]] && \
-       [[ ${myrep} != "messagefacility" ]]
-    then
-	cd ${MRB_SOURCE}/$myrep
-	# this is necessary for those packages where the default branch is not master
-	echo "ready to run git flow init for $myrep"
-	git checkout master
-	git flow init -d > /dev/null
-	# make sure we are on the develop branch
-	git checkout develop
-	# just in case we are using an older git flow
-	git branch --set-upstream-to=origin/develop
-	git pull
-    fi
+    cd ${MRB_SOURCE}/$myrep
+    # this is necessary for those packages where the default branch is not master
+    echo "ready to run git flow init for $myrep"
+    git checkout master
+    git flow init -d > /dev/null
+    # make sure we are on the develop branch
+    git checkout develop
+    # just in case we are using an older git flow
+    git branch --set-upstream-to=origin/develop
+    git pull
 }
 
 clone_init_cmake() {
@@ -208,11 +212,10 @@ fi
 # Construct the git clone command
 # Special cases for larsoft
 larsoft_list="larcore lardata larevt larsim larreco larana larexamples lareventdisplay larpandora larwirecell larsoft"
-art_list="cetlib_except cetlib fhiclcpp messagefacility canvas art gallery critic"
-critic_list="cetlib_except cetlib fhiclcpp messagefacility canvas art gallery critic"
-gallery_list="cetlib_except cetlib fhiclcpp messagefacility canvas gallery"
+art_list="cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io art gallery critic"
+critic_list="cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io art gallery critic"
+gallery_list="cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io gallery"
 larsoftobj_list="larcoreobj lardataobj larcorealg larsoftobj"
-no_develop="cetlib_except cetlib fhiclcpp messagefacility"
 if [ "${REP}" = "larsoft_suite" ]
 then
     if [ "x${useTag}" != "x" ]
