@@ -79,7 +79,7 @@ echo $product_list
 
 thisos=`get-directory-name os`
 
-myflvr=`ups flavor`
+myflvr=`ups flavor -4`
 myOS=`uname -s`
 if [ ${myOS} = "Darwin" ]
 then
