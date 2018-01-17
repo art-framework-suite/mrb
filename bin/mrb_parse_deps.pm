@@ -64,6 +64,7 @@ our (@EXPORT, @setup_list);
               get_parent_info 
               get_product_list 
               get_qualifier_list 
+              get_qualifier_matrix 
               find_default_qual 
               get_fcl_directory 
               get_gdml_directory 
@@ -72,6 +73,7 @@ our (@EXPORT, @setup_list);
 	      get_setfw_list
 	      get_root_path
               cetpkg_info_file 
+              match_qual
               setup_only_for_build 
               print_setup_noqual 
               print_setup_qual 
@@ -406,6 +408,107 @@ sub get_qualifier_list {
   close(QIN);
   ##print "found $irow qualifier rows\n";
   return ($qlen, @qlist);
+}
+
+sub get_qualifier_matrix {
+  my @params = @_;
+  my $efl = $params[1];
+  my $irow=0;
+  my $get_quals="false";
+  my $i;
+  my $line;
+  my @words;
+  my $qlen = 0;
+  my @qlist;
+  my %qhash = ();
+  open(QIN, "< $params[0]") or die "Couldn't open $params[0]";
+  while ( $line=<QIN> ) {
+    chop $line;
+    if ( index($line,"#") == 0 ) {
+    } elsif ( $line !~ /\w+/ ) {
+    } else {
+      ##print "get_qualifier_matrix: $line\n";
+      @words=split(/\s+/,$line);
+      if( $words[0] eq "end_qualifier_list" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "end_product_list" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "parent" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "no_fq_dir" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "incdir" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "fcldir" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "gdmldir" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "perllib" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "fwdir" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "libdir" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "bindir" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "defaultqual" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "only_for_build" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "define_pythonpath" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "product" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "table_fragment_begin" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "table_fragment_end" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "table_fragment_begin" ) {
+         $get_quals="false";
+      } elsif( $words[0] eq "qualifier" ) {
+         $get_quals="true";
+         ##print "get_qualifier_matrix qualifiers: $line\n";
+	 $qlen = $#words;
+	 for $i ( 0 .. $#words ) {
+	      if( $words[$i] eq "notes" ) {
+		 $qlen = $i - 1;
+	      }
+	 }
+	 if( $irow != 0 ) {
+            print $efl "echo ERROR: qualifier definition row must come before qualifier list\n";
+            print $efl "return 2\n";
+	    exit 2;
+	 }
+	 ##print "get_qualifier_matrix: there are $qlen product entries out of $#words\n";
+	 for $i ( 0 .. $qlen ) {
+	   $qlist[$i] = $words[$i];
+	 }
+	 $irow++;
+      } elsif( $get_quals eq "true" ) {
+	 #print $efl "get_qualifier_matrix: $params[0] qualifier $words[0] $#words\n";
+	 if( ! $qlen ) {
+            print $efl "echo ERROR: qualifier definition row must come before qualifier list\n";
+            print $efl "return 3\n";
+	    exit 3;
+	 }
+	 if ( $#words < $qlen ) {
+            print $efl "echo ERROR: only $#words qualifiers for $words[0] - need $qlen\n";
+            print $efl "return 4\n";
+	    exit 4;
+	 }
+	 for $i ( 1 .. $qlen ) {
+           #print $efl "get_qualifier_matrix: fill qhash of $qlist[$i] $words[0] with $words[$i]\n";
+	   $qhash{$qlist[$i]}->{sort_qual( $words[0] )} = sort_qual( $words[$i] );
+	 }
+	 $irow++;
+      } else {
+        ##print "get_qualifier_matrix: ignoring $line\n";
+      }
+    }
+  }
+  close(QIN);
+  #print "found $irow qualifier rows\n";
+  return ($qlen, %qhash);
 }
 
 sub find_default_qual {
@@ -854,6 +957,18 @@ sub compare_qual {
   return $retval;
 }
 
+sub match_qual {
+  my @params = @_;
+  my $q1 = $params[0];
+  my @ql2 = split(/:/,$params[1]);
+  my $retval = 0;
+  my $ii;
+  foreach $ii ( 0 .. $#ql2 ) {
+      if( $q1 eq $ql2[$ii] )  { $retval = 1; }
+  }
+  return $retval;
+}
+
 sub product_setup_loop {
   my @params = @_;
   my $sourcedir = $params[0];
@@ -873,10 +988,12 @@ sub product_setup_loop {
   #print $dfile "product_setup_loop debug info: mrb_quals is $setup_products::mrb_quals \n";
 
   my $qual;
+  # qualifier matrix
+  my ($ndeps2, %qhash) = get_qualifier_matrix( $pfile, $dfile );
   # logic problem here - we might not want the default qualifier
   # use MRB_QUALS if different than the default qualifier AND if present in the qualifier matrix
   my ($ndeps, @qlist) = get_qualifier_list( $pfile, $dfile );
-  foreach my $i ( 1 .. $#qlist ) {
+  foreach my $i ( 0 .. $#qlist ) {
     #print $dfile "product_setup_loop debug info: compare $qlist[$i][0] to $setup_products::mrb_quals \n";
     next if ( ! (compare_qual( $qlist[$i][0], $setup_products::mrb_quals ) ) );
     #print $dfile "product_setup_loop debug info: $qlist[$i][0] matches MRB_QUAL $setup_products::mrb_quals \n";
@@ -920,20 +1037,25 @@ sub product_setup_loop {
 
   if (!$compiler) {
     my @quals = split /:/, $qual;
-    if (grep /^(e|gcc)\d+$/, @quals) {
+    if ( $qhash{compiler}->{$qual} ) {
+       #print $dfile "product_setup_loop debug info: compiler entry for $qual is $qhash{compiler}->{$qual}\n";
+      $compiler = $qhash{"compiler"}->{$qual};
+    } elsif (grep /^(e|gcc)\d+$/, @quals) {
       $compiler = "gcc";
     } elsif (grep /^(i|icc)\d+$/, @quals) {
       $compiler = "icc";
+    } elsif (grep /^(c)\d+$/, @quals) {
+      $compiler = "clang";
     } else {
       $compiler = "cc"; # Native.
     }
   }
-  ###print $dfile "product_setup_loop debug info: compiler is $compiler\n";
+  ##print $dfile "product_setup_loop debug info: compiler is $compiler\n";
   ###print $dfile "product_setup_loop debug info: $compiler_table->{$compiler}->{CC} $compiler_table->{$compiler}->{CXX} $compiler_table->{$compiler}->{FC}\n";
 
   my ($nonly, @build_products) = get_only_for_build( $pfile, $dfile );
   my $onlyForBuild="";
-  ##print $dfile "product_setup_loop debug: get_only_for_build returns $nonly\n";
+  #print $dfile "product_setup_loop debug: get_only_for_build returns $nonly\n";
   foreach my $i ( 1 .. $nonly ) {
       $onlyForBuild=$build_products[$i][0].";".$onlyForBuild;
   }
@@ -957,75 +1079,57 @@ sub product_setup_loop {
   my ($plen, $plist_ref, $dqlen, $dqlist_ref) = get_product_list( $pfile, $dfile );
   my @plist=@$plist_ref;
   my @dqlist=@$dqlist_ref;
+  foreach my $i ( 0 .. $#plist ) {
+    #print $dfile "product_setup_loop debug info: product entry for $plist[$i][0] $plist[$i][1]\n";
+  }
   # now call setup with the correct version and qualifiers
-  foreach my $i ( 1 .. $#qlist ) {
-    #print $dfile "product_setup_loop debug info: compare $qlist[$i][0] to $qual \n";
-    next if ( ! (compare_qual( $qlist[$i][0], $qual ) ) );
-    #print $dfile "product_setup_loop debug info: $qlist[$i][0] matches $qual \n";
-    foreach my $j ( 1 .. $ndeps ) {
-      next if $qlist[0][$j] eq "compiler";
-      my $print_setup = "true";
+  # use the hash
+  foreach my $i ( 0 .. $#plist ) {
+    #print $dfile "product_setup_loop debug info: looking up $plist[$i][0] $qual\n";
+    my $print_setup = "true";
+    if (( $qhash{$plist[$i][0]}->{$qual} ) && ($qhash{$plist[$i][0]}->{$qual} ne '-')) {
+      #print $dfile "product_setup_loop debug info: found $qhash{$plist[$i][0]}->{$qual} for $plist[$i][0]\n";
       # are we building this product?
       foreach my $k ( 0 .. $#product_setup_loop::productnames ) {
-	if ( $product_setup_loop::productnames[$k] eq $qlist[0][$j] ) {
+	if ( $product_setup_loop::productnames[$k] eq $plist[$i][0] ) {
+           #print $dfile "product_setup_loop debug info: $plist[$i][0] is being built\n";
 	   $print_setup = "false";
 	}
       }
       # is this product already in the setup list?
       foreach my $k ( 0 .. $#setup_list ) {
-	if( $qlist[0][$j] eq $setup_list[$k] ) {
+	if( $plist[$i][0] eq $setup_list[$k] ) {
+          #print $dfile "product_setup_loop debug info: $plist[$i][0] is already in the setup list\n";
           $print_setup = "false";
 	}
       }
-      #print $dfile "product_setup_loop debug info: setup $qlist[0][$j] $qlist[$i][$j]? ${print_setup}\n";
+    } else {
+      #print $dfile "product_setup_loop debug info: skipping $plist[$i][0]\n";
+      $print_setup = "false";
+    }
+    #print $dfile "product_setup_loop debug info: setup $plist[$i][0] ? ${print_setup}\n";
       if ( $print_setup eq "true" ) {
-	push( @setup_list, $qlist[0][$j] );
-	my $piter = -1;
-	foreach my $k ( 0 .. $plen ) {
-	  if ( $plist[$k][0] eq $qlist[0][$j] ) {
-	    if ( $plist[$k][2] ) {
-	      #print $dfile "product_setup_loop debug info: $k $j $plist[$k][0] $plist[$k][2] matches $qlist[0][$j] \n";
-	      if( index($qual, $plist[$k][2]) >= 0 ) { $piter = $k; }
-	    } else {
-	      $piter = $k;
-	    }
-	  }
-	}
-	if ( $piter < 0 ) {
-	  my $errfl2 = $builddir."/error-".$product."-".$version;
-	  open(ERR2, "> $errfl2") or die "Couldn't open $errfl2";
-	  print ERR2 "\n";
-	  print ERR2 "unsetenv_ CETPKG_NAME\n";
-	  print ERR2 "unsetenv_ CETPKG_VERSION\n";
-	  print ERR2 "unsetenv_ CETPKG_DIR\n";
-	  print ERR2 "unsetenv_ CETPKG_QUAL\n";
-	  print ERR2 "unsetenv_ CETPKG_TYPE\n";
-	  print ERR2 "echo \"ERROR: no match to qualifier list for $qlist[0][$j]\"\n";
-	  print ERR2 "return 1\n";
-	  close(ERR2);
-	  print "$errfl2\n";
-	  exit 0;
-	}
+	push( @setup_list, $plist[$i][0] );
 	my $is_optional = "false";
+        my $depqual = $qhash{$plist[$i][0]}->{$qual};
 	# old and new style
-	if (( $plist[$piter][2]) && ( $plist[$piter][2] eq "optional" )) { $is_optional = "true"; }
-	if (( $plist[$piter][3]) && ( $plist[$piter][3] eq "optional" )) { $is_optional = "true"; }
+	if (( $plist[$i][2]) && ( $plist[$i][2] eq "optional" )) { $is_optional = "true"; }
+	if (( $plist[$i][3]) && ( $plist[$i][3] eq "optional" )) { $is_optional = "true"; }
 	# are we going to build this package?
 	my $no_package_setup = "false";
 	for my $ip ( 0 .. $#setup_products::package_list ) {
-	  if ( $qlist[0][$j] eq $setup_products::package_list[$ip] ) { $no_package_setup = "true"; }
+	  if ( $plist[$i][0] eq $setup_products::package_list[$ip] ) { $no_package_setup = "true"; }
 	}
-	if ( $qlist[$i][$j] eq "-" ) {
+	if ( $depqual eq "-" ) {
 	} elsif ( $no_package_setup eq "true" ) {
-	} elsif ( $qlist[$i][$j] eq "-nq-" ) {
-          print_setup_noqual( $qlist[0][$j], $plist[$piter][1], $is_optional, $tfile, $dfile );
-	} elsif ( $qlist[$i][$j] eq "-b-" ) {
-          print_setup_noqual( $qlist[0][$j], $plist[$piter][1], $is_optional, $tfile, $dfile );
+	} elsif ( $depqual eq "-nq-" ) {
+          print_setup_noqual( $plist[$i][0], $plist[$i][1], $is_optional, $tfile, $dfile );
+	} elsif ( $depqual eq "-b-" ) {
+          print_setup_noqual( $plist[$i][0], $plist[$i][1], $is_optional, $tfile, $dfile );
 	} else {
-          print_setup_qual( $qlist[0][$j], $plist[$piter][1], $qlist[$i][$j], $is_optional, $tfile, $dfile );
+          print_setup_qual( $plist[$i][0], $plist[$i][1], $depqual, $is_optional, $tfile, $dfile );
 	}
-      }
-    }
+      } # print_setup = true
   }
 
   return ($product, $version);
