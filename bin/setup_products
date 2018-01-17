@@ -223,8 +223,21 @@ for my $i ( 0 .. $#setup_products::package_list ) {
     }
   }
   if ( $match_mrb eq "false" ) {
-     print $dfh "ERROR: failed to find a march for $setup_products::mrb_quals in $productnames[$i]\n";
-     exit 1;
+    my $errfl3 = "problem_report";
+    open(ERR3, "> $errfl3") or die "Couldn't open $errfl3";
+    print ERR3 "\n";
+    print ERR3 "unsetenv_ CETPKG_NAME\n";
+    print ERR3 "unsetenv_ CETPKG_VERSION\n";
+    print ERR3 "unsetenv_ CETPKG_QUAL\n";
+    print ERR3 "unsetenv_ CETPKG_TYPE\n";
+    print ERR3 "unsetenv_ CETPKG_CC\n";
+    print ERR3 "unsetenv_ CETPKG_CXX\n";
+    print ERR3 "unsetenv_ CETPKG_FC\n";
+    print ERR3 "echo \"ERROR: failed to find a match for $setup_products::mrb_quals in $productnames[$i]/ups/product_deps\"\n";
+    print ERR3 "return 1\n";
+    close(ERR3);
+    print "$errfl3\n";
+    exit 0;
   }
 }
 print $tfh "set_ setup_fail=\"false\"\n"; 
