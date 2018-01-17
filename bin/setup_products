@@ -49,7 +49,7 @@ for my $i ( 2 .. $#ARGV ) {
 my $mrb_project = $ENV{MRB_PROJECT};
 my $mrb_project_version = $ENV{MRB_PROJECT_VERSION};
 $setup_products::mrb_quals = sort_qual ( $ENV{MRB_QUALS} );
-##print $dfh "setup_products debug info: mrb_quals is $setup_products::mrb_quals \n";
+#print $dfh "setup_products debug info: mrb_quals is $setup_products::mrb_quals \n";
 
 # determine the compiler based on mrb_quals
 my $default_fc = ( $^O eq "darwin" ) ? "-" : "gfortran";
@@ -60,6 +60,8 @@ if (!$compiler) {
     $compiler = "gcc";
   } elsif (grep /^(i|icc)\d+$/, @quals) {
     $compiler = "icc";
+  } elsif (grep /^(c)\d+$/, @quals) {
+      $compiler = "clang";
   } else {
     $compiler = "cc"; # Native.
   }
@@ -69,6 +71,7 @@ my $compiler_table =
    cc => { CC => "cc", CXX => "c++", FC => $default_fc },
    gcc => { CC => "gcc", CXX => "g++", FC => "gfortran" },
    icc => { CC => "icc", CXX => "icpc", FC => "ifort" },
+   clang => { CC => "clang", CXX => "clang++", FC => "gfortran" },
   };
 
 # determine build type from MRB_QUALS
@@ -201,6 +204,41 @@ for my $i ( 0 .. $#setup_products::package_list ) {
   $cetbver[$i] = find_cetbuildtools( $pfile );
   ##print $dfh "setup_products debug info: cetbuildtools $cetbver[$i]\n";
   $use_cetbver = compare_versions( $use_cetbver, $cetbver[$i] );
+  # we expect to find an approximate match to mrb_quals in the product_deps
+  my @mquals = split /:/, $setup_products::mrb_quals;
+  my ($ndeps, @qlist) = get_qualifier_list( $pfile, $dfh );
+  my $match_mrb = "false";
+  foreach my $j ( 0 .. $#qlist ) {
+     #print $dfh "setup_products debug info: compare $qlist[$j][0] to $setup_products::mrb_quals\n";
+    my $piter=-1;
+    foreach my $k ( 0 .. $#mquals ) {
+       if ( match_qual( $mquals[$k],$qlist[$j][0] ) ) { 
+         $piter++;
+       }
+    }
+    #print $dfh "setup_products debug info: found $piter of $#mquals matches\n"; 
+    if ( $piter == $#mquals ) {
+    #print $dfh "setup_products debug info: $qlist[$j][0] matches MRB_QUAL $setup_products::mrb_quals \n";
+    $match_mrb="true";
+    }
+  }
+  if ( $match_mrb eq "false" ) {
+    my $errfl3 = "problem_report";
+    open(ERR3, "> $errfl3") or die "Couldn't open $errfl3";
+    print ERR3 "\n";
+    print ERR3 "unsetenv_ CETPKG_NAME\n";
+    print ERR3 "unsetenv_ CETPKG_VERSION\n";
+    print ERR3 "unsetenv_ CETPKG_QUAL\n";
+    print ERR3 "unsetenv_ CETPKG_TYPE\n";
+    print ERR3 "unsetenv_ CETPKG_CC\n";
+    print ERR3 "unsetenv_ CETPKG_CXX\n";
+    print ERR3 "unsetenv_ CETPKG_FC\n";
+    print ERR3 "echo \"ERROR: failed to find a match for $setup_products::mrb_quals in $productnames[$i]/ups/product_deps\"\n";
+    print ERR3 "return 1\n";
+    close(ERR3);
+    print "$errfl3\n";
+    exit 0;
+  }
 }
 print $tfh "set_ setup_fail=\"false\"\n"; 
 print $tfh "setup -B cetbuildtools $use_cetbver\n";

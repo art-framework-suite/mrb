@@ -1033,12 +1033,13 @@ sub product_setup_loop {
      cc => { CC => "cc", CXX => "c++", FC => $default_fc },
      gcc => { CC => "gcc", CXX => "g++", FC => "gfortran" },
      icc => { CC => "icc", CXX => "icpc", FC => "ifort" },
+     clang => { CC => "clang", CXX => "clang++", FC => "gfortran" },
     };
 
   if (!$compiler) {
     my @quals = split /:/, $qual;
     if ( $qhash{compiler}->{$qual} ) {
-       #print $dfile "product_setup_loop debug info: compiler entry for $qual is $qhash{compiler}->{$qual}\n";
+      #print $dfile "product_setup_loop debug info: compiler entry for $qual is $qhash{compiler}->{$qual}\n";
       $compiler = $qhash{"compiler"}->{$qual};
     } elsif (grep /^(e|gcc)\d+$/, @quals) {
       $compiler = "gcc";
@@ -1050,7 +1051,7 @@ sub product_setup_loop {
       $compiler = "cc"; # Native.
     }
   }
-  ##print $dfile "product_setup_loop debug info: compiler is $compiler\n";
+  #print $dfile "product_setup_loop debug info: compiler is $compiler\n";
   ###print $dfile "product_setup_loop debug info: $compiler_table->{$compiler}->{CC} $compiler_table->{$compiler}->{CXX} $compiler_table->{$compiler}->{FC}\n";
 
   my ($nonly, @build_products) = get_only_for_build( $pfile, $dfile );
@@ -1079,9 +1080,9 @@ sub product_setup_loop {
   my ($plen, $plist_ref, $dqlen, $dqlist_ref) = get_product_list( $pfile, $dfile );
   my @plist=@$plist_ref;
   my @dqlist=@$dqlist_ref;
-  foreach my $i ( 0 .. $#plist ) {
+  #foreach my $i ( 0 .. $#plist ) {
     #print $dfile "product_setup_loop debug info: product entry for $plist[$i][0] $plist[$i][1]\n";
-  }
+  #}
   # now call setup with the correct version and qualifiers
   # use the hash
   foreach my $i ( 0 .. $#plist ) {
@@ -1103,6 +1104,15 @@ sub product_setup_loop {
           $print_setup = "false";
 	}
       }
+      # does this product need an extra qualifier match?
+      if ( $plist[$i][2] ) {
+        #print $dfile "product_setup_loop debug info: check $plist[$i][2] against $qual for $plist[$i][0]\n";
+        if ( match_qual( $plist[$i][2], $qual ) ) {
+          #print $dfile "product_setup_loop debug info: will setu $plist[$i][0] $plist[$i][1]\n";
+        } else {
+          $print_setup = "false";
+        }
+      }
     } else {
       #print $dfile "product_setup_loop debug info: skipping $plist[$i][0]\n";
       $print_setup = "false";
@@ -1120,6 +1130,7 @@ sub product_setup_loop {
 	for my $ip ( 0 .. $#setup_products::package_list ) {
 	  if ( $plist[$i][0] eq $setup_products::package_list[$ip] ) { $no_package_setup = "true"; }
 	}
+        # do the setups
 	if ( $depqual eq "-" ) {
 	} elsif ( $no_package_setup eq "true" ) {
 	} elsif ( $depqual eq "-nq-" ) {
@@ -1128,7 +1139,7 @@ sub product_setup_loop {
           print_setup_noqual( $plist[$i][0], $plist[$i][1], $is_optional, $tfile, $dfile );
 	} else {
           print_setup_qual( $plist[$i][0], $plist[$i][1], $depqual, $is_optional, $tfile, $dfile );
-	}
+        }
       } # print_setup = true
   }
 
