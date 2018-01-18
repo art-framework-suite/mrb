@@ -43,7 +43,8 @@ for $i ( 2 .. $#ARGV ) {
 
 # use this file for debugging
 $diagfl = $builddir."/diag_report";
-open(DIAG, ">> $diagfl") or die "Couldn't open $diagfl";
+#open(DIAG, ">> $diagfl") or die "Couldn't open $diagfl";
+open(my $dfh, ">> $diagfl") or die "Couldn't open $diagfl";
 
 $inputdir = $sourcedir."/ups";
 
@@ -51,47 +52,47 @@ my $mrb_project = $ENV{MRB_PROJECT};
 my $mrb_project_version = $ENV{MRB_PROJECT_VERSION};
 my $mrb_quals = $ENV{MRB_QUALS};
 my $tmpfl = $builddir."/".$mrb_project."-".$mrb_project_version."-defs";
-##print DIAG "opening $tmpfl for $mrb_project $mrb_project_version\n";
+##print $dfh "opening $tmpfl for $mrb_project $mrb_project_version\n";
 open(TSET, "+> $tmpfl") or die "Couldn't open $tmpfl";
 
-##print DIAG "setup_products debug info: cmakefile  is $cmakefile\n";
+##print $dfh "setup_products debug info: cmakefile  is $cmakefile\n";
 my @uname = uname();
-##print DIAG "uname returns $uname[0] $uname[1] $uname[2]\n";
+##print $dfh "uname returns $uname[0] $uname[1] $uname[2]\n";
 my $library_path_name = LD_LIBRARY_PATH;
 if ( $uname[0] eq "Darwin" ) {
   $library_path_name = DYLD_LIBRARY_PATH;
 }
 my $have_library_path=$ENV{${library_path_name}};
-##print DIAG "${library_path_name}: ${have_library_path}\n";
+##print $dfh "${library_path_name}: ${have_library_path}\n";
 
 
 # have to find the list of packages to traverse
 my $cmakefile=$sourcedir."/CMakeLists.txt";
-my @package_list = get_package_list( $cmakefile, DIAG );
-##print DIAG "DIAGNOSTICS: packages to check: @package_list\n";
+my @package_list = get_package_list( $cmakefile, $dfh );
+##print $dfh "DIAGNOSTICS: packages to check: @package_list\n";
 if ( $#package_list < 0 ) {
-  print DIAG "DIAGNOSTICS: there are no packages in $sourcedir\n";
-  print DIAG "DIAGNOSTICS: nothing to build\n";
+  print $dfh "DIAGNOSTICS: there are no packages in $sourcedir\n";
+  print $dfh "DIAGNOSTICS: nothing to build\n";
   print "$tmpfl\n";
   exit 0;
 }
 for $i ( 0 .. $#package_list ) {
   my $pkg=$package_list[$i];
   my $pfile=$sourcedir."/".$pkg."/ups/product_deps";
-  ##print DIAG "checking $pfile for $pkg \n";
-  ($productnames[$i], $productversn[$i]) = get_product_name( $pfile, DIAG );
-  $productdefaultquals[$i] = find_default_qual( $pfile );
-  ##print DIAG "DIAGNOSTICS: $productdefaultquals[$i] for $productnames[$i]\n";
+  ##print $dfh "checking $pfile for $pkg \n";
+  ($productnames[$i], $productversn[$i]) = get_product_name( $pfile, $dfh );
+  $productdefaultquals[$i] = find_default_qual( $pfile, $dfh );
+  ##print $dfh "DIAGNOSTICS: $productdefaultquals[$i] for $productnames[$i]\n";
 }
 
 # unsetup if necessary
 print TSET "# unsetup products we are building\n";
-##print DIAG "DIAGNOSTICS: packages to check: @package_list\n";
+##print $dfh "DIAGNOSTICS: packages to check: @package_list\n";
 for $i ( 0 .. $#package_list ) {
   # call unsetup if the $productnames[$i] has been setup
   my $psetup = "SETUP_".uc($productnames[$i]);
   my $is_setup=$ENV{$psetup};
-  ##print DIAG "DIAGNOSTICS: $psetup for $productnames[$i] is $is_setup\n";
+  ##print $dfh "DIAGNOSTICS: $psetup for $productnames[$i] is $is_setup\n";
   if ( $is_setup ) {
     print TSET "unsetup -j $productnames[$i]\n";
   }
@@ -109,7 +110,7 @@ my $have_root_path = $ENV{ROOT_INCLUDE_PATH};
 for $i ( 0 .. $#package_list ) {
   my $pkg=$package_list[$i];
   my $pfile=$sourcedir."/".$pkg."/ups/product_deps";
-  ##print DIAG "checking $pfile for $pkg \n";
+  ##print $dfh "checking $pfile for $pkg \n";
   my $product = $productnames[$i];
   my $version = $productversn[$i];
   my $qual    = $productdefaultquals[$i]; 
@@ -121,9 +122,9 @@ for $i ( 0 .. $#package_list ) {
   my ($fwlen, $fwlist_ref, $fwdir_ref) = get_setfw_list( $pfile );
   my @fwlist=@$fwlist_ref;
   my @fwdirs=@$fwdir_ref;
-  ##print DIAG "$pkg perl directory: $perl_directory \n";
+  ##print $dfh "$pkg perl directory: $perl_directory \n";
   my $root_path = get_root_path( $pfile, $product );
-  ##print DIAG "$pkg root path: $root_path\n";
+  ##print $dfh "$pkg root path: $root_path\n";
   # pretend this is a product
   my $product_uc = uc($product);
   print TSET "setenv  ${product_uc}_VERSION $version\n";
@@ -148,7 +149,7 @@ for $i ( 0 .. $#package_list ) {
 ##    print TSET "setenv  DYLD_LIBRARY_PATH \'${build_dir}/${product}/lib\'\n";
 ##  }
   if ( "${fcl_directory}" ne "none" ) {
-    ##print DIAG "$product: add ---${fcl_directory}---\n";
+    ##print $dfh "$product: add ---${fcl_directory}---\n";
     if ( ${have_fclpath} ne '' ) {
       print TSET "setenv  FHICL_FILE_PATH \`dropit -esf -p \${FHICL_FILE_PATH} \'${build_dir}/${fcl_directory}\'\`\n";
     } else {
@@ -165,13 +166,13 @@ for $i ( 0 .. $#package_list ) {
     }
   }
   if ( "${perl_directory}" ne "none" ) {
-    ##print DIAG "pkg have perllib: ${have_perllib}\n";
+    ##print $dfh "pkg have perllib: ${have_perllib}\n";
     if ( "${have_perllib}" ne '' ) {
-      ##print DIAG "PERL5LIB is already set\n";
+      ##print $dfh "PERL5LIB is already set\n";
       print TSET "setenv  PERL5LIB \`dropit -esf -p \${PERL5LIB} \'${build_dir}/${perl_directory}\'\`\n";
     } else {
       $have_perllib = true;
-      ##print DIAG "PERL5LIB is not yet set\n";
+      ##print $dfh "PERL5LIB is not yet set\n";
       print TSET "setenv  PERL5LIB \'${build_dir}/${perl_directory}\'\n";
     }
   }
@@ -185,7 +186,7 @@ for $i ( 0 .. $#package_list ) {
   }
   foreach $i ( 0 .. $fwlen ) {
     if( $fwlist[$i]  eq  "ERROR" ) {
-      print DIAG "define_local: error in set_fwdir entry\n";
+      print $dfh "define_local: error in set_fwdir entry\n";
     } else {
       if ( ${have_fw_path} ne '' ) {
 	print TSET "setenv  FW_SEARCH_PATH \`dropit -esf -p \${FW_SEARCH_PATH} \'${source_dir}/${product}$fwlist[$i]\'\`\n";
@@ -212,7 +213,7 @@ print TSET "setenv  FHICL_FILE_PATH .:\${FHICL_FILE_PATH}\n";
 
 # cleanup
 close(TSET);
-close(DIAG);
+close($dfh);
 print "$tmpfl\n";
 
 
