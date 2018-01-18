@@ -75,7 +75,7 @@ source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
 # now run cmake
 mkdir -p ${pkgdir}/${pkgver}/build
 cd ${pkgdir}/${pkgver}/build
-setup cmake v3_1_2
+setup cmake v3_9_6
 cmake -DCMAKE_INSTALL_PREFIX=${product_dir} ${pkgdir}/${pkgver}/source/mrb-${pkgver}
 make install
 make package
