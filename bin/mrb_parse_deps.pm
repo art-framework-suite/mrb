@@ -208,7 +208,7 @@ sub get_parent_info {
       } elsif( $words[0] eq "defaultqual" ) {
 	 $dq=$words[1];
       } elsif( $words[0] eq "no_fq_dir" ) {
-          $fq = "";
+          $fq = "false";
       } else {
         ##print "get_parent_info: ignoring $line\n";
       }
@@ -325,7 +325,7 @@ sub get_qualifier_list {
     if ( index($line,"#") == 0 ) {
     } elsif ( $line !~ /\w+/ ) {
     } else {
-      ##print "get_qualifier_list: $line\n";
+      #print $efl "get_qualifier_list: $line\n";
       @words=split(/\s+/,$line);
       if( $words[0] eq "end_qualifier_list" ) {
          $get_quals="false";
@@ -406,7 +406,7 @@ sub get_qualifier_list {
     }
   }
   close(QIN);
-  ##print "found $irow qualifier rows\n";
+  #print $efl "get_qualifier_list: found $irow qualifier rows\n";
   return ($qlen, @qlist);
 }
 
@@ -513,6 +513,7 @@ sub get_qualifier_matrix {
 
 sub find_default_qual {
   my @params = @_;
+  my $dfile = $params[1];
   my $defq = "";
   my $line;
   open(PIN, "< $params[0]") or die "Couldn't open $params[0]";
@@ -528,8 +529,8 @@ sub find_default_qual {
     }
   }
   close(PIN);
-  ##print "defining library directory $libdir\n";
-  return ($find_default_qual::defq);
+  #print $dfile "default qualifier is $defq\n";
+  return ($defq);
 }
 
 sub get_fcl_directory {
@@ -984,7 +985,7 @@ sub product_setup_loop {
   unless ( -e $pkgdir or mkdir $pkgdir ) { die "Couldn't create $pkgdir"; }
 
   my ($product, $version, $default_ver, $default_qual, $have_fq) = get_parent_info( $pfile );
-  #print $dfile "product_setup_loop debug info: $product $version $default_ver $default_qual\n";
+  #print $dfile "product_setup_loop debug info: $product $version $default_ver $default_qual $have_fq\n";
   #print $dfile "product_setup_loop debug info: mrb_quals is $setup_products::mrb_quals \n";
 
   my $qual;
@@ -1000,6 +1001,7 @@ sub product_setup_loop {
     $qual = $setup_products::mrb_quals;
   }
   if ( $simple eq "true" ) { $qual = "-nq-"; }
+  if ( ( $default_qual ) && ( $default_qual eq "-nq-" ) ) { $qual = "-nq-"; }
   if ( $qual ) { 
     #print $dfile "product_setup_loop debug info: qual is defined as $qual\n"; 
   } else {
