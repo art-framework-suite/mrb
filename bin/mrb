@@ -39,7 +39,7 @@ export mrb_command=${mrb_bin}/mrb
 
 # Define the short list of commands
 shortComList="(newDev | gitCheckout | svnCheckout | mrbsetenv | build | install | test | makePackage | mrbslp | 
-           zapBuild | newProduct | changelog | updateDepsCM | updateDepsPV | checkDeps | pullDeps | makeDeps )"
+           zapBuild | newProduct | changelog | changeQual | updateDepsCM | updateDepsPV | checkDeps | pullDeps | makeDeps )"
 #  Adams's list:  | bumpVersion | updateDeps)"
 
 # Simple help if no argumets
@@ -94,6 +94,7 @@ Usage ${mrb_command} $shortComList [-h for help]"
    changelog (c)               Display a changelog for a package
    updateDepsCM (uc)           Update the master CMakeLists.txt file
    updateDepsPV (uv)           Update a product version in product_deps
+   changeQual (cq)             Change a single qualifer in product_deps (e.g. s52 to s55)
    updateSource                Update all svn or git code in MRB_SOURCE
    makeDeps (md)               Build or update a header level dependency list
    checkDeps (cd)              Check for missing build packages
@@ -181,6 +182,10 @@ EOF
 
    # Update product_deps and CMakeLists.txt to latest dependencies (calls &l=bin/updateDeps.sh&)
     "updateDepsPV" | "uv" ) ${mrb_bin}/updateDepsPV.sh $*
+        ;;
+
+   # Update product_deps to latest dependencies (calls &l=bin/changeQual.sh&)
+    "changeQual" | "cq" ) ${mrb_bin}/changeQual.sh $*
         ;;
 
    # Update svn and git code
