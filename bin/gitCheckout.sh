@@ -51,7 +51,7 @@ run_git_command() {
 	if [ "$gitCommandRO" != "none" ]
 	then
 	    larret=`ssh p-${rbase}@cdcvs.fnal.gov "echo Hi" 2>&1`
-	    is_bad=`echo $larret | egrep "Permission|authentication" | wc -l`
+	    is_bad=`echo $larret | egrep "Permission|authentication" | grep -v "fake authentication" | wc -l`
 	    if [ $is_bad -gt 0 ]
 	    then
               echo ""
