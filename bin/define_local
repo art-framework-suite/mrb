@@ -63,6 +63,7 @@ if ( $uname[0] eq "Darwin" ) {
   $library_path_name = DYLD_LIBRARY_PATH;
 }
 my $have_library_path=$ENV{${library_path_name}};
+my $have_plugin_path=$ENV{CET_PLUGIN_PATH};
 ##print $dfh "${library_path_name}: ${have_library_path}\n";
 
 
@@ -143,11 +144,12 @@ for $i ( 0 .. $#package_list ) {
     $have_library_path = true;
     print TSET "setenv  ${library_path_name} \'${build_dir}/${product}/lib\'\n";
   }
-##  if ( $ENV{DYLD_LIBRARY_PATH} ne '' ) {
-##    print TSET "setenv  DYLD_LIBRARY_PATH \`dropit -esf -p \${DYLD_LIBRARY_PATH} \'${build_dir}/${product}/lib\'\`\n";
-##  } else {
-##    print TSET "setenv  DYLD_LIBRARY_PATH \'${build_dir}/${product}/lib\'\n";
-##  }
+  if ( $have_plugin_path) {
+    print TSET "setenv CET_PLUGIN_PATH \`dropit -esf -p \${CET_PLUGIN_PATH} \'${build_dir}/${product}/lib\'\`\n";
+  } else {
+    print TSET "setenv CET_PLUGIN_PATH \'${build_dir}/${product}/lib\'\n";
+    $have_plugin_path = true;
+  }
   if ( "${fcl_directory}" ne "none" ) {
     ##print $dfh "$product: add ---${fcl_directory}---\n";
     if ( ${have_fclpath} ne '' ) {
