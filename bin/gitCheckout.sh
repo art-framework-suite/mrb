@@ -31,7 +31,7 @@ Usage: $fullCom [-r] [-d destination_name] [-b branch] [-t tag] <gitRepositoryNa
      larsoft_suite: 
        "larcore lardata larevt larsim larreco larana larexamples lareventdisplay larpandora larwirecell larsoft"
      larsoftobj_suite: 
-       "larcoreobj lardataobj larcorealg larsoftobj"
+       "larcoreobj lardataobj larcorealg lardataalg larsoftobj"
    
 
 EOF
@@ -215,7 +215,7 @@ larsoft_list="larcore lardata larevt larsim larreco larana larexamples lareventd
 art_list="cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io art gallery critic"
 critic_list="cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io art gallery critic"
 gallery_list="cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io gallery"
-larsoftobj_list="larcoreobj lardataobj larcorealg larsoftobj"
+larsoftobj_list="larcoreobj lardataobj larcorealg lardataalg larsoftobj"
 if [ "${REP}" = "larsoft_suite" ]
 then
     if [ "x${useTag}" != "x" ]
