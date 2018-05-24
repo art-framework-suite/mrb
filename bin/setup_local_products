@@ -104,6 +104,7 @@ tnotnull PATH   && setenv PATH   `dropit -p $PATH   $MRB_BUILDDIR`
 # Remove build area LIBRARY_PATH
 tnotnull LD_LIBRARY_PATH   && setenv LD_LIBRARY_PATH   `dropit -p $LD_LIBRARY_PATH   $MRB_BUILDDIR`
 tnotnull DYLD_LIBRARY_PATH && setenv DYLD_LIBRARY_PATH `dropit -p $DYLD_LIBRARY_PATH $MRB_BUILDDIR`
+tnotnull CET_PLUGIN_PATH && setenv CET_PLUGIN_PATH `dropit -p $CET_PLUGIN_PATH $MRB_BUILDDIR`
 
 echo ----------- this block should be empty ------------------
 

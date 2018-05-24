@@ -269,6 +269,7 @@ if ( $old_build_dir ) {
   print $tfh "setenv  PATH \`dropit -p \${PATH} \'${old_build_dir}\'`\n";
   print $tfh "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${old_build_dir}\'`\n";
   print $tfh "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${old_build_dir}\'\`\n";
+  print $tfh "setenv  CET_PLUGIN_PATH \`dropit -p \${CET_PLUGIN_PATH} \'${old_build_dir}\'\`\n";
 }
 ##print $dfh "setup_products debug info: product names @productnames\n";
 ##print $dfh "setup_products debug info: product versions @productversn\n";
