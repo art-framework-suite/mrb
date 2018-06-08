@@ -32,6 +32,8 @@ Usage: $fullCom [-r] [-d destination_name] [-b branch] [-t tag] <gitRepositoryNa
        "larcore lardata larevt larsim larreco larana larexamples lareventdisplay larpandora larwirecell larsoft"
      larsoftobj_suite: 
        "larcoreobj lardataobj larcorealg lardataalg larsoftobj"
+     uboone_suite:
+       "uboonecode ubutil uboonedata ublite ubana ubreco ubsim ubevt ubraw ubcrt ubcore ubcv ubobj ubxsec"
    
 
 EOF
@@ -216,6 +218,7 @@ art_list="cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io ar
 critic_list="cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io art gallery critic"
 gallery_list="cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io gallery"
 larsoftobj_list="larcoreobj lardataobj larcorealg lardataalg larsoftobj"
+uboone_list="uboonecode ubutil uboonedata ublite ubana ubreco ubsim ubevt ubraw ubcrt ubcore ubcv ubobj ubxsec"
 if [ "${REP}" = "larsoft_suite" ]
 then
     if [ "x${useTag}" != "x" ]
@@ -321,6 +324,23 @@ then
        gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
        gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
        clone_init_cmake $code
+    done
+elif [ "${REP}" = "uboone_suite" ]
+then
+    if [ "x${useTag}" != "x" ]
+    then
+       already_set=`echo ${useTag} | grep UBOONE_SUITE | wc -l`
+       if [ $already_set -eq 0 ]
+       then
+	 useTag=UBOONE_SUITE_${useTag}
+	 echo "INFO: git clone will use tag ${useTag} for the larsoft suite"
+       fi
+    fi
+    for code in ${uboone_list}
+    do
+        gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
+	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
+	clone_init_cmake $code
     done
 elif [ "${REP}" == "artdaq_core" ]
 then
