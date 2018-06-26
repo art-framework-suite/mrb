@@ -33,7 +33,7 @@ Usage: $fullCom [-r] [-d destination_name] [-b branch] [-t tag] <gitRepositoryNa
      larsoftobj_suite: 
        "larcoreobj lardataobj larcorealg lardataalg larsoftobj"
      uboone_suite:
-       "uboonecode ubutil uboonedata ublite ubana ubreco ubsim ubevt ubraw ubcrt ubcore ubcv ubobj ubxsec"
+       "uboonecode ubutil uboonedata ublite ubana ubreco ubsim ubevt ubraw ubcrt ubcore ubcv ubobj"
    
 
 EOF
@@ -218,7 +218,7 @@ art_list="cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io ar
 critic_list="cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io art gallery critic"
 gallery_list="cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io gallery"
 larsoftobj_list="larcoreobj lardataobj larcorealg lardataalg larsoftobj"
-uboone_list="uboonecode ubutil uboonedata ublite ubana ubreco ubsim ubevt ubraw ubcrt ubcore ubcv ubobj ubxsec"
+uboone_list="uboonecode ubutil uboonedata ublite ubana ubreco ubsim ubevt ubraw ubcrt ubcore ubcv ubobj"
 if [ "${REP}" = "larsoft_suite" ]
 then
     if [ "x${useTag}" != "x" ]
