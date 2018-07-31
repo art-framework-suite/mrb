@@ -29,7 +29,7 @@ Usage: $fullCom [-r] [-d destination_name] [-b branch] [-t tag] <gitRepositoryNa
      gallery_suite: 
        "cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io gallery"
      larsoft_suite: 
-       "larcore lardata larevt larsim larreco larana larexamples lareventdisplay larpandora larwirecell larsoft"
+       "larcore lardata larevt larsim larg4 larreco larana larexamples lareventdisplay larpandora larwirecell larsoft"
      larsoftobj_suite: 
        "larcoreobj lardataobj larcorealg lardataalg larsoftobj"
      uboone_suite:
@@ -213,7 +213,7 @@ fi
 
 # Construct the git clone command
 # Special cases for larsoft
-larsoft_list="larcore lardata larevt larsim larreco larana larexamples lareventdisplay larpandora larwirecell larsoft"
+larsoft_list="larcore lardata larevt larsim larg4 larreco larana larexamples lareventdisplay larpandora larwirecell larsoft"
 art_list="cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io art gallery critic"
 critic_list="cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io art gallery critic"
 gallery_list="cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io gallery"
