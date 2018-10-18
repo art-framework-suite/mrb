@@ -82,6 +82,24 @@ Usage: $fullCom [-r] [-d destination_name] [-b branch] [-t tag] <gitRepositoryNa
 EOF
 }
 
+function short_usage() {
+  cat 1>&2 << EOF
+Usage: $fullCom [-r] [-d destination_name] [-b branch] [-t tag] <gitRepositoryName>
+  Clone a Git Repository to your development area. You should be in the srcs directory.
+  By default, you will be on the HEAD.
+  Options:
+
+     -r                    = clone a read-only copy
+     
+     -d <destination_name> = use this name instead of the default repository name
+    
+     -b <branch>           = git clone, and then git checkout this branch
+     
+     -t <tag>              = git clone, and then git checkout this tag
+
+EOF
+}
+
 run_git_command() {
     # First check permissions
     rbase=${1}
@@ -114,6 +132,26 @@ run_git_command() {
     if [ $? -ne 0 ];
     then
 	echo 'ERROR: The git command failed!'
+	exit 1
+    fi
+
+    # check ups/product_deps
+    if [ -z ${destinationDir} ]; then
+        parent=`grep ^parent ${REP}/ups/product_deps | awk '{print $2}'`
+	repodir=${REP}
+    else
+        parent=`grep ^parent ${destinationDir}/ups/product_deps | awk '{print $2}'`
+	repodir=${destinationDir}
+    fi
+    if [[ ${repodir} != ${parent} ]]; then
+        echo
+        echo "ERROR: Product name ${parent} is inconsistent with checked out directory ${repodir}"
+	echo "       Please use the following instructions to correct the problem:"
+	echo "            rm -rf ${repodir}"
+	echo "            mrb uc"
+	echo "            run mrb g with the appropriate flags"
+	echo
+	short_usage
 	exit 1
     fi
 }
