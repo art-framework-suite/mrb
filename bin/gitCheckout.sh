@@ -7,6 +7,49 @@ thisComFull=$(basename $0)
 thisCom=${thisComFull%.*}
 fullCom="${mrb_command} $thisCom"
 
+# map special cases using associative arrays
+declare -A gitToDest
+declare -A destToGit
+declare -A sshNameList
+gitToDest=( ["artdaq-core"]="artdaq_core" \
+            ["lariat-online-lariatfragments"]="lariatfragments" \
+	    ["lardbt-lariatutil"]="lariatutil" \
+	    ["fhicl-cpp"]="fhiclcpp" \
+	    ["lbne-raw-data"]="lbne_raw_data" \
+	    ["artdaq-core-demo"]="artdaq_core_demo" \
+	    ["artdaq-demo"]="artdaq_demo" \
+	    ["artdaq-utilities"]="artdaq_utilities" \
+	    ["artdaq-utilities-ganglia-plugin"]="artdaq_ganglia_plugin" \
+	    ["artdaq-utilities-epics-plugin"]="artdaq_epics_plugin" \
+	    ["artdaq-utilities-database"]="artdaq_database" \
+	    ["artdaq-utilities-daqinterface"]="artdaq_daqinterface" \
+	    ["artdaq-utilities-mpich-plugin"]="artdaq_mpich_plugin" \
+	    ["mf-extensions-git"]="artdaq_mfextensions" )
+destToGit=( ["artdaq_core"]="artdaq-core" \
+            ["lariatfragments"]="lariat-online-lariatfragments" \
+	    ["lariatutil"]="lardbt-lariatutil" \
+	    ["fhiclcpp"]="fhicl-cpp" \
+	    ["lbne_raw_data"]="lbne-raw-data" \
+	    ["artdaq_core_demo"]="artdaq-core-demo" \
+	    ["artdaq_demo"]="artdaq-demo" \
+	    ["artdaq_utilities"]="artdaq-utilities" \
+	    ["artdaq_ganglia_plugin"]="artdaq-utilities-ganglia-plugin" \
+	    ["artdaq_epics_plugin"]="artdaq-utilities-epics-plugin" \
+	    ["artdaq_database"]="artdaq-utilities-database" \
+	    ["artdaq_daqinterface"]="artdaq-utilities-daqinterface" \
+	    ["artdaq_mpich_plugin"]="artdaq-utilities-mpich-plugin" \
+	    ["artdaq_mfextensions"]="mf-extensions-git" )
+sshNameList=( ["artdaq_core"]="artdaq" \
+              ["lariatfragments"]="lariat-online" \
+	      ["lariatutil"]="lardbt" \
+	      ["fhiclcpp"]="fhicl-cpp" \
+	      ["artdaq_ganglia_plugin"]="artdaq-utilities" \
+	      ["artdaq_epics_plugin"]="artdaq-utilities" \
+	      ["artdaq_database"]="artdaq-utilities" \
+	      ["artdaq_daqinterface"]="artdaq-utilities" \
+	      ["artdaq_mpich_plugin"]="artdaq-utilities" \
+	      ["artdaq_mfextensions"]="artdaq" )
+
 # Usage function
 function usage() {
   cat 1>&2 << EOF
@@ -42,9 +85,9 @@ EOF
 run_git_command() {
     # First check permissions
     rbase=${1}
-    if [ "${rbase}" = "fhiclcpp" ]; then rbase="fhicl-cpp"; fi
-    if [ "${rbase}" = "lariatfragments" ]; then rbase="lariat-online"; fi
-    if [ "${rbase}" = "lariatutil" ]; then rbase="lardbt"; fi
+    if [[ ${sshNameList[${rbase}]} ]]; then
+        rbase=${sshNameList[${rbase}]}
+    fi
     if [ "${useRO}" == "true" ]
     then
         myGitCommand="$gitCommandRO"
@@ -342,55 +385,31 @@ then
 	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
 	clone_init_cmake $code
     done
-elif [ "${REP}" == "artdaq_core" ]
-then
-    # this special case needs to become generic
-    if [ -z ${destinationDir} ]
-    then
-        destinationDir=artdaq_core
+elif [[ ${gitToDest[${REP}]} ]]; then
+    if [ -z ${destinationDir} ]; then
+        destinationDir=${gitToDest[${REP}]}
     fi
-    gitCommand="git clone ssh://p-artdaq@cdcvs.fnal.gov/cvs/projects/artdaq-core ${destinationDir}"
-    gitCommandRO="git clone http://cdcvs.fnal.gov/projects/artdaq-core ${destinationDir}"
+    if [[ ${sshNameList[${destinationDir}]} ]]; then
+        sshName=${sshNameList[${destinationDir}]}
+    else
+        sshName=${REP}
+    fi
+    gitCommand="git clone ssh://p-${sshName}@cdcvs.fnal.gov/cvs/projects/${REP} ${destinationDir}"
+    gitCommandRO="git clone http://cdcvs.fnal.gov/projects/${REP} ${destinationDir}"
     clone_init_cmake $repbase ${destinationDir}
-elif [ "${REP}" == "lariatfragments" ]
-then
-    # this special case needs to become generic
+elif [[ ${destToGit[${REP}]} ]]; then
     if [ -z ${destinationDir} ]
     then
-        destinationDir=lariatfragments
+       destinationDir=${REP} 
     fi
-    gitCommand="git clone ssh://p-lariat-online@cdcvs.fnal.gov/cvs/projects/lariat-online-lariatfragments ${destinationDir}"
-    gitCommandRO="git clone http://cdcvs.fnal.gov/projects/lariat-online-lariatfragments ${destinationDir}"
-    clone_init_cmake $repbase ${destinationDir}
-elif [ "${REP}" == "lariatutil" ]
-then
-    # this special case needs to become generic
-    if [ -z ${destinationDir} ]
-    then
-        destinationDir=lariatutil
+    REP=${destToGit[${REP}]}
+    if [[ ${sshNameList[${destinationDir}]} ]]; then
+        sshName=${sshNameList[${destinationDir}]}
+    else
+        sshName=${REP}
     fi
-    gitCommand="git clone ssh://p-lardbt@cdcvs.fnal.gov/cvs/projects/lardbt-lariatutil ${destinationDir}"
-    gitCommandRO="git clone http://cdcvs.fnal.gov/projects/lardbt-lariatutil ${destinationDir}"
-    clone_init_cmake $repbase ${destinationDir}
-elif [ "${REP}" == "fhiclcpp" ]
-then
-    # this special case needs to become generic
-    if [ -z ${destinationDir} ]
-    then
-        destinationDir=fhiclcpp
-    fi
-    gitCommand="git clone ssh://p-fhicl-cpp@cdcvs.fnal.gov/cvs/projects/fhicl-cpp ${destinationDir}"
-    gitCommandRO="git clone http://cdcvs.fnal.gov/projects/fhicl-cpp ${destinationDir}"
-    clone_init_cmake $repbase ${destinationDir}
-elif [ "${REP}" == "lbne_raw_data" ]
-then
-    # this special case needs to become generic
-    if [ -z ${destinationDir} ]
-    then
-        destinationDir=lbne_raw_data
-    fi
-    gitCommand="git clone ssh://p-lbne-raw-data@cdcvs.fnal.gov/cvs/projects/lbne-raw-data ${destinationDir}"
-    gitCommandRO="git clone http://cdcvs.fnal.gov/projects/lbne-raw-data ${destinationDir}"
+    gitCommand="git clone ssh://p-${sshName}@cdcvs.fnal.gov/cvs/projects/${REP} ${destinationDir}"
+    gitCommandRO="git clone http://cdcvs.fnal.gov/projects/${REP} ${destinationDir}"
     clone_init_cmake $repbase ${destinationDir}
 elif [ "${have_path}" == "true" ]
 then
@@ -410,9 +429,10 @@ fi
 
 echo " "
 
-if [ "${VER}" != "head" ]
-then
-    echo "You are now on ${VER}"
+if [[ ${useTag} ]]; then
+    echo "You are now on ${useTag}"
+elif [[ ${useBranch} ]]; then
+    echo "You are now on ${useBranch}"
 else
     echo "You are now on the develop branch (check with 'git branch')"
     echo "To make a new feature, do 'git flow feature start <featureName>'"
