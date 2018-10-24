@@ -143,12 +143,12 @@ run_git_command() {
     fi
 
     # check ups/product_deps
-    if [ -z ${destinationDir} ]; then
+    if [ -z ${myDestination} ]; then
         parent=`grep ^parent ${myrep}/ups/product_deps | awk '{print $2}'`
 	repodir=${myrep}
     else
-        parent=`grep ^parent ${destinationDir}/ups/product_deps | awk '{print $2}'`
-	repodir=${destinationDir}
+        parent=`grep ^parent ${myDestination}/ups/product_deps | awk '{print $2}'`
+	repodir=${myDestination}
     fi
     if [[ ${repodir} != ${parent} ]]; then
         echo
@@ -232,33 +232,38 @@ clone_init_cmake() {
 
 process_name() {
     myrep=${1}
+    #echo "DEBUG: start process_name for ${myrep}"
     if [[ ${gitToDest[${myrep}]} ]]; then
         #echo "DEBUG: found gitToDest ${gitToDest[${myrep}]} for ${myrep}"
 	if [ -z ${destinationDir} ]; then
-            destinationDir=${gitToDest[${myrep}]}
+            myDestination=${gitToDest[${myrep}]}
+	else
+	    myDestination=${destinationDir}
 	fi
-	if [[ ${sshNameList[${destinationDir}]} ]]; then
-            sshName=${sshNameList[${destinationDir}]}
+	if [[ ${sshNameList[${myDestination}]} ]]; then
+            sshName=${sshNameList[${myDestination}]}
 	else
             sshName=${myrep}
 	fi
-	gitCommand="git clone ssh://p-${sshName}@cdcvs.fnal.gov/cvs/projects/${myrep} ${destinationDir}"
-	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/${myrep} ${destinationDir}"
-	clone_init_cmake ${repbase} ${destinationDir}
+	gitCommand="git clone ssh://p-${sshName}@cdcvs.fnal.gov/cvs/projects/${myrep} ${myDestination}"
+	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/${myrep} ${myDestination}"
+	clone_init_cmake ${repbase} ${myDestination}
     elif [[ ${destToGit[${myrep}]} ]]; then
         #echo "DEBUG: found destToGit ${destToGit[${myrep}]} for ${myrep}"
 	if [ -z ${destinationDir} ]; then
-	   destinationDir=${myrep} 
+	    myDestination=${myrep} 
+	else
+	    myDestination=${destinationDir}
 	fi
 	myrep=${destToGit[${myrep}]}
-	if [[ ${sshNameList[${destinationDir}]} ]]; then
-            sshName=${sshNameList[${destinationDir}]}
+	if [[ ${sshNameList[${myDestination}]} ]]; then
+            sshName=${sshNameList[${myDestination}]}
 	else
             sshName=${myrep}
 	fi
-	gitCommand="git clone ssh://p-${sshName}@cdcvs.fnal.gov/cvs/projects/${myrep} ${destinationDir}"
-	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/${myrep} ${destinationDir}"
-	clone_init_cmake ${repbase} ${destinationDir}
+	gitCommand="git clone ssh://p-${sshName}@cdcvs.fnal.gov/cvs/projects/${myrep} ${myDestination}"
+	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/${myrep} ${myDestination}"
+	clone_init_cmake ${repbase} ${myDestination}
     elif [ "${have_path}" == "true" ]; then
         #echo "DEBUG: ${myrep} includes a path"
 	if [ "${useRO}" == "true" ]; then
@@ -270,9 +275,15 @@ process_name() {
 	clone_init_cmake ${repbase} ${destinationDir}
     else
         #echo "DEBUG: plain jane checkout for ${myrep}"
-	gitCommand="git clone ssh://p-${myrep}@cdcvs.fnal.gov/cvs/projects/${myrep} ${destinationDir}"
-	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/${myrep} ${destinationDir}"
-	clone_init_cmake ${myrep} ${destinationDir}
+        sshName=${myrep}
+	if [ -z ${destinationDir} ]; then
+	    myDestination=${myrep} 
+	else
+	    myDestination=${destinationDir}
+	fi
+	gitCommand="git clone ssh://p-${myrep}@cdcvs.fnal.gov/cvs/projects/${myrep} ${myDestination}"
+	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/${myrep} ${myDestination}"
+	clone_init_cmake ${myrep} ${myDestination}
     fi
 }
 
@@ -383,6 +394,7 @@ then
     fi
     for code in ${art_list}
     do
+        #echo "DEBUG: begin $code"
         process_name $code
     done
 elif [ "${REP}" = "critic_suite" ]
