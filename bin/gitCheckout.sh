@@ -102,10 +102,17 @@ EOF
 
 run_git_command() {
     # First check permissions
-    rbase=${1}
-    if [[ ${sshNameList[${rbase}]} ]]; then
-        rbase=${sshNameList[${rbase}]}
+    if [ -z ${sshName} ]; then
+        rbase=${1}
+    else
+        rbase=${sshName}
     fi
+    #echo "DEBUG: run_git_command RW $gitCommand"
+    #echo "DEBUG: run_git_command RO $gitCommandRO"
+    #echo "DEBUG: run_git_command: ${1} sshName ${sshName}"
+    #echo "DEBUG: run_git_command: rbase ${rbase}"
+    #echo "DEBUG: run_git_command: REP ${REP}"
+    #echo "DEBUG: run_git_command: myrep ${myrep}"
     if [ "${useRO}" == "true" ]
     then
         myGitCommand="$gitCommandRO"
@@ -136,12 +143,12 @@ run_git_command() {
     fi
 
     # check ups/product_deps
-    if [ -z ${destinationDir} ]; then
-        parent=`grep ^parent ${REP}/ups/product_deps | awk '{print $2}'`
-	repodir=${REP}
+    if [ -z ${myDestination} ]; then
+        parent=`grep ^parent ${myrep}/ups/product_deps | awk '{print $2}'`
+	repodir=${myrep}
     else
-        parent=`grep ^parent ${destinationDir}/ups/product_deps | awk '{print $2}'`
-	repodir=${destinationDir}
+        parent=`grep ^parent ${myDestination}/ups/product_deps | awk '{print $2}'`
+	repodir=${myDestination}
     fi
     if [[ ${repodir} != ${parent} ]]; then
         echo
@@ -178,6 +185,7 @@ clone_init_cmake() {
     else
       coderep=${2}
     fi
+    #echo "DEBUG clone_init_cmake: codebase $codebase coderep $coderep"
     echo "git clone: clone $coderep at ${MRB_SOURCE}"
     cd ${MRB_SOURCE}
     run_git_command $codebase
@@ -220,6 +228,63 @@ clone_init_cmake() {
 
     # Display informational messages
     echo "NOTICE: You can now 'cd $myrep'"
+}
+
+process_name() {
+    myrep=${1}
+    #echo "DEBUG: start process_name for ${myrep}"
+    if [[ ${gitToDest[${myrep}]} ]]; then
+        #echo "DEBUG: found gitToDest ${gitToDest[${myrep}]} for ${myrep}"
+	if [ -z ${destinationDir} ]; then
+            myDestination=${gitToDest[${myrep}]}
+	else
+	    myDestination=${destinationDir}
+	fi
+	if [[ ${sshNameList[${myDestination}]} ]]; then
+            sshName=${sshNameList[${myDestination}]}
+	else
+            sshName=${myrep}
+	fi
+	gitCommand="git clone ssh://p-${sshName}@cdcvs.fnal.gov/cvs/projects/${myrep} ${myDestination}"
+	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/${myrep} ${myDestination}"
+	clone_init_cmake ${repbase} ${myDestination}
+    elif [[ ${destToGit[${myrep}]} ]]; then
+        #echo "DEBUG: found destToGit ${destToGit[${myrep}]} for ${myrep}"
+	if [ -z ${destinationDir} ]; then
+	    myDestination=${myrep} 
+	else
+	    myDestination=${destinationDir}
+	fi
+	myrep=${destToGit[${myrep}]}
+	if [[ ${sshNameList[${myDestination}]} ]]; then
+            sshName=${sshNameList[${myDestination}]}
+	else
+            sshName=${myrep}
+	fi
+	gitCommand="git clone ssh://p-${sshName}@cdcvs.fnal.gov/cvs/projects/${myrep} ${myDestination}"
+	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/${myrep} ${myDestination}"
+	clone_init_cmake ${repbase} ${myDestination}
+    elif [ "${have_path}" == "true" ]; then
+        #echo "DEBUG: ${myrep} includes a path"
+	if [ "${useRO}" == "true" ]; then
+	   echo "ERROR: you cannot use -r when a full path is supplied"
+	   exit 1
+	fi
+	gitCommand="git clone ${myrep} ${destinationDir}"
+	gitCommandRO="none"
+	clone_init_cmake ${repbase} ${destinationDir}
+    else
+        #echo "DEBUG: plain jane checkout for ${myrep}"
+        sshName=${myrep}
+	if [ -z ${destinationDir} ]; then
+	    myDestination=${myrep} 
+	else
+	    myDestination=${destinationDir}
+	fi
+	gitCommand="git clone ssh://p-${myrep}@cdcvs.fnal.gov/cvs/projects/${myrep} ${myDestination}"
+	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/${myrep} ${myDestination}"
+	clone_init_cmake ${myrep} ${myDestination}
+    fi
 }
 
 # Determine command options (just -h for help)
@@ -300,6 +365,7 @@ critic_list="cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io
 gallery_list="cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io gallery"
 larsoftobj_list="larcoreobj lardataobj larcorealg lardataalg larsoftobj"
 uboone_list="uboonecode ubutil uboonedata ublite ubana ubreco ubsim ubevt ubraw ubcrt ubcore ubcv ubobj"
+
 if [ "${REP}" = "larsoft_suite" ]
 then
     if [ "x${useTag}" != "x" ]
@@ -313,9 +379,7 @@ then
     fi
     for code in ${larsoft_list}
     do
-        gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
-	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
-	clone_init_cmake $code
+        process_name $code
     done
 elif [ "${REP}" = "art_suite" ]
 then
@@ -330,16 +394,8 @@ then
     fi
     for code in ${art_list}
     do
-        if [ "${code}" = "fhiclcpp" ]
-	then
-          gitCommand="git clone ssh://p-fhicl-cpp@cdcvs.fnal.gov/cvs/projects/fhicl-cpp $code"
-	  gitCommandRO="git clone http://cdcvs.fnal.gov/projects/fhicl-cpp $code"
-	  clone_init_cmake $code
-	else
-          gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
-	  gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
-	  clone_init_cmake $code
-	fi
+        #echo "DEBUG: begin $code"
+        process_name $code
     done
 elif [ "${REP}" = "critic_suite" ]
 then
@@ -354,16 +410,7 @@ then
     fi
     for code in ${critic_list}
     do
-        if [ "${code}" = "fhiclcpp" ]
-	then
-          gitCommand="git clone ssh://p-fhicl-cpp@cdcvs.fnal.gov/cvs/projects/fhicl-cpp $code"
-	  gitCommandRO="git clone http://cdcvs.fnal.gov/projects/fhicl-cpp $code"
-	  clone_init_cmake $code
-	else
-          gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
-	  gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
-	  clone_init_cmake $code
-	fi
+        process_name $code
     done
 elif [ "${REP}" = "gallery_suite" ]
 then
@@ -378,16 +425,7 @@ then
     fi
     for code in ${gallery_list}
     do
-        if [ "${code}" = "fhiclcpp" ]
-	then
-          gitCommand="git clone ssh://p-fhicl-cpp@cdcvs.fnal.gov/cvs/projects/fhicl-cpp $code"
-	  gitCommandRO="git clone http://cdcvs.fnal.gov/projects/fhicl-cpp $code"
-	  clone_init_cmake $code
-	else
-          gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
-	  gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
-	  clone_init_cmake $code
-	fi
+        process_name $code
     done
 elif [ "${REP}" = "larsoftobj_suite" ]
 then
@@ -402,9 +440,7 @@ then
     fi
     for code in ${larsoftobj_list}
     do
-       gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
-       gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
-       clone_init_cmake $code
+        process_name $code
     done
 elif [ "${REP}" = "uboone_suite" ]
 then
@@ -419,50 +455,10 @@ then
     fi
     for code in ${uboone_list}
     do
-        gitCommand="git clone ssh://p-$code@cdcvs.fnal.gov/cvs/projects/$code"
-	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$code"
-	clone_init_cmake $code
+        process_name $code
     done
-elif [[ ${gitToDest[${REP}]} ]]; then
-    if [ -z ${destinationDir} ]; then
-        destinationDir=${gitToDest[${REP}]}
-    fi
-    if [[ ${sshNameList[${destinationDir}]} ]]; then
-        sshName=${sshNameList[${destinationDir}]}
-    else
-        sshName=${REP}
-    fi
-    gitCommand="git clone ssh://p-${sshName}@cdcvs.fnal.gov/cvs/projects/${REP} ${destinationDir}"
-    gitCommandRO="git clone http://cdcvs.fnal.gov/projects/${REP} ${destinationDir}"
-    clone_init_cmake $repbase ${destinationDir}
-elif [[ ${destToGit[${REP}]} ]]; then
-    if [ -z ${destinationDir} ]
-    then
-       destinationDir=${REP} 
-    fi
-    REP=${destToGit[${REP}]}
-    if [[ ${sshNameList[${destinationDir}]} ]]; then
-        sshName=${sshNameList[${destinationDir}]}
-    else
-        sshName=${REP}
-    fi
-    gitCommand="git clone ssh://p-${sshName}@cdcvs.fnal.gov/cvs/projects/${REP} ${destinationDir}"
-    gitCommandRO="git clone http://cdcvs.fnal.gov/projects/${REP} ${destinationDir}"
-    clone_init_cmake $repbase ${destinationDir}
-elif [ "${have_path}" == "true" ]
-then
-    if [ "${useRO}" == "true" ]
-    then
-       echo "ERROR: you cannot use -r when a full path is supplied"
-       exit 1
-    fi
-    gitCommand="git clone $REP ${destinationDir}"
-    gitCommandRO="none"
-    clone_init_cmake $repbase ${destinationDir}
 else
-    gitCommand="git clone ssh://p-$REP@cdcvs.fnal.gov/cvs/projects/$REP ${destinationDir}"
-    gitCommandRO="git clone http://cdcvs.fnal.gov/projects/$REP ${destinationDir}"
-    clone_init_cmake $REP ${destinationDir}
+    process_name ${REP}
 fi
 
 echo " "
