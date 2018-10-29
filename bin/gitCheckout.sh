@@ -143,6 +143,8 @@ run_git_command() {
     fi
 
     # check ups/product_deps
+    #echo "DEBUG: run_git_command: myrep ${myrep}"
+    #echo "DEBUG: run_git_command: myDestination ${myDestination}"
     if [ -z ${myDestination} ]; then
         parent=`grep ^parent ${myrep}/ups/product_deps | awk '{print $2}'`
 	repodir=${myrep}
@@ -157,6 +159,7 @@ run_git_command() {
 	echo "            rm -rf ${repodir}"
 	echo "            mrb uc"
 	echo "            run mrb g with the appropriate flags"
+	echo "            for instance, mrb g -d ${parent} ..."
 	echo
 	short_usage
 	exit 1
@@ -233,7 +236,22 @@ clone_init_cmake() {
 process_name() {
     myrep=${1}
     #echo "DEBUG: start process_name for ${myrep}"
-    if [[ ${gitToDest[${myrep}]} ]]; then
+    if [ "${have_path}" == "true" ]; then
+        # If a full path is specified, then we don't need much else
+        #echo "DEBUG: ${myrep} includes a path"
+	if [ "${useRO}" == "true" ]; then
+	   echo "ERROR: you cannot use -r when a full path is supplied"
+	   exit 1
+	fi
+        if [ "x${destinationDir}" != "x" ]; then
+	    myDestination=${destinationDir}
+	else
+	    myDestination=${repbase}
+	fi
+	gitCommand="git clone ${myrep} ${destinationDir}"
+	gitCommandRO="none"
+	clone_init_cmake ${repbase} ${destinationDir}
+    elif [[ ${gitToDest[${myrep}]} ]]; then
         #echo "DEBUG: found gitToDest ${gitToDest[${myrep}]} for ${myrep}"
 	if [ -z ${destinationDir} ]; then
             myDestination=${gitToDest[${myrep}]}
@@ -264,15 +282,6 @@ process_name() {
 	gitCommand="git clone ssh://p-${sshName}@cdcvs.fnal.gov/cvs/projects/${myrep} ${myDestination}"
 	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/${myrep} ${myDestination}"
 	clone_init_cmake ${repbase} ${myDestination}
-    elif [ "${have_path}" == "true" ]; then
-        #echo "DEBUG: ${myrep} includes a path"
-	if [ "${useRO}" == "true" ]; then
-	   echo "ERROR: you cannot use -r when a full path is supplied"
-	   exit 1
-	fi
-	gitCommand="git clone ${myrep} ${destinationDir}"
-	gitCommandRO="none"
-	clone_init_cmake ${repbase} ${destinationDir}
     else
         #echo "DEBUG: plain jane checkout for ${myrep}"
         sshName=${myrep}
