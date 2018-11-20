@@ -1,21 +1,95 @@
 #!/usr/bin/perl -w
+########################################################################
+# mrb gitCheckout - Check out repositories and suites from git into an
+#                   mrb source area.
+########################################################################
 
 use strict;
 
+########################################################################
+# Modules.
 use Cwd qw(chdir :DEFAULT);
 use File::Basename;
+use File::Spec;
 use Getopt::Long;
 use Pod::Usage;
-use Scalar::Util qw(reftype);
 
+########################################################################
+# Preamble: configuration, globals and prototypes.
 Getopt::Long::Configure(qw(no_ignore_case bundling require_order));
 
 my $prog = basename($0);
 my $options = {};
 my $default_repo_type = "redmine";
+my $known_suites =
+  { larsoft => [qw(larcore lardata larevt larsim larg4 larreco
+                   larana larexamples lareventdisplay larpandora
+                   larwirecell larsoft)],
+    art => [qw(cetlib_except cetlib fhiclcpp messagefacility
+               canvas canvas_root_io art gallery critic)],
+    critic => [qw(cetlib_except cetlib fhiclcpp messagefacility
+                  canvas canvas_root_io art gallery critic)],
+    gallery => [qw(cetlib_except cetlib fhiclcpp messagefacility
+                   canvas canvas_root_io gallery)],
+    larsoftobj => [qw(larcoreobj lardataobj larcorealg lardataalg larsoftobj)],
+    uboone=> [qw(uboonecode ubutil uboonedata ublite ubana ubreco ubsim
+                 ubevt ubraw ubcrt ubcore ubcv ubobj)]
+  };
+my $global_tree_ish;
 
 my $version = "2.0.0";
 
+# Declare prototypes for repository handlers here, implement wherever
+# you like. Specify the appropriate handler in $repo_handlers, below.
+sub redmine_repo;
+
+my $repo_handlers =
+  { redmine => \&redmine_repo,
+    github => undef, # Known but unimplemented currently.
+    bitbucket => undef, # Known but unimplemented currently.
+    gitlab => undef, # Known but unimplemented currently.
+    local => undef # Known but unimplemented currently.
+  };
+
+my @known_specs = 
+  ( redmine_repo("artdaq_core", "artdaq-core", "artdaq"),
+    redmine_repo("lariatfragments", "lariat-online-lariatfragments",
+                 "lariat_online"),
+    redmine_repo("lariatutil", "lardbt-lariatutil", "lardbt"),
+    redmine_repo("fhiclcpp", "fhicl-cpp"),
+    redmine_repo("lbne_raw_data", "lbne-raw-data"),
+    redmine_repo("artdaq_core_demo", "artdaq-core-demo"),
+    redmine_repo("artdaq_demo", "artdaq-demo"),
+    redmine_repo("artdaq_utilities", "artdaq-utilities"),
+    redmine_repo("artdaq_ganglia_plugin",
+                 "artdaq-utilities-ganglia-plugin",
+                 "artdaq-utilities"),
+    redmine_repo("artdaq_epics_plugin", "artdaq-utilities-epics-plugin",
+                 "artdaq-utilities"),
+    redmine_repo("artdaq_database", "artdaq-utilities-database",
+                 "artdaq-utilities"),
+    redmine_repo("artdaq_daqinterface", "artdaq-utilities-daqinterface",
+                 "artdaq-utilities"),
+    redmine_repo("artdaq_mpich_plugin", "artdaq-utilities-mpich-plugin",
+                 "artdaq-utilities"),
+    redmine_repo("artdaq_mfextensions", "mf-extensions-git")
+  );
+
+sub init_known_repos;
+
+my ($known_products, $known_repos) = init_known_repos();
+
+########################################################################
+# Subroutines.
+
+####################################
+# process_args - process incoming arguments to a subroutine into a
+#                hashref.
+#
+# Usage: process_args(@args)
+#
+# Positional arguments are saved (in order) as an array in
+# $hash->{positional}.
 sub process_args {
   my $args = { positional => [] };
   while (my $arg = shift) {
@@ -28,13 +102,16 @@ sub process_args {
   return $args;
 }
 
-sub name_positional($@) {
-  my $args = shift;
-  foreach my $arg (@_) {
-    $args->{$arg} = shift @{$args->{positional}} || undef;
-  }
-}
-
+####################################
+# report - Print messages at the specified level.
+#
+# Usage: report(@msgs, kwargs)
+#
+# Keyword arguments: -level => "INFO"|"WARNING"|"ERROR"|"VERBOSE"
+#                      Level of the provided message.
+#
+# WARNING and ERROR messages are sent to STDERR, all others to
+# STDOUT.
 sub report {
   my $args = process_args(@_);
   my $level = $args->{level} || "INFO";
@@ -45,9 +122,19 @@ sub report {
              ($level eq "VERBOSE" and not $options->{verbose})) {
     return;
   }
-  print $out "$level: ", join(" ", @{$args->{positional}}), "\n";
+  print $out "$level: ", join("", @{$args->{positional}}), "\n";
 }
 
+
+####################################
+# error - Report an error and exit.
+#
+# Usage: error(@msgs)
+#
+# Keyword arguments: -exitval => #
+#                      Exit code.
+#                    -usage => 1|0
+#                      Print short usage if true.
 sub error {
   my $args = process_args(@_);
   my $exitval = $args->{exitval} || 1;
@@ -59,6 +146,12 @@ sub error {
   }
 }
 
+####################################
+# repo_args - Process args to repository handlers.
+#
+# Usage: repo_args(@args)
+#
+# Returns a tuple of ($product, $repo, $user).
 sub repo_args {
   my $product = shift;
   $product or error("Product not specified!");
@@ -67,6 +160,12 @@ sub repo_args {
   return ($product, $repo, $user);
 }
 
+####################################
+# redmine_repo - Handle a Redmine repository specification.
+#
+# Usage: redmine_repo($product, $repo, $user)
+#
+# Returns a repo_info hashref.
 sub redmine_repo {
   my ($product, $repo, $user) = repo_args(@_);
   return {type => "redmine",
@@ -77,25 +176,44 @@ sub redmine_repo {
           ro_url => "http://cdcvs.fnal.gov/projects/${repo}"};
 }
 
-my $file_repo_type_request = 'file a feature request at https://cdcvs.fnal.gov/redmine/projects/mrb/issues/new?issue[tracker_id]=2&issue[subject]=Need%20git%20checkout%20support%20for%20$type%20repositories';
+####################################
+# repo_type_request - message text to file a feauture request to
+#                     implement a repository handler.
+#
+# Usage: repo_type_request($type)
+#
+# Returns: message text.
+sub repo_type_request {
+  my $type = shift;
+  return "file a feature request at
+https://cdcvs.fnal.gov/redmine/projects/mrb/issues/new?issue[tracker_id]=2&issue[subject]=Need\%20git\%20checkout\%20support\%20for\%20$type\%20repositories";
+}
 
+####################################
+# unimplemented_repo_type - report an error for an unimplemented
+#                           repository type.
+#
+# Usage: unimplemented_repo_type($product, $repo, $user)
+#
+# Informs the user on the procedure for requesting support for the
+# unimplemented type.
 sub unimplemented_repo_type {
   my $type = shift;
   my ($product, $repo, $user) = repo_args(@_);
-  error("Unimplemented handler \"$type\" for repository \"$repo\": $file_repo_type_request");
+  error("Unimplemented handler \"$type\" for repository \"$repo\": ", repo_type_request($type));
 }
 
-my $repo_handlers =
-  { redmine => \&redmine_repo,
-    github => undef, # Known but unimplemented.
-    bitbucket => undef, # Known but unimplemented.
-    gitlab => undef, # Known but unimplemented.
-    local => undef # Known but unimplemented.
-  };
-
+####################################
+# handle_repo - Invoke the correct repo handler.
+#
+# Usage: handle_repo($type, @handler_args)
+#
+# @handler_args are passed through to the invoked handler.
+#
+# Returns the return value of the invoked handler.
 sub handle_repo {
   my $type = shift || $default_repo_type;
-  unless (defined $repo_handlers->{$type}) {
+  unless (exists $repo_handlers->{$type}) {
     error("Unrecognized repo type $type or other repo handling error.");
   }
   my $handler = $repo_handlers->{$type};
@@ -105,270 +223,81 @@ sub handle_repo {
   return &{$handler}(@_);
 }
 
+####################################
+# init_known_repos - Initialize the $known_products and $known_repos
+#                    global hashes.
+#
+# Usage: init_known_repos()
 sub init_known_repos {
-  my @known_specs = 
-    ( redmine_repo("artdaq_core", "artdaq-core", "artdaq"),
-      redmine_repo("lariatfragments", "lariat-online-lariatfragments",
-                   "lariat_online"),
-      redmine_repo("lariatutil", "lardbt-lariatutil", "lardbt"),
-      redmine_repo("fhiclcpp", "fhicl-cpp"),
-      redmine_repo("lbne_raw_data", "lbne-raw-data"),
-      redmine_repo("artdaq_core_demo", "artdaq-core-demo"),
-      redmine_repo("artdaq_demo", "artdaq-demo"),
-      redmine_repo("artdaq_utilities", "artdaq-utilities"),
-      redmine_repo("artdaq_ganglia_plugin",
-                   "artdaq-utilities-ganglia-plugin",
-                   "artdaq-utilities"),
-      redmine_repo("artdaq_epics_plugin", "artdaq-utilities-epics-plugin",
-                   "artdaq-utilities"),
-      redmine_repo("artdaq_database", "artdaq-utilities-database",
-                   "artdaq-utilities"),
-      redmine_repo("artdaq_daqinterface", "artdaq-utilities-daqinterface",
-                   "artdaq-utilities"),
-      redmine_repo("artdaq_mpich_plugin", "artdaq-utilities-mpich-plugin",
-                   "artdaq-utilities"),
-      redmine_repo("artdaq_mfextensions", "mf-extensions-git")
-    );
-  my ($known_products, $known_repos);
   foreach my $repo_spec (@known_specs) {
     $known_products->{$repo_spec->{product}} = $repo_spec;
     $known_repos->{$repo_spec->{repo}} = $repo_spec;
   }
-  return ($known_products, $known_repos);
 }
 
-my ($known_products, $known_repos) = init_known_repos();
-
-=pod
-
-sub run_git_command {
-  my $rbase = ${sshname} || shift;
-  # First check permissions
-    if [ -z ${sshName} ]; then
-        rbase=${1}
-    else
-        rbase=${sshName}
-    fi
-    #echo "DEBUG: run_git_command RW $gitCommand"
-    #echo "DEBUG: run_git_command RO $gitCommandRO"
-    #echo "DEBUG: run_git_command: ${1} sshName ${sshName}"
-    #echo "DEBUG: run_git_command: rbase ${rbase}"
-    #echo "DEBUG: run_git_command: REP ${REP}"
-    #echo "DEBUG: run_git_command: myrep ${myrep}"
-    if [ "${useRO}" == "true" ]
-    then
-        myGitCommand="$gitCommandRO"
-    else
-	myGitCommand="$gitCommand"
-	if [ "$gitCommandRO" != "none" ]
-	then
-	    larret=`ssh p-${rbase}@cdcvs.fnal.gov "echo Hi" 2>&1`
-	    is_bad=`echo $larret | egrep "Permission|authentication" | grep -v "fake authentication" | wc -l`
-	    if [ $is_bad -gt 0 ]
-	    then
-              echo ""
-              echo "NOTICE: You do not have read-write permissions for this repository"
-	      myGitCommand="$gitCommandRO"
-	    fi
-	fi
-    fi
-    echo "NOTICE: Running $myGitCommand"
-    # Run the git clone command
-    cd ${MRB_SOURCE}
-    $myGitCommand
-
-    # Did it work?
-    if [ $? -ne 0 ];
-    then
-	echo 'ERROR: The git command failed!'
-	exit 1
-    fi
-
-    # check ups/product_deps
-    #echo "DEBUG: run_git_command: myrep ${myrep}"
-    #echo "DEBUG: run_git_command: myDestination ${myDestination}"
-    if [ -z ${myDestination} ]; then
-        parent=`grep ^parent ${myrep}/ups/product_deps | awk '{print $2}'`
-	repodir=${myrep}
-    else
-        parent=`grep ^parent ${myDestination}/ups/product_deps | awk '{print $2}'`
-	repodir=${myDestination}
-    fi
-    if [[ ${repodir} != ${parent} ]]; then
-        echo
-        echo "ERROR: Product name ${parent} is inconsistent with checked out directory ${repodir}"
-	echo "       Please use the following instructions to correct the problem:"
-	echo "            rm -rf ${repodir}"
-	echo "            mrb uc"
-	echo "            run mrb g with the appropriate flags"
-	echo "            for instance, mrb g -d ${parent} ..."
-	echo
-	short_usage
-	exit 1
-    fi
-}
-
-git_flow_init() {
-    myrep=$1
-    cd ${MRB_SOURCE}/$myrep
-    # this is necessary for those packages where the default branch is not master and master does not exist
-    echo "ready to run git flow init for $myrep"
-    git checkout master
-    git flow init -d > /dev/null
-    # make sure we are on the develop branch
-    git checkout develop
-    # just in case we are using an older git flow
-    git branch --set-upstream-to=origin/develop
-    git pull
-}
-
-clone_init_cmake() {
-    codebase=${1}
-    if [ -z "${2}" ]
-    then
-      coderep=${1}
-    else
-      coderep=${2}
-    fi
-    #echo "DEBUG clone_init_cmake: codebase $codebase coderep $coderep"
-    echo "git clone: clone $coderep at ${MRB_SOURCE}"
-    cd ${MRB_SOURCE}
-    run_git_command $codebase
-    git_flow_init $coderep
-    # change to the requested branch or tag
-    if [ "x${useTag}" != "x" ]
-    then
-       cd ${MRB_SOURCE}/$coderep
-       git checkout ${useTag}
-       tagstatus=$?
-       if [[ ${tagstatus} != 0 ]]; then
-         echo
-         echo "ERROR: git checkout of $coderep ${useTag} failed"
-         echo
-         exit 1
-       fi
-       #git branch
-    fi
-    if [ "x${useBranch}" != "x" ]
-    then
-       cd ${MRB_SOURCE}/$coderep
-       git checkout ${useBranch}
-       brstatus=$?
-       if [[ ${brstatus} != 0 ]]; then
-         echo
-         echo "WARNING: git checkout of $coderep ${useBranch} failed"
-         echo
-         git branch
-         echo
-       fi
-    fi
-    # add to CMakeLists.txt
-    if grep -q \($coderep\) ${MRB_SOURCE}/CMakeLists.txt
-      then
-	echo "NOTICE: project is already in CMakeLists.txt file"
-      else
-	#add_to_cmake $coderep
-	${MRB_DIR}/bin/add_to_cmake.sh ${MRB_SOURCE} ${coderep} || exit 1;
-    fi
-
-    # Display informational messages
-    echo "NOTICE: You can now 'cd $myrep'"
-}
-
-process_name() {
-    myrep=${1}
-    #echo "DEBUG: start process_name for ${myrep}"
-    if [ "${have_path}" == "true" ]; then
-        # If a full path is specified, then we don't need much else
-        #echo "DEBUG: ${myrep} includes a path"
-	if [ "${useRO}" == "true" ]; then
-	   echo "ERROR: you cannot use -r when a full path is supplied"
-	   exit 1
-	fi
-        if [ "x${destinationDir}" != "x" ]; then
-	    myDestination=${destinationDir}
-	else
-	    myDestination=${repbase}
-	fi
-	gitCommand="git clone ${myrep} ${destinationDir}"
-	gitCommandRO="none"
-	clone_init_cmake ${repbase} ${destinationDir}
-    elif [[ ${gitToDest[${myrep}]} ]]; then
-        #echo "DEBUG: found gitToDest ${gitToDest[${myrep}]} for ${myrep}"
-	if [ -z ${destinationDir} ]; then
-            myDestination=${gitToDest[${myrep}]}
-	else
-	    myDestination=${destinationDir}
-	fi
-	if [[ ${sshNameList[${myDestination}]} ]]; then
-            sshName=${sshNameList[${myDestination}]}
-	else
-            sshName=${myrep}
-	fi
-	gitCommand="git clone ssh://p-${sshName}@cdcvs.fnal.gov/cvs/projects/${myrep} ${myDestination}"
-	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/${myrep} ${myDestination}"
-	clone_init_cmake ${repbase} ${myDestination}
-    elif [[ ${destToGit[${myrep}]} ]]; then
-        #echo "DEBUG: found destToGit ${destToGit[${myrep}]} for ${myrep}"
-	if [ -z ${destinationDir} ]; then
-	    myDestination=${myrep} 
-	else
-	    myDestination=${destinationDir}
-	fi
-	myrep=${destToGit[${myrep}]}
-	if [[ ${sshNameList[${myDestination}]} ]]; then
-            sshName=${sshNameList[${myDestination}]}
-	else
-            sshName=${myrep}
-	fi
-	gitCommand="git clone ssh://p-${sshName}@cdcvs.fnal.gov/cvs/projects/${myrep} ${myDestination}"
-	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/${myrep} ${myDestination}"
-	clone_init_cmake ${repbase} ${myDestination}
-    else
-        #echo "DEBUG: plain jane checkout for ${myrep}"
-        sshName=${myrep}
-	if [ -z ${destinationDir} ]; then
-	    myDestination=${myrep} 
-	else
-	    myDestination=${destinationDir}
-	fi
-	gitCommand="git clone ssh://p-${myrep}@cdcvs.fnal.gov/cvs/projects/${myrep} ${myDestination}"
-	gitCommandRO="git clone http://cdcvs.fnal.gov/projects/${myrep} ${myDestination}"
-	clone_init_cmake ${myrep} ${myDestination}
-    fi
-}
-
-=cut
-
+####################################
+# split_type_repo - Split the repo into type:repo
+#
+# Usage: split_type_repo($repo_clause)
+#
+# Returns a tuple of ($type, $value).
 sub split_type_repo {
   my $repo = shift;
   return ($repo =~ m&^(?:(.*?):)?(.*)$&);
 }
 
+####################################
+# format_repo_info - Format a repo_info hash into a pretty string.
+#
+# Usage: format_repo_info(%repo_info)
+#
+# Returns a formatted human-readable string representing the repo_info
+# hash.
+sub format_repo_info(\%) {
+  my $repo_info = shift;
+  my $repo = $repo_info->{repo};
+  return
+    sprintf("%s => { %s\n%s    }\n",
+            $repo,
+            join(sprintf(",\n%s", ' '  x ((length $repo) + 6)),
+                 map { sprintf("%s => %s", $_, $repo_info->{$_}); }
+                 sort keys %$repo_info),
+            ' ' x length $repo);
+}
+
+####################################
+# process_repo_spec - Process a repo spec into a repo_info hash
+#
+# Usage: process_repo_info($repo_spec)
+#
+# Returns the repo_info hash.
 sub process_repo_spec {
   my $repo_spec = shift;
-  my ($type, $product, $repo, $user, $url, $tree_ish);
+  my ($type, $product, $repo, $user, $user_url, $tree_ish);
   my %repo_info = ();
-  if (($product, $url) =
-      ($repo_spec =~ m&^(?:(.*?)%)?(.*?://.*)$&)) { # [<product>%]<URL>
-    $repo = $product || basename($url);
-    report("(product, repo, url) = ($product, $repo, $url)\n", -level => "WARNING");
-    %repo_info = (product => ${product} || undef,
+  if (($product, $user_url, $tree_ish) =
+      ($repo_spec =~ m&^(?:(.*?)%)?(.*?://.*?)(?:@(.*))?$&)) {
+    # [<product>%]<URL>[@<tree-ish>]
+    $repo = $product || basename($user_url);
+    %repo_info = (product => ${product} || ${repo},
                   repo => ${repo},
-                  url => ${url},
-                  origin => "url");
+                  type => "user",
+                  user_url => ${user_url},
+                  origin => "user_url");
   } elsif (($product, $repo, $user, $tree_ish) =
            ($repo_spec =~ m&^(.*?)(?:%(.*?)(?:%(.*))?)?(?:@(.*))?$&)) {
+    # [<product>%][<type>:]<repo>[%<user>][@<tree-ish>] OR
+    # <type>:<product>[@<tree-ish>]
     if ($repo) {
       ($type, $repo) = split_type_repo(${repo});
     } else {
       ($type, $repo) = split_type_repo(${product});
       $product = basename(${repo});
     }
-    if ($known_products->{$product}) {
+    if ($known_products->{$product} and not $options->{"no-expand"}) {
       %repo_info = %{$known_products->{$product}};
       $repo_info{origin} = "known_products";
-    } elsif ($known_repos->{$repo}) {
+    } elsif ($known_repos->{$repo} and not $options->{"no-expand"}) {
       %repo_info = %{$known_repos->{$repo}};
       $repo_info{origin} = "known_repos";
     } else {
@@ -377,64 +306,76 @@ sub process_repo_spec {
       %repo_info = %{handle_repo($type, $product, $repo, $user)};
       $repo_info{origin} = "handled_repo";
     }
-    if ($tree_ish) {
-      $repo_info{"tree-ish"} = ${tree_ish};
-    }
   } else {
     error("Unrecognized repo spec ${repo_spec}\n");
   }
+  if (${tree_ish}) {
+    $repo_info{"tree-ish"} = ${tree_ish};
+  }
+  report("Repository info:\n",
+         format_repo_info(%repo_info),
+         -level => "VERBOSE");
   return %repo_info;
 }
 
+####################################
+# expand_suite - Expand recognized suites into their constituent
+#                repositories.
+#
+# Usage: expand_suite($repo_spec)
+#
+# Returns: expanded list of repositories for the given suite or ().
+#
+# If the given suite also specifies a tree-ish, it is appended to each
+# repository spec. version tags are translated to full suite version
+# tags when appropriate.
 sub expand_suite {
   my $repo_spec = shift;
   my ($suite, $treeish);
+  my $known_suites_expr = join("|", sort keys %{$known_suites});
   if (($suite, $treeish) =
-      ($repo_spec =~ /^(larsoft|art|critic|gallery|larsoftobj|uboone)_suite@(.*)?$/o)) {
+      ($repo_spec =~ m&^($known_suites_expr)_suite@(.*)?$&o)) {
     report("Expanding $repo_spec");
   } else {
     return ();
-  }
-  my @result = ();
-  if ($suite eq "larsoft") {
-    @result = qw(larcore lardata larevt larsim larg4 larreco
-                 larana larexamples lareventdisplay larpandora
-                 larwirecell larsoft);
-  } elsif ($suite eq "larsoftobj") {
-    @result = qw(larcoreobj lardataobj larcorealg lardataalg larsoftobj);
-  } elsif ($suite eq "art") {
-    @result = qw(cetlib_except cetlib fhiclcpp messagefacility
-                 canvas canvas_root_io art gallery critic);
-  } elsif ($suite eq "critic") {
-    @result = qw(cetlib_except cetlib fhiclcpp messagefacility
-                 canvas canvas_root_io art gallery critic);
-  } elsif ($suite eq "gallery") {
-    @result = qw(cetlib_except cetlib fhiclcpp messagefacility
-                 canvas canvas_root_io gallery);
-  } elsif ($suite eq "uboone") {
-    @result = qw(uboonecode ubutil uboonedata ublite ubana ubreco ubsim
-                 ubevt ubraw ubcrt ubcore ubcv ubobj);
-  } else {
-    error("Unrecognized suite $suite");
   }
   if ($treeish and $treeish =~ m&^v\d+.*$&o) {
     $treeish = sprintf("%s_SUITE_${treeish}", uc ${suite});
     report("Using tag $treeish for suite $suite");
   }
-  return map { sprintf("${_}%s", $treeish ? "\@${treeish}" : ""); } @result;
+  return map { sprintf("${_}%s", $treeish ? "\@${treeish}" : ""); }
+    $known_suites->{$suite};
 }
 
+####################################
+# have_read_access - verify we have at least read access to the
+#                    specified repository.
+#
+# Usage: have_read_acces($url)
+#
+# Returns true on success.
 sub have_read_access {
   my $url = shift;
-  return system("git ls-remote -q '$url' >/dev/null") == 0;
+  return system(sprintf("git ls-remote -q '%s' >%s 2>&1",
+                        $url,
+                        File::Spec->devnull())) == 0;
 }
 
+####################################
+# verified_url - Return a verified repository URL.
+#
+# Usage: verified_url($repo_info)
+#
+# Interrogates the provided repo_info hashref to ascertain the best URL
+# to use to clone the repository.
+#
+# Returns a verified URL.
 sub verified_url {
   my $repo_info = shift;
   my $read_only = shift || $options->{"read-only"};
-  if ($repo_info->{url}) {
+  if ($repo_info->{user_url}) {
     # No verification: assume the user knows what they want.
-    return $repo_info->{url};
+    return $repo_info->{user_url};
   } elsif ($read_only and exists $repo_info->{ro_url}) {
     if (have_read_access($repo_info->{ro_url})) {
       return $repo_info->{ro_url};
@@ -442,6 +383,8 @@ sub verified_url {
       error("Unable to verify read access to remote $repo_info->{ro_url}");
     }
   } elsif ($repo_info->{rw_url}) {
+    # FIXME expand this to use a handler system when we implement more
+    # repo types.
     if ($repo_info->{type} eq "redmine" and
         exists $repo_info->{ssh_access}) {
       # We can verify write access to this one.
@@ -449,13 +392,11 @@ sub verified_url {
       my $bad = `ssh $repo_info->{ssh_access} echo hi 2>&1 | grep -E 'Permission|authentication' | grep -v 'fake authentication' | wc -l`;
       if ($bad == 1) {
         report("Unable to verify write access for $repo_info->{repo}, falling back to read-only");
-        print join("\n", map { "$_ = $repo_info->{$_}"; } sort keys %$repo_info), "\n"; 
         return verified_url($repo_info, 1);
       } else {
         return $repo_info->{rw_url};
       }
     } elsif (have_read_access($repo_info->{rw_url})) {
-      # FIXME expand this when we implement more repo types.
       return $repo_info->{rw_url};
     } else {
       error("Unable to verify at least read access to remote $repo_info->{rw_url}");
@@ -465,68 +406,212 @@ sub verified_url {
   }
 }
 
-sub checkout_repo(\%) {
+####################################
+# clone_repo - Execute git clone for the specified URL.
+#
+# Usage: clone_repo($url, $destination)
+sub clone_repo {
+  my ($url, $destination) = @_;
+  my @clone_cmd = (qw(git clone), $url, $destination);
+  system(@clone_cmd) == 0 or
+    error("Unable to execute clone command: ", join(" ", @clone_cmd));
+}
+
+####################################
+# checkout_tree_ish - Execute git checkout with the specified tree-ish.
+#
+# Usage: checkout_tree_ish($destination, $tree_ish)
+# 
+sub checkout_tree_ish {
+  my ($destination, $tree_ish) = @_;
+  my $checkout_cmd =
+    sprintf("(cd \"%s\" && git checkout \"%s\")",
+            File::Spec->catdir($ENV{MRB_SOURCE}, $destination),
+            $tree_ish);
+  system($checkout_cmd) == 0 or
+    error("Unable to check out ${tree_ish} in ${destination}");
+}
+
+####################################
+# git_flow_init - Initialize git flow for the specified repository.
+#
+# Usage: git_flow_init($destination)
+#
+sub git_flow_init {
+  my $destination = shift;
+  my $path = File::Spec->catdir($ENV{MRB_SOURCE}, $destination);
+  # This is necessary for those packages where the default branch is not master and master does not exist
+  my $init_cmd = "(cd \"${path}\" && git checkout develop && git checkout master && git flow init -fd && git checkout develop && git branch --set-upstream-to=origin/develop && git pull)";
+  system($init_cmd) == 0 or error("Unable to initialize git flow in $path");
+}
+
+####################################
+# update_cmake - Add an entry for the specified product to
+#                CMakeLists.txt.
+#
+# Usage: update_cmake($destination)
+sub update_cmake {
+  my $destination = shift;
+  my $product_deps = File::Spec->join("$destination", "ups", "product_deps");
+  if (-e $product_deps) {
+    my $parent_line = `grep -e '^parent' "$product_deps"`;
+    my ($parent) = ($parent_line =~ m&^parent\s+(\w+)&o);
+    if ($parent ne $destination) {
+      error("$product_deps specifies product name $parent but you have checked the repo out as $destination.",
+            "\nPlease rectify either by renaming the top level directory or correcting the parent line in $product_deps.",
+            "\nThen, add to CMakeLists.txt with add_to_cmake.sh \"$ENV{MRB_SOURCE}\" \"<product>\".");
+    }
+    my $cmakeliststxt = File::Spec->join($ENV{MRB_SOURCE}, "CMakeLists.txt");
+    my $check_cmake_entry_cmd =
+      sprintf("grep -q -e '(%s)' '$cmakeliststxt' >%s 2>&1",
+              $destination,
+              File::Spec->devnull());
+    my @update_cmake_cmd = qw(add_to_cmake.sh $ENV{MRB_SOURCE} ${destination});
+    (system($check_cmake_entry_cmd) == 0 and
+     (report("CMakeLists.txt entry for product $destination already exists"), 1)) or
+       (system(@update_cmake_cmd) == 0 and
+        (report("Entry added to CMakeLists.txt for product ${destination}.",
+                -level => "VERBOSE"), 1)) or
+                  error("Unable to add product $destination to CMakeLists.txt");
+  } else {
+    report("Product ${destination} does not appear to have a ${product_deps} file: not adding to CMakeLists.txt.",
+           "\nExecute add_to_cmake.sh \"$ENV{MRB_SOURCE}\" \"${destination}\" when you have created it.",
+          -level => "WARNING");
+  }
+}
+
+####################################
+# get_repo - Execute all operations for the repo as specified by the
+#            given repo_info hash.
+#
+# Usage: get_repo(%repo_info)
+sub get_repo(\%) {
   my $repo_info = shift;
-  if ($options->{"read-only"} and exists $repo_info->{url}) {
-    report("Read-only global specification ignored for repo $repo_info->{repo} with user-specified url $repo_info->{url}",
+  if ($options->{"read-only"} and exists $repo_info->{user_url}) {
+    report("Read-only global specification ignored for repo $repo_info->{repo} with user-specified url $repo_info->{user_url}",
            -level => "INFO")
   }
   my $destination_arg = $options->{destination} || $repo_info->{product} || "";
   my $destination = $destination_arg || basename($repo_info->{repo});
   if (-e $destination) {
-    report("Repository $repo_info->{repo} already exists at $destination: skipping.",
+    report("Repository $repo_info->{repo} already exists at $destination.",
            -level => "WARNING");
-    return;
+  } else {
+    my $url = verified_url($repo_info);
+    clone_repo($url, $destination);
   }
-  my $url = verified_url($repo_info);
-  system(sprintf("git clone %s %s", $url, $destination));
-  if (exists $repo_info->{"tree-ish"}) {
-    system(sprintf("cd \"%s\" && git checkout \"%s\"",
-                   $destination,
-                   $repo_info->{"tree-ish"}));
-  }
+  git_flow_init($destination);
+  my $tree_ish = $repo_info->{"tree-ish"} || $global_tree_ish;
+  checkout_tree_ish($destination, $tree_ish) if $tree_ish;
+  update_cmake($destination);
 }
 
+####################################
+# expand_and_process_repo_specs - Process all non-option arguments.
+#
+# Usage: expand_and_process_repo_specs(@repo_specs)
 sub expand_and_process_repo_specs {
   my @repo_specs = @_;
+  my @expanded_specs = ();
   while (my $repo_spec = shift @repo_specs) {
-    my @expanded_items = expand_suite(${repo_spec});
-    if (@expanded_items) {
+    my @suite_items = $options->{"no-expand"} ?
+      () :
+      expand_suite(${repo_spec});
+    if (@suite_items) {
       report(sprintf("Exapanded $repo_spec to %s items",
-                     scalar @expanded_items),
+                     scalar @suite_items),
              -level => "VERBOSE");
-      unshift @repo_specs, @expanded_items;
+      unshift @repo_specs, @suite_items;
     } else {
-      report("Processing repo specification $repo_spec", -level => "VERBOSE");
-      my %repo_info = process_repo_spec($repo_spec);
-      checkout_repo(%repo_info);
+      push @expanded_specs, $repo_spec;
     }
+  }
+  if (scalar @expanded_specs > 1) {
+    if ($options->{destination}) {
+      error("Destination specification is meaningless if multiple repositories are specified.");
+    } elsif ($options->{commit}) {
+      error("Commit specification is meaningless if multiple repositories are specified.");
+    }
+  }
+  foreach my $repo_spec (@expanded_specs) {
+    report("Processing repo specification $repo_spec", -level => "VERBOSE");
+    my %repo_info = process_repo_spec($repo_spec);
+    get_repo(%repo_info);
   }
 }
 
-sub print_version {
+####################################
+# longest string - ascertain the longest argument.
+#
+# Usage: longest_string(@args)
+#
+# Returns the longest argument in the provided list.
+sub longest_string {
+  my $max = -1;
+  my $max_ref;
+  for (@_) {
+    if (length > $max) {
+      $max = length;
+      $max_ref = \$_;
+    }
+  }
+  return $$max_ref;
+}
+
+####################################
+# print_version - Print the version of this program.
+#
+# Usage: print_version()
+sub print_version() {
   print "${prog} ${version}\n";
 }
 
-sub print_repo_types {
-  print "Known repository types: \n";
-  my $unimplemented;
-  foreach my $type (sort keys %{$repo_handlers}) {
-    my $handler = $repo_handlers->{$type};
-    $handler or $unimplemented = 1;
-    printf "  %s%s\n", $type, (defined $handler) ? "" : " (unimplemented)";
-  }
-  print "\nN.B. If a desired repository type is missing or currently unimplemented, ${file_repo_type_request}\n"
-    if ($unimplemented);
-}  
+####################################
+# print_known_repos - Print the known repositories and their pertinent
+#                     information.
+sub print_known_repos() {
+  print "Known repositories: \n\n";
+  my $rl = length longest_string(map { $known_repos->{$_}->{repo}; } keys %$known_repos);
+  my $pl = length longest_string(map { $known_repos->{$_}->{product}; } keys %$known_repos);
+  my $tl = length longest_string(map { $known_repos->{$_}->{type}; } keys %$known_repos);
+  my $url_indent = ' ' x ($rl + $pl + $tl + 12);
+  printf "%-${rl}s    %-${pl}s    %-${tl}s    URLs\n", "Repository", "Product", "Type";
+  print map { sprintf("%-${rl}s    %-${pl}s    %-${tl}s    %s\n",
+                      $known_repos->{$_}->{repo},
+                      $known_repos->{$_}->{product},
+                      $known_repos->{$_}->{type},
+                      join(",\n$url_indent",
+                           ($known_repos->{$_}->{user_url} || (),
+                            $known_repos->{$_}->{rw_url} || (),
+                            $known_repos->{$_}->{ro_url} || ())));
+            } sort keys %$known_repos;
+}
 
-1;
 
+####################################
+# print_known_suites - Print the known suites and their pertinent
+#                      information.
+sub print_known_suites() {
+  print "Known suites: \n\n";
+  my $sl = length longest_string(map { "${_}_suite"; } keys %{$known_suites});
+  printf "%-${sl}s    Repositories\n", "Suite";
+  print map { sprintf("%-${sl}s    %s\n",
+                      "${_}_suite",
+                      join(" ", @{$known_suites->{$_}})); }
+    sort keys %{$known_suites};
+}
+
+########################################################################
+# Main code.
 GetOptions($options,
            "help|h|?",
            "branch|b=s",
+           "commit|c=s",
            "destination|directory|d=s",
+           "help-repos",
+           "help-suites",
            "help-repo-types",
+           "no-expand",
            "quiet|q",
            "read-only|r",
            "repo-type=s",
@@ -540,10 +625,26 @@ if ($options->{help}) {
 } elsif ($options->{"help-repo-types"}) {
   print_repo_types();
   exit(1);
+} elsif ($options->{"help-repos"}) {
+  print_known_repos();
+  exit(1);
+} elsif ($options->{"help-suites"}) {
+  print_known_suites();
+  exit(1);
 } elsif ($options->{version}) {
   print_version();
   exit(1);
 }
+
+my @tree_ish_args = grep m&(branch|commit|tree)&, sort keys %{$options};
+
+if (scalar @tree_ish_args > 1) {
+  error("Mutually-exclusive tree-ish options specified: ",
+        join(",", @tree_ish_args));
+}
+
+$global_tree_ish =
+  $options->{branch} || $options->{commit} || $options->{tag} || undef;
 
 my @REP = @ARGV;
 
@@ -556,87 +657,165 @@ error("MRB_SOURCE must be defined and non-empty: source the appropriate localPro
 chdir($ENV{MRB_SOURCE}) or
 error("Unable to change directory to MRB_SOURCE ($ENV{MRB_SOURCE})");
 
-if ($options->{destination} and scalar @REP > 1) {
-  error("Destination specification is meaningless if multiple repositories are specified.");
+if ($options->{destination} and
+    scalar File::Spec->splitdir($options->{destination}) > 1) {
+  error("Destination specification must be a name, not a path.");
 }
 
 expand_and_process_repo_specs(@REP);
 
-=pod
-
-# Make sure this product isn't already checked out
-# You can only have one copy of a given repository in any given srcs directory
-if [ -d ${MRB_SOURCE}/${repbase} ]
-then
-    echo "ERROR: $repbase directory already exists!"
-    exit 1
-fi
-if [ "x${destinationDir}" != "x" ] && [ -d ${MRB_SOURCE}/${destinationDir} ]
-then
-    echo "ERROR: ${MRB_SOURCE}/${destinationDir} directory already exists!"
-    exit 1
-fi
-
-
-if [[ ${useTag} ]]; then
-    echo "You are now on ${useTag}"
-elif [[ ${useBranch} ]]; then
-    echo "You are now on ${useBranch}"
-else
-    echo "You are now on the develop branch (check with 'git branch')"
-    echo "To make a new feature, do 'git flow feature start <featureName>'"
-fi
+1;
 
 =pod
 
-  # Usage function
-function usage() {
-  cat 1>&2 << EOF
-Usage: $fullCom [-r] [-d destination_name] [-b branch] [-t tag] <gitRepositoryName>
-  Clone a Git Repository to your development area. You should be in the srcs directory.
-  By default, you will be on the HEAD.
-  Options:
+=head1 NAME
 
-     -r                    = clone a read-only copy
-     
-     -d <destination_name> = use this name instead of the default repository name
-    
-     -b <branch>           = git clone, and then git checkout this branch
-     
-     -t <tag>              = git clone, and then git checkout this tag
+mrb gitCheckout - Clone one or more git repositories or suites to your development area.
 
-  Available suites:
-     art_suite: 
-       "cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io art gallery critic"
-     gallery_suite: 
-       "cetlib_except cetlib fhiclcpp messagefacility canvas canvas_root_io gallery"
-     larsoft_suite: 
-       "larcore lardata larevt larsim larg4 larreco larana larexamples lareventdisplay larpandora larwirecell larsoft"
-     larsoftobj_suite: 
-       "larcoreobj lardataobj larcorealg lardataalg larsoftobj"
-     uboone_suite:
-       "uboonecode ubutil uboonedata ublite ubana ubreco ubsim ubevt ubraw ubcrt ubcore ubcv ubobj"
-   
+=head1 SYNOPSIS
 
-EOF
-}
+B<mrb gitCheckout|g> B<-h|--help|-?> | B<--help-repo-types> | B<--help-repos> | B<--help-suites>
 
-function short_usage() {
-  cat 1>&2 << EOF
-Usage: $fullCom [-r] [-d destination_name] [-b branch] [-t tag] <gitRepositoryName>
-  Clone a Git Repository to your development area. You should be in the srcs directory.
-  By default, you will be on the HEAD.
-  Options:
+B<mrb gitCheckout|g> [I<options>] [--] I<spec>+
 
-     -r                    = clone a read-only copy
-     
-     -d <destination_name> = use this name instead of the default repository name
-    
-     -b <branch>           = git clone, and then git checkout this branch
-     
-     -t <tag>              = git clone, and then git checkout this tag
+I<spec> = I<suite>[@I<tree-ish>] OR
+       [I<product>%]I<URL>[@I<tree-ish>] OR
+       [I<product>%][I<type>:]I<repo>[%I<user>][@I<tree-ish>] OR
+       I<type>:I<product>[@I<tree-ish>]
 
-EOF
-}
+N.B. + implies optional repeated arguments.
+
+=head1 DESCRIPTION
+
+mrb gitCheckout facilitates the ordered checkout of one or more repositories or suites. It knows about many suites and common products. In addition to cloning the repository, mrb gitCheckout will initialize git flow and add an entry to the F<CMakeLists.txt> file if necessary.
+
+=head2 OPTIONS
+
+=over 2
+
+=item B<--branch> I<branch>
+
+=item B<-b> I<branch>
+
+After cloning, check out the specified I<branch>. Mutually-exclusive with B<--commit> and B<--tag>. Overridden by per-repository I<tree-ish> specification (see L</NON-OPTION ARGUMENTS>).
+
+=item B<--commit> I<commit>
+
+=item B<-c> I<commit>
+
+After cloning, check out the specified I<commit>. Mutually-exclusive with B<--branch> and B<--tag>. Overridden by per-repository I<tree-ish> specification. It is an error to specify --commit with multiple repository specifications.
+
+=item B<--destination> I<directory-name>
+
+=item B<--directory> I<directory-name>
+
+=item B<-d> I<directory-name>
+
+Clone the repository into the specified I<directory-name> rather than I<product> or C<`basename I<repo>`> It is an error to specify B<--directory> with multiple repository specifications. It is an error to specify B<--directory> if it is inconsistent with a product's name as specified in F<ups/product_deps>.
+
+=item B<--help>
+
+=item B<-h>
+
+=item B<-?>
+
+This help.
+
+=item B<--help-repos>
+
+Print the list of known repositories and their main attributes.
+
+=item B<--help-suites>
+
+Print the list of known suites and their repositories.
+
+=item B<--help-repo-types>
+
+Print the list of known repository types.
+
+=item B<--no-expand>
+
+Disable the expansion of known suites, repositories and products.
+
+=item B<--quiet>
+
+=item B<-q>
+
+Print only warnings and errors (overridden by B<--verbose>).
+
+=item B<--read-only>
+
+=item B<-r>
+
+Check out the repository in read-only mode.
+
+=item B<--repo-type> I<repo-type>
+
+Specify the repository type as I<repo-type>. Overridden by per-repository I<type> specification (see L</NON-OPTION ARGUMENTS>).
+
+=item B<--tag> I<tag>
+
+=item B<-t> I<tag>
+
+After cloning, check out the specified I<tag>. Mutually-exclusive with B<--branch> and B<--commit>. Overridden by per-repository I<tree-ish> specification (see L</NON-OPTION ARGUMENTS>).
+
+=item B<--verbose>
+
+=item B<-v>
+
+Increase verbosity (overrides B<--quiet>).
+
+=item B<--version>
+
+=item B<-V>
+
+Print version.
+
+=back
+
+=head2 NON-OPTION ARGUMENTS
+
+A I<spec> may be:
+
+=over 2
+
+=item I<suite>[@I<tree-ish>]
+
+If known, suite is expanded to its list of repositories, otherwise I<spec> is interpreted per below. See B<--help-suites> for a table of known suites. This form is not available if the B<--no-expand> option is used.
+
+=item [I<product>%]I<URL>[@I<tree-ish>]
+
+If not specified, I<product> is inferred from the basename of the URL.
+
+=item [I<product>%][I<type>:]I<repo>[%I<user>][@I<tree-ish>]
+
+=item I<type>:I<product>[@<tree-ish>]
+
+If not specified, I<type> defaults to redmine.
+
+If not specified, I<product> defaults to I<repo> and vice-versa.
+
+If recognized as a known product or repository, internal information is used and conflicting user-provided information is ignored. If this behavior is not what is desired, use the I<URL> form for I<spec> or the B<--no-expand> option.
+
+=back
+
+=head2 EXAMPLES
+
+=over 4
+
+=item mrb g larsoft_suite@v07_01_00
+
+Check out all the constituent repositories of the larsoft suite at the specified suite version.
+
+=item mrb g art
+
+Check out the art repository.
+
+=item mrb g -v my_repo%redmine:my-project_my-repo%my-project
+
+Check out the specific redmine repository.
+
+=back
 
 =cut
+
