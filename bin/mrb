@@ -39,7 +39,7 @@ export mrb_command=${mrb_bin}/mrb
 
 # Define the short list of commands
 shortComList="(newDev | gitCheckout | svnCheckout | mrbsetenv | build | install | test | makePackage | mrbslp | 
-           zapBuild | newProduct | changelog | changeQual | updateDepsCM | updateDepsPV | checkDeps | pullDeps | makeDeps )"
+           zapBuild | zapInstall | zapDist | newProduct | changelog | changeQual | updateDepsCM | updateDepsPV | checkDeps | pullDeps | makeDeps )"
 #  Adams's list:  | bumpVersion | updateDeps)"
 
 # Simple help if no argumets
@@ -90,6 +90,8 @@ Usage ${mrb_command} $shortComList [-h for help]"
    test (t)                    Run buildtool with tests
    makePackage (mp)            Make distribution tarballs
    zapBuild (z)                Delete everything in your build area
+   zapInstall (zi)             Delete everything in your localProducts area
+   zapDist (zd)                Delete everything in both your build and localProducts areas
    newProduct (p)              Create a new product from scratch
    changelog (c)               Display a changelog for a package
    updateDepsCM (uc)           Update the master CMakeLists.txt file
@@ -164,6 +166,14 @@ EOF
 
    # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)
     "zapBuild" | "z" ) ${mrb_bin}/zapBuild.sh $*
+        ;;
+
+   # Delete everything in this build area (safely) (calls &l=bin/zapInstall.sh&)
+    "zapInstall" | "zi" ) ${mrb_bin}/zapInstall.sh $*
+        ;;
+
+   # Delete everything in this build area (safely) (calls &l=bin/zapDist.sh&)
+    "zapDist" | "zd" ) ${mrb_bin}/zapDist.sh $*
         ;;
 
    # Display a git log
