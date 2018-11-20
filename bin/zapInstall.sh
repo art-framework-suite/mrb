@@ -36,13 +36,16 @@ if pwd | egrep -q '/local[^/]*$';
      fi
 fi
 
-# Make sure we're in a build area (something called .../localbla)
+# Make sure we're in a localProducts area
 cd ${MRB_INSTALL}
 if pwd | egrep -q '/local[^/]*$';
   then
-    echo "Removing everything in ${MRB_INSTALL}"
-    rm -rf * .??*
-
+    echo "Removing all products from in ${MRB_INSTALL}"
+    product_list=`find . -maxdepth 1 -type d`
+    for pdir in ${product_list}
+    do
+      rm -rf ${pdir}
+    done
   else
     echo "ERROR: ${MRB_INSTALL} does not point to a directory that starts with local"
     exit 2
