@@ -118,8 +118,8 @@ EOF
     "newDev" | "n"     ) ${mrb_bin}/newDev.sh $*
         ;;
 
-   # Clone a Redmine git repository (calls &l=bin/gitCheckout.sh&)
-    "gitCheckout" | "g" ) ${mrb_bin}/gitCheckout.sh $*
+   # Clone a Redmine git repository (calls &l=bin/gitCheckout&)
+    "gitCheckout" | "g" ) ${mrb_bin}/gitCheckout $*
         ;;
 
    # Checkout from a Redmine svn repository (calls &l=bin/svnCheckout.sh&)

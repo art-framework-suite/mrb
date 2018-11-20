@@ -8,7 +8,7 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   edit_product_deps
 		   findDir.sh
 		   get_setup_list.sh
-		   gitCheckout.sh
+		   gitCheckout
 		   makeDep.py
 		   makePackage.sh
 		   mrb
