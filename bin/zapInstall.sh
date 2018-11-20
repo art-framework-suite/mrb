@@ -40,11 +40,18 @@ fi
 cd ${MRB_INSTALL}
 if pwd | egrep -q '/local[^/]*$';
   then
-    echo "Removing all products from in ${MRB_INSTALL}"
-    product_list=`find . -maxdepth 1 -type d`
+    echo "Removing all products from ${MRB_INSTALL}"
+    # Start by finding the directories and ignoring $MRB_INSTALL itself
+    product_list=`find . -maxdepth 1  -mindepth 1 -type d`
     for pdir in ${product_list}
     do
-      rm -rf ${pdir}
+      # ignore any directory that does not contain a ups version
+      have_version=`find ${pdir} -name "*.version" -type d | wc -l`
+      if (( ${have_version} > 0 ))
+      then
+        echo "remove directory ${pdir} from \$MRB_INSTALL"
+        rm -rf ${pdir}
+      fi
     done
   else
     echo "ERROR: ${MRB_INSTALL} does not point to a directory that starts with local"
