@@ -20,7 +20,7 @@ Getopt::Long::Configure(qw(no_ignore_case bundling require_order));
 
 my $prog = basename($0);
 my $options = {};
-my $default_repo_type = "redmine";
+my $default_repo_type = "fnal";
 my $known_suites =
   { larsoft => [qw(larcore lardata larevt larsim larg4 larreco
                    larana larexamples lareventdisplay larpandora
@@ -41,10 +41,10 @@ my $version = "2.0.0";
 
 # Declare prototypes for repository handlers here, implement wherever
 # you like. Specify the appropriate handler in $repo_handlers, below.
-sub redmine_repo;
+sub fnal_repo;
 
 my $repo_handlers =
-  { redmine => \&redmine_repo,
+  { fnal => \&fnal_repo,
     github => undef, # Known but unimplemented currently.
     bitbucket => undef, # Known but unimplemented currently.
     gitlab => undef, # Known but unimplemented currently.
@@ -52,32 +52,30 @@ my $repo_handlers =
   };
 
 my @known_specs = 
-  ( redmine_repo("artdaq_core", "artdaq-core", "artdaq"),
-    redmine_repo("lariatfragments", "lariat-online-lariatfragments",
+  ( fnal_repo("artdaq_core", "artdaq-core", "artdaq"),
+    fnal_repo("lariatfragments", "lariat-online-lariatfragments",
                  "lariat_online"),
-    redmine_repo("lariatutil", "lardbt-lariatutil", "lardbt"),
-    redmine_repo("fhiclcpp", "fhicl-cpp"),
-    redmine_repo("lbne_raw_data", "lbne-raw-data"),
-    redmine_repo("artdaq_core_demo", "artdaq-core-demo"),
-    redmine_repo("artdaq_demo", "artdaq-demo"),
-    redmine_repo("artdaq_utilities", "artdaq-utilities"),
-    redmine_repo("artdaq_ganglia_plugin",
+    fnal_repo("lariatutil", "lardbt-lariatutil", "lardbt"),
+    fnal_repo("fhiclcpp", "fhicl-cpp"),
+    fnal_repo("lbne_raw_data", "lbne-raw-data"),
+    fnal_repo("artdaq_core_demo", "artdaq-core-demo"),
+    fnal_repo("artdaq_demo", "artdaq-demo"),
+    fnal_repo("artdaq_utilities", "artdaq-utilities"),
+    fnal_repo("artdaq_ganglia_plugin",
                  "artdaq-utilities-ganglia-plugin",
                  "artdaq-utilities"),
-    redmine_repo("artdaq_epics_plugin", "artdaq-utilities-epics-plugin",
+    fnal_repo("artdaq_epics_plugin", "artdaq-utilities-epics-plugin",
                  "artdaq-utilities"),
-    redmine_repo("artdaq_database", "artdaq-utilities-database",
+    fnal_repo("artdaq_database", "artdaq-utilities-database",
                  "artdaq-utilities"),
-    redmine_repo("artdaq_daqinterface", "artdaq-utilities-daqinterface",
+    fnal_repo("artdaq_daqinterface", "artdaq-utilities-daqinterface",
                  "artdaq-utilities"),
-    redmine_repo("artdaq_mpich_plugin", "artdaq-utilities-mpich-plugin",
+    fnal_repo("artdaq_mpich_plugin", "artdaq-utilities-mpich-plugin",
                  "artdaq-utilities"),
-    redmine_repo("artdaq_mfextensions", "mf-extensions-git")
+    fnal_repo("artdaq_mfextensions", "mf-extensions-git")
   );
 
-sub init_known_repos;
-
-my ($known_products, $known_repos) = init_known_repos();
+my ($known_products, $known_repos); # Initialized on startup.
 
 ########################################################################
 # Subroutines.
@@ -140,7 +138,7 @@ sub error {
   my $exitval = $args->{exitval} || 1;
   report(@{$args->{positional}}, -level => "ERROR");
   if ($args->{usage} || 0) {
-    pod2usage(-exitval => $exitval);
+    pod2usage(-exitval => $exitval, -width => 132);
   } else {
     exit($exitval);
   }
@@ -161,14 +159,14 @@ sub repo_args {
 }
 
 ####################################
-# redmine_repo - Handle a Redmine repository specification.
+# fnal_repo - Handle a FNAL Redmine repository specification.
 #
-# Usage: redmine_repo($product, $repo, $user)
+# Usage: fnal_repo($product, $repo, $user)
 #
 # Returns a repo_info hashref.
-sub redmine_repo {
+sub fnal_repo {
   my ($product, $repo, $user) = repo_args(@_);
-  return {type => "redmine",
+  return {type => "fnal",
           product => ${product},
           repo => ${repo},
           ssh_access => "p-${user}\@cdcvs.fnal.gov",
@@ -303,7 +301,7 @@ sub process_repo_spec {
     } else {
       $user = basename($repo) unless ${user};
       $type = $options->{"repo-type"} unless ${type};
-      %repo_info = %{handle_repo($type, $product, $repo, $user)};
+      %repo_info = %{handle_repo(lc $type, $product, $repo, $user)};
       $repo_info{origin} = "handled_repo";
     }
   } else {
@@ -385,7 +383,7 @@ sub verified_url {
   } elsif ($repo_info->{rw_url}) {
     # FIXME expand this to use a handler system when we implement more
     # repo types.
-    if ($repo_info->{type} eq "redmine" and
+    if ($repo_info->{type} eq "fnal" and
         exists $repo_info->{ssh_access}) {
       # We can verify write access to this one.
       report("Checking write access to $repo_info->{ssh_access}", -level => "VERBOSE");
@@ -491,8 +489,9 @@ sub get_repo(\%) {
     report("Read-only global specification ignored for repo $repo_info->{repo} with user-specified url $repo_info->{user_url}",
            -level => "INFO")
   }
-  my $destination_arg = $options->{destination} || $repo_info->{product} || "";
-  my $destination = $destination_arg || basename($repo_info->{repo});
+  my $destination = $options->{destination} ||
+    $repo_info->{product} ||
+    basename($repo_info->{repo});
   if (-e $destination) {
     report("Repository $repo_info->{repo} already exists at $destination.",
            -level => "WARNING");
@@ -567,6 +566,22 @@ sub print_version() {
 }
 
 ####################################
+# print_repo_types - Print the known repository types.
+#
+# Usage: print_repo_types()
+sub print_repo_types {
+  print "Known repository types: \n\n";
+  my $unimplemented;
+  foreach my $type (sort keys %{$repo_handlers}) {
+    my $handler = $repo_handlers->{$type};
+    $handler or $unimplemented = 1;
+    printf "  %s%s\n", $type, (defined $handler) ? "" : " (unimplemented)";
+  }
+  print "\nN.B. If a desired repository type is missing or currently unimplemented, ", repo_type_request("<type>"), "\n"
+    if ($unimplemented);
+}
+
+####################################
 # print_known_repos - Print the known repositories and their pertinent
 #                     information.
 sub print_known_repos() {
@@ -603,11 +618,13 @@ sub print_known_suites() {
 
 ########################################################################
 # Main code.
+init_known_repos();
+
 GetOptions($options,
            "help|h|?",
            "branch|b=s",
            "commit|c=s",
-           "destination|directory|d=s",
+           "destination|directory|product|d=s",
            "help-repos",
            "help-suites",
            "help-repo-types",
@@ -618,7 +635,7 @@ GetOptions($options,
            "tag|t=s",
            "verbose|v",
            "version|V",
-          ) or pod2usage(-exitval => 2);
+          ) or pod2usage(-exitval => 2, -width => 132);
 
 if ($options->{help}) {
   pod2usage(-exitval => 1, -verbose => 3);
@@ -676,14 +693,13 @@ mrb gitCheckout - Clone one or more git repositories or suites to your developme
 
 B<mrb gitCheckout|g> B<-h|--help|-?> | B<--help-repo-types> | B<--help-repos> | B<--help-suites>
 
-B<mrb gitCheckout|g> [I<options>] [--] I<spec>+
+B<mrb gitCheckout|g> B<-V>
 
-I<spec> = I<suite>[@I<tree-ish>] OR
-       [I<product>%]I<URL>[@I<tree-ish>] OR
-       [I<product>%][I<type>:]I<repo>[%I<user>][@I<tree-ish>] OR
-       I<type>:I<product>[@I<tree-ish>]
+B<mrb gitCheckout|g> [B<-b|--branch> I<branch> | B<-c|--commit> I<commit> | B<-t|--tag> I<tag>] [B<-d|--destination|--directory|--product> I<name>] [B<--no-expand>] [B<-q|--quiet>] [B<-r|--read-only>] [B<--repo-type> I<type>] [B<-V|--version>] [B<-v|--verbose>] [--] I<spec>+
 
-N.B. + implies optional repeated arguments.
+B<+> implies optional repeated arguments.
+
+For full argument help, see B<--help>.
 
 =head1 DESCRIPTION
 
@@ -697,7 +713,7 @@ mrb gitCheckout facilitates the ordered checkout of one or more repositories or 
 
 =item B<-b> I<branch>
 
-After cloning, check out the specified I<branch>. Mutually-exclusive with B<--commit> and B<--tag>. Overridden by per-repository I<tree-ish> specification (see L</NON-OPTION ARGUMENTS>).
+After cloning, check out the specified I<branch>. Mutually-exclusive with B<--commit> and B<--tag>. Overridden by per-repository I<tree-ish> specification (see L</ARGUMENTS>).
 
 =item B<--commit> I<commit>
 
@@ -705,13 +721,15 @@ After cloning, check out the specified I<branch>. Mutually-exclusive with B<--co
 
 After cloning, check out the specified I<commit>. Mutually-exclusive with B<--branch> and B<--tag>. Overridden by per-repository I<tree-ish> specification. It is an error to specify --commit with multiple repository specifications.
 
-=item B<--destination> I<directory-name>
+=item B<--destination> I<name>
 
-=item B<--directory> I<directory-name>
+=item B<--directory> I<name>
 
-=item B<-d> I<directory-name>
+=item B<-d> I<name>
 
-Clone the repository into the specified I<directory-name> rather than I<product> or C<`basename I<repo>`> It is an error to specify B<--directory> with multiple repository specifications. It is an error to specify B<--directory> if it is inconsistent with a product's name as specified in F<ups/product_deps>.
+=item B<--product> I<name>
+
+Clone the repository into the specified I<name>. It is an error to specify B<--directory> with multiple repository specifications. It is an error to specify B<--directory> if it is inconsistent with a product's name as specified in F<ups/product_deps>. This option overrides the I<product> component of I<spec>, if given. The latter, however, is the recommended mechanism for specifying the product name as it is more flexible and specific.
 
 =item B<--help>
 
@@ -751,13 +769,13 @@ Check out the repository in read-only mode.
 
 =item B<--repo-type> I<repo-type>
 
-Specify the repository type as I<repo-type>. Overridden by per-repository I<type> specification (see L</NON-OPTION ARGUMENTS>).
+Specify the repository type as I<repo-type>. Overridden by per-repository I<type> specification (see L</ARGUMENTS>).
 
 =item B<--tag> I<tag>
 
 =item B<-t> I<tag>
 
-After cloning, check out the specified I<tag>. Mutually-exclusive with B<--branch> and B<--commit>. Overridden by per-repository I<tree-ish> specification (see L</NON-OPTION ARGUMENTS>).
+After cloning, check out the specified I<tag>. Mutually-exclusive with B<--branch> and B<--commit>. Overridden by per-repository I<tree-ish> specification (see L</ARGUMENTS>).
 
 =item B<--verbose>
 
@@ -773,29 +791,29 @@ Print version.
 
 =back
 
-=head2 NON-OPTION ARGUMENTS
+=head2 ARGUMENTS
 
 A I<spec> may be:
 
 =over 2
 
-=item I<suite>[@I<tree-ish>]
+=item I<suite>[@I<branch|tag>]
 
-If known, suite is expanded to its list of repositories, otherwise I<spec> is interpreted per below. See B<--help-suites> for a table of known suites. This form is not available if the B<--no-expand> option is used.
+If known, suite is expanded to its list of repositories, otherwise I<spec> is interpreted per below. See B<--help-suites> for a table of known suites. This form is not available if the B<--no-expand> option is used. While B<mrb b> is not capable of detecting the specification of a commit rather than a branch or tag here, its use is contraindicated and will almost certainly not do what you want.
 
-=item [I<product>%]I<URL>[@I<tree-ish>]
+=item [I<product>%]I<URL>[@I<branch|commit|tag>]
 
 If not specified, I<product> is inferred from the basename of the URL.
 
-=item [I<product>%][I<type>:]I<repo>[%I<user>][@I<tree-ish>]
+=item [I<product>%][I<type>:]I<repo>[%I<user>][@I<branch|commit|tag>]
 
-=item I<type>:I<product>[@<tree-ish>]
+=item I<type>:I<product>[@<branch|commit|tag>]
 
-If not specified, I<type> defaults to redmine.
+If not specified, I<type> defaults to C<fnal>. See B<--help-repo-types> for a full list of known types.
 
 If not specified, I<product> defaults to I<repo> and vice-versa.
 
-If recognized as a known product or repository, internal information is used and conflicting user-provided information is ignored. If this behavior is not what is desired, use the I<URL> form for I<spec> or the B<--no-expand> option.
+If a known product or repository is recognized, internal information is used and conflicting user-provided information is ignored. If this behavior is not what is desired, use the I<URL> form for I<spec> or the B<--no-expand> option.
 
 =back
 
@@ -803,17 +821,21 @@ If recognized as a known product or repository, internal information is used and
 
 =over 4
 
-=item mrb g larsoft_suite@v07_01_00
+=item B<mrb g> larsoft_suite@v07_01_00
+
+=item B<mrb g> -t v07_01_00 larsoft_suite
 
 Check out all the constituent repositories of the larsoft suite at the specified suite version.
 
-=item mrb g art
+=item B<mrb g> -r art@art-v2-develop
 
-Check out the art repository.
+Check out the (known) art repository on the specified branch in read-only mode.
 
-=item mrb g -v my_repo%redmine:my-project_my-repo%my-project
+=item B<mrb g> -v my_repo%fnal:my-project_my-repo%my-project@feature/cool-stuff
 
-Check out the specific redmine repository.
+=item B<mrb g> -v -b feature/cool-stuff my_repo%fnal:my-project_my-repo%my-project
+
+Check out the B<feature/cool-stuff> branch of the C<my-repository_my-repo> branch from FNAL Redmine as the product C<my_repo> with the URL as calculated to be C<ssh://p-my-project@cdcvs.fnal.gov/cvs/projects/my-project_my-repo>, per the rules for FNAL Redmine repositories. Provide verbose messages.
 
 =back
 
