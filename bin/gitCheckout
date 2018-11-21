@@ -301,7 +301,7 @@ sub process_repo_spec {
     } else {
       $user = basename($repo) unless ${user};
       $type = $options->{"repo-type"} unless ${type};
-      %repo_info = %{handle_repo(lc $type, $product, $repo, $user)};
+      %repo_info = %{handle_repo(lc $type || undef, $product, $repo, $user)};
       $repo_info{origin} = "handled_repo";
     }
   } else {
@@ -331,8 +331,9 @@ sub expand_suite {
   my $repo_spec = shift;
   my ($suite, $treeish);
   my $known_suites_expr = join("|", sort keys %{$known_suites});
+  report("Checking $repo_spec against $known_suites_expr", -level => "VERBOSE");
   if (($suite, $treeish) =
-      ($repo_spec =~ m&^($known_suites_expr)_suite@(.*)?$&o)) {
+      ($repo_spec =~ m&^($known_suites_expr)_suite(?:@(.*))?$&o)) {
     report("Expanding $repo_spec");
   } else {
     return ();
@@ -342,7 +343,7 @@ sub expand_suite {
     report("Using tag $treeish for suite $suite");
   }
   return map { sprintf("${_}%s", $treeish ? "\@${treeish}" : ""); }
-    $known_suites->{$suite};
+    @{$known_suites->{$suite}};
 }
 
 ####################################
@@ -464,7 +465,7 @@ sub update_cmake {
       sprintf("grep -q -e '(%s)' '$cmakeliststxt' >%s 2>&1",
               $destination,
               File::Spec->devnull());
-    my @update_cmake_cmd = qw(add_to_cmake.sh $ENV{MRB_SOURCE} ${destination});
+    my @update_cmake_cmd = ("add_to_cmake.sh", "$ENV{MRB_SOURCE}", "${destination}");
     (system($check_cmake_entry_cmd) == 0 and
      (report("CMakeLists.txt entry for product $destination already exists"), 1)) or
        (system(@update_cmake_cmd) == 0 and
@@ -517,8 +518,9 @@ sub expand_and_process_repo_specs {
       () :
       expand_suite(${repo_spec});
     if (@suite_items) {
-      report(sprintf("Exapanded $repo_spec to %s items",
-                     scalar @suite_items),
+      report(sprintf("Exapanded $repo_spec to %s items: %s",
+                     scalar @suite_items,
+                    join(", ", @suite_items)),
              -level => "VERBOSE");
       unshift @repo_specs, @suite_items;
     } else {
@@ -699,7 +701,7 @@ B<mrb gitCheckout|g> [B<-b|--branch> I<branch> | B<-c|--commit> I<commit> | B<-t
 
 B<+> implies optional repeated arguments.
 
-For full argument help, see B<--help>.
+I<spec> may be a suite, product name, repository name or URL. For a full explanation of this flexibility, see section L</ARGUMENTS> with B<--help>.
 
 =head1 DESCRIPTION
 
