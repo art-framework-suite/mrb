@@ -301,7 +301,7 @@ sub process_repo_spec {
     } else {
       $user = basename($repo) unless ${user};
       $type = $options->{"repo-type"} unless ${type};
-      %repo_info = %{handle_repo(lc $type || undef, $product, $repo, $user)};
+      %repo_info = %{handle_repo($type ? lc $type : undef, $product, $repo, $user)};
       $repo_info{origin} = "handled_repo";
     }
   } else {
