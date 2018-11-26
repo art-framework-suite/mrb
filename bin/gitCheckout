@@ -438,10 +438,14 @@ sub checkout_tree_ish {
 #
 sub git_flow_init {
   my $destination = shift;
+  report("Initializing git flow for $destination", -level => 'VERBOSE');
   my $path = File::Spec->catdir($ENV{MRB_SOURCE}, $destination);
   # This is necessary for those packages where the default branch is not master and master does not exist
-  my $init_cmd = "(cd \"${path}\" && git checkout develop && git checkout master && git flow init -fd && git checkout develop && git branch --set-upstream-to=origin/develop && git pull)";
-  system($init_cmd) == 0 or error("Unable to initialize git flow in $path");
+  my $output = `(cd \"${path}\" && git checkout develop && git checkout master && git flow init -fd && git checkout develop && git branch --set-upstream-to=origin/develop && git pull) 2>&1`;
+  if ($? != 0) {
+    error("Unable to initialize git flow in $path: exit, code ",
+          $? >> 8, ", output:\n", $output);
+  }
 }
 
 ####################################
