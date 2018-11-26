@@ -8,7 +8,7 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   edit_product_deps
 		   findDir.sh
 		   get_setup_list.sh
-		   gitCheckout.sh
+		   gitCheckout
 		   makeDep.py
 		   makePackage.sh
 		   mrb
@@ -22,6 +22,8 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   updateDepsPV.sh
 		   updateSource.sh
 		   zapBuild.sh
+		   zapDist.sh
+		   zapInstall.sh
           DESTINATION ${product}/${version}/bin )
 
 INSTALL (FILES mrb_parse_deps.pm
