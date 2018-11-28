@@ -37,7 +37,7 @@ my $known_suites =
   };
 my $global_tree_ish;
 
-my $version = "2.0.0";
+my $version = "2.0.1";
 
 # Declare prototypes for repository handlers here, implement wherever
 # you like. Specify the appropriate handler in $repo_handlers, below.
@@ -440,9 +440,19 @@ sub git_flow_init {
   my $destination = shift;
   report("Initializing git flow for $destination", -level => 'VERBOSE');
   my $path = File::Spec->catdir($ENV{MRB_SOURCE}, $destination);
-  # This is necessary for those packages where the default branch is not master and master does not exist
-  my $output = `(cd \"${path}\" && git checkout develop && git checkout master && git flow init -fd && git checkout develop && git branch --set-upstream-to=origin/develop && git pull) 2>&1`;
-  if ($? != 0) {
+  # This elaborate procedure is necessary for those packages where the
+  # default branch is not master and master does not exist.
+  my $output = `(cd \"${path}\" && { git checkout develop || git checkout -b develop; } && { git checkout master || git checkout -b master; } && git flow init -fd && git checkout develop) 2>&1`;
+  if ($? == 0) {
+    # If we had to create any branches, inform the user how they should
+    # be pushed.
+    my @branch_check = `( cd \"${path}\" && git branch -a ) 2>&1`;
+    $? == 0 or error("Unable to execute git branch -a to examine branches.");
+    foreach my $branch (qw(develop master)) {
+      grep m&\borigin/$branch\b&, @branch_check or
+        report("Branch $branch has been created: when pushing upstream, use `git push -u' to configure future pull operations.");
+    }
+  } else {
     error("Unable to initialize git flow in $path: exit, code ",
           $? >> 8, ", output:\n", $output);
   }
