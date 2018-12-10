@@ -5,158 +5,321 @@
 
 use File::Basename;
 use lib dirname($0);
+use POSIX qw(uname);
 
 use mrb_parse_deps;
 
 use strict;
 use warnings;
 
-if( $#ARGV < 1 ) {
-    my $errfl1 = "problem_report";
-    open(ERR1, "> $errfl1") or die "Couldn't open $errfl1";
-    print ERR1 "\n";
-    print ERR1 "unsetenv_ CETPKG_NAME\n";
-    print ERR1 "unsetenv_ CETPKG_VERSION\n";
-    print ERR1 "unsetenv_ CETPKG_QUAL\n";
-    print ERR1 "unsetenv_ CETPKG_TYPE\n";
-    print ERR1 "unsetenv_ CETPKG_CC\n";
-    print ERR1 "unsetenv_ CETPKG_CXX\n";
-    print ERR1 "unsetenv_ CETPKG_FC\n";
-    print ERR1 "echo \"ERROR: directory not specified\"\n";
-    print ERR1 "echo \"USAGE: setup_products <input-directory> <build-directory>\"\n";
-    print ERR1 "return 1\n";
-    close(ERR1);
-    print "$errfl1\n";
-    exit 0;
+my $max_resolution_loops = 200;
+
+sub reconcile_compiler {
+  my $all_packages = shift;
+  my $compilers = { map { ($all_packages->{$_}->{compiler} => 1); }
+                    keys %{$all_packages} };
+  if (scalar keys %{$compilers} > 1) {
+    setup_error("problem_report",
+                "Inconsistent compilers reported across packages: ",
+                join(", ", keys %{$compilers})
+               );
+  }
+  return (keys %{$compilers})[0];
 }
 
-my $sourcedir = $ARGV[0];
+sub enhance_phash_info {
+  # Add qualifiers to dependency entries in *resolved* phashes in
+  # setup_products_hash.
+  my ($setup_products_hash, $dfh) = @_;
+  foreach my $prod (keys %{$setup_products_hash}) {
+    my $prod_entry = $setup_products_hash->{$prod};
+    my $phash = $prod_entry->{phash};
+    my $qhash = $prod_entry->{qhash};
+    foreach my $dep (keys %{$phash}) {
+      my $qual = $qhash->{$dep};
+      if ($qual and $qual eq "-") {
+        delete $phash->{$dep};
+        next;
+      }
+      $phash->{$dep}->{qual} =
+        ((not $qual and $phash->{$dep}->{only_for_build}) or
+         $qual eq "-b-") ? "-nq-" : $qual;
+      $phash->{$dep}->{only_for_build} = 1 if $qual && $qual eq "-b-";
+    }
+  }
+}
 
-my $builddir = $ARGV[1];
+sub reconcile_dep_quals {
+  # Enforce matching qualifiers while reconciling dupes.
+  my ($phash, $dfh) = @_;
+  my $result = { };
+  foreach my $prod (keys %{$phash}) {
+    foreach my $dep (keys %{$phash->{$prod}}) {
+      my $incoming = $phash->{$prod}->{$dep};
+      unless ($incoming->{qual} or $incoming->{qual}) {
+        setup_error("problem_report",
+                    "product_deps for $prod does not specify a qualifier for non-only-for-build dependency $dep");
+      }
+      if (exists $result->{$dep}->{$phash->{$prod}->{$dep}->{version}}) {
+        # Merge entries.
+        my $existing = $result->{$dep}->{$phash->{$prod}->{$dep}->{version}};
+        if ($existing->{only_for_build} and not $existing->{qual}) {
+          # Only allow missing qualifier for only_for_build deps.
+          $existing->{qual} = $incoming->{qual} if $incoming->{qual};
+        }
+        # Only only_for_build if everyone agrees.
+        delete $existing->{only_for_build} unless $incoming->{only_for_build};
+        if ($existing->{qual} ne $incoming->{qual}) {
+          setup_error("problem_report",
+                      "Qualifiers for dependency $dep are inconsistent between product_deps for packages",
+                      "$existing->{origin} ($existing->{qual}) and $prod ($incoming->{qual}).");
+        }
+        # Only optional if everyone agrees.
+        delete $existing->{optional} unless $incoming->{optional};
+      } else {
+        # New entry.
+        $result->{$dep}->{$phash->{$prod}->{$dep}->{version}} = $incoming;
+        # Record origin product for which this is a dependency.
+        $result->{$dep}->{$phash->{$prod}->{$dep}->{version}}->{origin} = $prod;
+      }
+    }
+  }
+  return $result;
+}
+
+sub reconcile_deps {
+  my ($setup_products_hash, $dfh) = @_;
+  my $product_phashes = { map { ($_ => $setup_products_hash->{$_}->{phash}); }
+                          keys %{$setup_products_hash} };
+#  print $dfh annotated_items("product_phashes: ", $product_phashes), "\n";
+  return reconcile_dep_quals($product_phashes, $dfh);
+}
+
+sub reconcile_only_for_build {
+  my ($setup_products_hash, $dfh) = @_;
+
+  my $ofb_phash =
+    { map { my $ofb = get_only_for_build($setup_products_hash->{$_}->{phash}, $dfh);
+            (scalar keys %{$ofb}) ? ($_ => $ofb) : () }
+      keys %{$setup_products_hash} };
+
+  my $ofb_deps = reconcile_dep_quals($ofb_phash, $dfh);
+
+  # Get the definitive list of versions of only_for_build dependencies,
+  # remembering optional status.
+  my $reconciled_ofb =
+    { map { ($_ => $ofb_deps->{$_}->{latest_version(keys %{$ofb_deps->{$_}})}); }
+      keys %{$ofb_deps} };
+
+  return $reconciled_ofb;
+}
+
+if ( $#ARGV < 1 ) {
+  setup_error("problem_report",
+              "directories not specified",
+              "USAGE: setup_products <input-directory> <build-directory>");
+}
+
+my $sourcedir = shift;
+my $builddir = shift;
+
 # use this file for debugging
-my $diagfl = $builddir."/diag_report";
+my $diagfl = "$builddir/diag_report";
 open(my $dfh, "+> $diagfl") or die "Couldn't open $diagfl";
 
-my $simple = "false";
-for my $i ( 2 .. $#ARGV ) {
-    if( $ARGV[$i] eq "simple" ) {
-      $simple = "true";
-    } else {
-      print $dfh "setup_products debug info: ignoring $ARGV[$i]\n";
-    }
-}
+my $simple =
+  (grep { $_ eq "simple" or
+            do { print $dfh "setup_products debug info: ignoring $_"; 0; } }
+   @ARGV) ? "true" : "false";
 
 my $mrb_project = $ENV{MRB_PROJECT};
 my $mrb_project_version = $ENV{MRB_PROJECT_VERSION};
-$setup_products::mrb_quals = sort_qual ( $ENV{MRB_QUALS} );
-#print $dfh "setup_products debug info: mrb_quals is $setup_products::mrb_quals \n";
-
-# determine the compiler based on mrb_quals
-my $default_fc = ( $^O eq "darwin" ) ? "-" : "gfortran";
-my $compiler;
-if (!$compiler) {
-  my @quals = split /:/, $setup_products::mrb_quals;
-  if (grep /^(e|gcc)\d+$/, @quals) {
-    $compiler = "gcc";
-  } elsif (grep /^(i|icc)\d+$/, @quals) {
-    $compiler = "icc";
-  } elsif (grep /^(c)\d+$/, @quals) {
-      $compiler = "clang";
-  } else {
-    $compiler = "cc"; # Native.
-  }
-}
-my $compiler_table =
-  {
-   cc => { CC => "cc", CXX => "c++", FC => $default_fc },
-   gcc => { CC => "gcc", CXX => "g++", FC => "gfortran" },
-   icc => { CC => "icc", CXX => "icpc", FC => "ifort" },
-   clang => { CC => "clang", CXX => "clang++", FC => "gfortran" },
-  };
+my $mrb_quals = sort_qual ( $ENV{MRB_QUALS} );
+#print $dfh "setup_products debug info: mrb_quals is $mrb_quals \n";
 
 # determine build type from MRB_QUALS
+my ($dop, $type) = ("undefined", "undefined");
 if ( $simple eq "true" ) {
-  $setup_products::dop = "";
-  $setup_products::type = "simple";
-} elsif ( $setup_products::mrb_quals eq "-nq-" ) {
+  $dop = "";
+  $type = "simple";
+} elsif ( $mrb_quals eq "-nq-" ) {
   $simple = "true";
-  $setup_products::dop = "";
-  $setup_products::type = "simple";
+  $dop = "";
+  $type = "simple";
 } else {
-  $setup_products::dop = "undefined";
-  $setup_products::type = "undefined";
-  my @qlist=split(/:/,$setup_products::mrb_quals);
+  my @qlist=split(/:/,$mrb_quals);
   for my $i ( 0 .. $#qlist ) {
-      #print $dfh "setup_products debug info: qualifier $i $qlist[$i]\n";
-      if( $qlist[$i] eq "debug" ) {
-	$setup_products::dop = "debug";
-	$setup_products::type = "Debug";
-      } elsif( $qlist[$i] eq "opt" ) {
-	$setup_products::dop = "opt";
-	$setup_products::type = "Opt";
-      } elsif( $qlist[$i] eq "prof" ) {
-	$setup_products::dop = "prof";
-	$setup_products::type = "Prof";
-      }
+    #print $dfh "setup_products debug info: qualifier $i $qlist[$i]\n";
+    if ( $qlist[$i] eq "debug" ) {
+      $dop = "debug";
+      $type = "Debug";
+    } elsif ( $qlist[$i] eq "opt" ) {
+      $dop = "opt";
+      $type = "Opt";
+    } elsif ( $qlist[$i] eq "prof" ) {
+      $dop = "prof";
+      $type = "Prof";
+    }
   }
-  if ( $setup_products::dop eq "undefined" ) {
-      my $errfl2 = "problem_report";
-      open(ERR2, "> $errfl2") or die "Couldn't open $errfl2";
-      print ERR2 "\n";
-      print ERR2 "unsetenv_ CETPKG_NAME\n";
-      print ERR2 "unsetenv_ CETPKG_VERSION\n";
-      print ERR2 "unsetenv_ CETPKG_QUAL\n";
-      print ERR2 "unsetenv_ CETPKG_TYPE\n";
-      print ERR2 "unsetenv_ CETPKG_CC\n";
-      print ERR2 "unsetenv_ CETPKG_CXX\n";
-      print ERR2 "unsetenv_ CETPKG_FC\n";
-      print ERR2 "echo \"ERROR: \"\n";
-      print ERR2 "echo \"ERROR: build type is undefined\"\n";
-      print ERR2 "echo \"ERROR: MRB_QUALS is $setup_products::mrb_quals\"\n";
-      print ERR2 "echo \"ERROR: One of debug, opt, or prof must be specified.\"\n";
-      print ERR2 "echo \"ERROR: \"\n";
-      print ERR2 "return 1\n";
-      close(ERR2);
-      print "$errfl2\n";
-      exit 0;
+  if ( $dop eq "undefined" ) {
+    setup_error("problem_report",
+                "build type is undefined",
+                "MRB_QUALS is \"$mrb_quals\"",
+                "One of debug, opt, or prof must be specified.");
   }
 }
+
+# have to find the list of packages to traverse
+my $cmakefile="$sourcedir/CMakeLists.txt";
+
+my $tmpfl = "$builddir/$mrb_project-$mrb_project_version";
+##print $dfh "setup_products debug info: opening $tmpfl for $mrb_project $mrb_project_version\n";
+open(my $tfh, "+> $tmpfl") or die "Couldn't open $tmpfl";
+
+my @package_list = get_package_list( $cmakefile, $dfh );
+#print $dfh "DIAGNOSTICS: packages to check: $#package_list @package_list\n";
+if ( $#package_list < 0 ) {
+  print $dfh "DIAGNOSTICS: there are no packages in $sourcedir\n";
+  print $dfh "DIAGNOSTICS: nothing to build\n";
+  print "$tmpfl\n";
+  exit 0;
+}
+
+# Initialize omnibus data structure.
+my $all_packages = {};
+
+foreach my $pkg (@package_list) {
+  # Obtain all the information for this package.
+  my $pfile = "$sourcedir/$pkg/ups/product_deps";
+  my $phash = get_product_list($pfile);
+  my ($qlen, $qhash, $qqhash) = get_qualifier_matrix($pfile, $tfh);
+  my ($name, $version, $default_version, $default_qual, $have_fq) =
+    get_parent_info($pfile);
+  my $fcl_dir = get_fcl_directory($pfile, $pkg, "$pkg/fcl");
+  my $gdml_dir = get_gdml_directory($pfile, $pkg);
+  my $perl_dir = get_perllib($pfile, $pkg);
+  my $fw_dir = get_fw_directory($pfile, $pkg);
+  my $root_path = get_root_path($pfile, $pkg);
+  my ($fwlen, $fwlist, $fwdirs) = get_setfw_list($pfile);
+  # determine the compiler based on mrb_quals
+  my $compiler = compiler_for_quals($qhash->{compiler} || {}, $mrb_quals);
+  # Load it all into the master hash.
+  $all_packages->{$pkg} =
+    { map { eval "($_ => \$$_)"; }
+      qw(pfile phash qhash qqhash name version default_version
+         default_qual have_fq compiler fcl_dir gdml_dir perl_dir fw_dir
+         root_path fwlist fwdirs) };
+}
+
+# We have all the dependency information. Next, resolve the dependency
+# matrix to ascertain the correct qualifiers for each product.
+my $setup_products_hash = {};
+
+# We will assume that $mrb_quals applies to $mrb_project, if that is a
+# package, and any package not mentioned in the dependency tree of any
+# other package. Note that we do *not* use UPS to fill in gaps.
+my $npkgs = scalar @package_list;
+foreach my $pkg (keys %{$all_packages}) {
+  my $qqhash = $all_packages->{$pkg}->{qqhash} || undef;
+  if (($pkg eq $mrb_project and $qqhash)
+      or not grep { grep { $_ eq $pkg } keys %{$all_packages->{$_}->{qhash}} }
+      keys %{$all_packages}) {
+    if (exists $qqhash->{$mrb_quals}) {
+      $setup_products_hash->{$pkg} =
+        { qual => $mrb_quals,
+          phash => prods_for_quals($all_packages->{$pkg}->{phash}, $mrb_quals),
+          qhash => $qqhash->{$mrb_quals}
+        };
+    } else {
+      setup_error("problem_report",
+                  "product $pkg must have an entry in qualifier_list corresponding to",
+                  "specified MRB_QUALS ${mrb_quals}, or a dependent package that does."
+                 );
+    }
+  }
+}
+
+# Look for each unresolved package in the correct qualifier row for
+# packages we've already resolved, or in the qualifier-filtered
+# product_list of same if we find it listed as an only_for_build
+# product.
+for (my $iloop = 0;
+     $npkgs > scalar keys %{$setup_products_hash} and
+     $iloop < $max_resolution_loops;
+     ++$iloop) {
+  for my $pkg (grep {not exists $setup_products_hash->{$_}; } @package_list) {
+    # For each remaining unresolved package, attempt to find it in the
+    # dependencies of packages we've already dealt with for the current
+    # qualifiers.
+    my $found_in_deps =
+      { map { my $result = $setup_products_hash->{$_}->{qhash}->{$pkg} ||
+              (exists $setup_products_hash->{$_}->{phash}->{$pkg} and
+               $setup_products_hash->{$_}->{phash}->{$pkg}->{only_for_build} and
+               "-nq-");
+            if (not $result or $result eq '-') {
+              ();
+            } else {
+              ( $_ => { qual => ($result eq "-b") ? "-nq-" : $result } );
+            }
+          } keys %{$setup_products_hash} };
+    if (scalar keys %{$found_in_deps}) {
+      # Check for an unambiguous qualifier.
+      my $quals = { map { ($found_in_deps->{$_}->{qual} => 1); } keys %{$found_in_deps} };
+      scalar keys %{$quals} > 1 and
+        setup_error("problem_report",
+                    sprintf("could not ascertain unambiguous qualifier (\%s) for package $pkg from",
+                            join(", ", sort keys %{$quals})),
+                    sprintf("dependency information found in packages \%s",
+                            join(", ", keys %{$found_in_deps})),
+                    "with MRB_QUALS=$mrb_quals."
+                   );
+      # Find the lowest level in the dependency tree.
+      my $found_dep_info = (keys %{$found_in_deps})[0];
+      my ($qual) = ($found_in_deps->{$found_dep_info}->{qual});
+      if (exists $all_packages->{$pkg}->{qqhash}->{$qual}) {
+        $setup_products_hash->{$pkg} =
+          { qual => $qual,
+            phash => prods_for_quals($all_packages->{$pkg}->{phash}, $qual),
+            qhash => $all_packages->{$pkg}->{qqhash}->{$qual}
+          };
+      } else {
+        setup_error("problem_report",
+                    "could not find information for qualifier $qual of package $pkg"
+                   );
+      }
+    } else {
+      next;
+    }
+  }
+}
+
+# Check we resolved everything.
+$npkgs > scalar keys %{$setup_products_hash} and
+  setup_error("problem_report",
+              "exceeded loop limit ($max_resolution_loops) attempting to resolve qualifiers for packages.");
+
+# print $dfh annotated_items("package_list: ", @package_list), "\n";
+# print $dfh annotated_items("setup_products_hash keys: ", keys %{$setup_products_hash}), "\n";
+enhance_phash_info($setup_products_hash, $dfh);
+
+#print $dfh annotated_items("setup_products_hash: ", $setup_products_hash), "\n";
 
 my $srcbase = basename($sourcedir);
 my $inputdir;
 if ( $srcbase eq "ups" ) {
-    $inputdir = $sourcedir;
-    ##print $dfh "setup_products debug info: have the old setup_for_development\n";
-    my $errfl2 = "problem_report";
-    open(ERR2, "> $errfl2") or die "Couldn't open $errfl2";
-    print ERR2 "\n";
-    print ERR2 "unsetenv_ CETPKG_NAME\n";
-    print ERR2 "unsetenv_ CETPKG_VERSION\n";
-    print ERR2 "unsetenv_ CETPKG_QUAL\n";
-    print ERR2 "unsetenv_ CETPKG_TYPE\n";
-    print ERR2 "unsetenv_ CETPKG_CC\n";
-    print ERR2 "unsetenv_ CETPKG_CXX\n";
-    print ERR2 "unsetenv_ CETPKG_FC\n";
-    print ERR2 "echo \"ERROR: \"\n";
-    print ERR2 "echo \"ERROR: you have an old copy of setup_for_development\"\n";
-    print ERR2 "echo \"ERROR: please issue the following command\"\n";
-    print ERR2 "echo \"ERROR: cp \$CETBUILDTOOLS_DIR/templates/setup_for_development.template $inputdir/setup_for_development\"\n";
-    print ERR2 "echo \"ERROR: \"\n";
-    print ERR2 "return 1\n";
-    close(ERR2);
-    print "$errfl2\n";
-    exit 0;
+  $inputdir = $sourcedir;
+  ##print $dfh "setup_products debug info: have the old setup_for_development\n";
+  setup_error("problem_report2",
+              "you have an old copy of setup_for_development",
+              "please issue the following command",
+              "cp \$CETBUILDTOOLS_DIR/templates/setup_for_development.template $inputdir/setup_for_development");
 } else {
-    $inputdir = $sourcedir."/ups";
+  $inputdir = "$sourcedir/ups";
 }
 #print $dfh "setup_products debug info: source dir is $sourcedir\n";
 
-my $tmpfl = $builddir."/".$mrb_project."-".$mrb_project_version;
-##print $dfh "setup_products debug info: opening $tmpfl for $mrb_project $mrb_project_version\n";
-open(my $tfh, "+> $tmpfl") or die "Couldn't open $tmpfl";
-
-my $override=$ENV{UPS_OVERRIDE};
-if( $override ) {
+my $override = $ENV{UPS_OVERRIDE};
+if ( $override ) {
   if (grep /\-B/, $override) {
     print  $tfh "# UPS_OVERRIDE is already $override\n";
   } else {
@@ -165,150 +328,211 @@ if( $override ) {
 } else {
   print $tfh "setenv UPS_OVERRIDE \"-B\"\n";
 }
-print $tfh "setenv CETPKG_NAME $mrb_project\n";
-print $tfh "setenv CETPKG_VERSION $mrb_project_version\n";
-if ( $simple eq "true" ) {
-  print $tfh "unsetenv_ CETPKG_QUAL\n";
-  print $tfh "unsetenv_ CETPKG_TYPE\n";
-  print $tfh "unsetenv_ CETPKG_CC\n";
-  print $tfh "unsetenv_ CETPKG_CXX\n";
-  print $tfh "unsetenv_ CETPKG_FC\n";
-} else {
-  print $tfh "setenv CETPKG_QUAL $setup_products::mrb_quals\n";
-  print $tfh "setenv CETPKG_TYPE $setup_products::type\n";
-  print $tfh "setenv CETPKG_CC $compiler_table->{$compiler}->{CC}\n";
-  print $tfh "setenv CETPKG_CXX $compiler_table->{$compiler}->{CXX}\n";
-  print $tfh "setenv CETPKG_FC $compiler_table->{$compiler}->{FC}\n";
+
+my $compiler = reconcile_compiler($all_packages);
+
+# Boilerplate, including cetpkgsupport.
+print_setup_boilerplate($tfh,
+                        $mrb_project, $mrb_project_version, $simple eq "true",
+                        $mrb_quals, $type, $compiler);
+
+my $ofb_products = reconcile_only_for_build($setup_products_hash, $dfh);
+# print $dfh annotated_items("ofb_products: ", $ofb_products), "\n";
+
+my $regular_products = reconcile_deps($setup_products_hash, $dfh);
+# print $dfh annotated_items("regular_products: ", $regular_products), "\n";
+
+foreach my $prod (keys %{$regular_products}) {
+  # Not interested in only_for_build products.
+  if (grep { $_ eq $prod } (keys %{$ofb_products})) {
+    delete $regular_products->{$prod};
+    next;
+  }
+  # Check for inconsistent dependency versions (we already checked for
+  # inconsistent qualifiers) and collapse the hierarchy.
+  if (scalar keys %{$regular_products->{$prod}} > 1) {
+    setup_error("problem_report",
+                "Inconsistent versions for dependency $prod from product_deps for packages:",
+                join(", ", map { sprintf("%s (%s)", $_->{origin}, $_->{version}); }
+                     keys %{$regular_products->{$prod}}));
+  }
+  # Collapse the hierarchy.
+  $regular_products->{$prod} =
+    $regular_products->{$prod}->{(keys %{$regular_products->{$prod}})[0]};
 }
 
-# have to find the list of packages to traverse
-my $cmakefile=$sourcedir."/CMakeLists.txt";
-@setup_products::package_list = get_package_list( $cmakefile, $dfh );
-#print $dfh "DIAGNOSTICS: packages to check: $#setup_products::package_list @setup_products::package_list\n";
-if ( $#setup_products::package_list < 0 ) {
-  print $dfh "DIAGNOSTICS: there are no packages in $sourcedir\n";
-  print $dfh "DIAGNOSTICS: nothing to build\n";
-  print "$tmpfl\n";
-  exit 0;
+# print $dfh annotated_items("regular_products: ", $regular_products), "\n";
+
+# Handle checked-out products differently.
+my $checked_out_products =
+  { map { ($_ => (delete $regular_products->{$_}) ||
+           { qual => $setup_products_hash->{$_}->{qual} }) }
+    keys %{$setup_products_hash} };
+
+# cetbuildtools.
+print_dep_setup("cetbuildtools", delete $ofb_products->{cetbuildtools}, "-nq-", $tfh,
+                "Please type \"unsetup cetbuildtools\" and \"unsetup cmake\"");
+
+# Remaining only_for_build products.
+foreach my $prod (keys %{$ofb_products}) {
+  print_dep_setup($prod, $ofb_products->{$prod},
+                  $ofb_products->{$prod}->{qual}, $tfh);
 }
 
-my $use_cetbver="v0_00_00";
-my @cetbver;
-my @productnames;
-my @productversn;
-for my $i ( 0 .. $#setup_products::package_list ) {
-  my $pkg=$setup_products::package_list[$i];
-  my $pfile=$sourcedir."/".$pkg."/ups/product_deps";
-  my $default_ver;
-  my $default_qual;
-  my $have_fq;
-  #print $dfh "setup_products debug info: checking $pfile for $pkg \n";
-  #($productnames[$i], $productversn[$i]) = get_product_name( $pfile, $dfh );
-  ($productnames[$i], $productversn[$i], $default_ver, $default_qual, $have_fq) = get_parent_info( $pfile );
-  #print $dfh "setup_products debug info: $productnames[$i], $productversn[$i], $default_ver, $default_qual, $have_fq\n";
-  $cetbver[$i] = find_cetbuildtools( $pfile );
-  ##print $dfh "setup_products debug info: cetbuildtools $cetbver[$i]\n";
-  $use_cetbver = compare_versions( $use_cetbver, $cetbver[$i] );
-  # we expect to find an approximate match to mrb_quals in the product_deps
-  # skip this entire block if this product is declared no_fq_dir
-  if ( $have_fq eq "true" ) {
-  my @mquals = split /:/, $setup_products::mrb_quals;
-  my ($ndeps, @qlist) = get_qualifier_list( $pfile, $dfh );
-  my $match_mrb = "false";
-  #print $dfh "setup_products debug info: check qualifiers for $productnames[$i]\n";
-  foreach my $j ( 0 .. $#qlist ) {
-    #print $dfh "setup_products debug info: compare $qlist[$j][0] to $setup_products::mrb_quals\n";
-    my $piter=-1;
-    foreach my $k ( 0 .. $#mquals ) {
-       if ( match_qual( $mquals[$k],$qlist[$j][0] ) ) { 
-         $piter++;
-       }
-    }
-    #print $dfh "setup_products debug info: found $piter of $#mquals matches for $productnames[$i]\n"; 
-    if ( $piter == $#mquals ) {
-    #print $dfh "setup_products debug info: $qlist[$j][0] matches MRB_QUAL $setup_products::mrb_quals \n";
-    $match_mrb="true";
-    }
-  }
-  if ( $match_mrb eq "false" ) {
-    my $errfl3 = "problem_report";
-    open(ERR3, "> $errfl3") or die "Couldn't open $errfl3";
-    print ERR3 "\n";
-    print ERR3 "unsetenv_ CETPKG_NAME\n";
-    print ERR3 "unsetenv_ CETPKG_VERSION\n";
-    print ERR3 "unsetenv_ CETPKG_QUAL\n";
-    print ERR3 "unsetenv_ CETPKG_TYPE\n";
-    print ERR3 "unsetenv_ CETPKG_CC\n";
-    print ERR3 "unsetenv_ CETPKG_CXX\n";
-    print ERR3 "unsetenv_ CETPKG_FC\n";
-    print ERR3 "echo \"ERROR: failed to find a match for $setup_products::mrb_quals in $productnames[$i]/ups/product_deps\"\n";
-    print ERR3 "return 1\n";
-    close(ERR3);
-    print "$errfl3\n";
-    exit 0;
-  }
-  }
+# Regular products
+foreach my $prod (keys %{$regular_products}) {
+  print_dep_setup($prod, $regular_products->{$prod},
+                  $regular_products->{$prod}->{qual}, $tfh);
 }
-print $tfh "set_ setup_fail=\"false\"\n"; 
-print $tfh "setup -B cetbuildtools $use_cetbver\n";
-print $tfh "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
-print $tfh "test \"\$setup_fail\" =  \"true\" && echo \"ERROR: setup -B cetbuildtools $use_cetbver failed\"\n"; 
-print $tfh "test \"\$setup_fail\" =  \"true\" && echo \"ERROR: Please type \\\"unsetup cetbuildtools\\\" and \\\"unsetup cmake\\\"\"\n"; 
-print $tfh "test \"\$setup_fail\" =  \"true\" && return 1\n"; 
-print $tfh "set_ setup_fail=\"false\"\n"; 
-print $tfh "setup -B cetpkgsupport \n";
-print $tfh "test \"\$?\" = 0 || set_ setup_fail=\"true\"\n"; 
-print $tfh "test \"\$setup_fail\" =  \"true\" && echo \"ERROR: setup -B cetpkgsupport failed\"\n"; 
-print $tfh "test \"\$setup_fail\" =  \"true\" && return 1\n"; 
-@setup_list=( "cetbuildtools", "cetpkgsupport" );
 
-# now check for an old build directory 
-my $old_build_dir=$ENV{OLD_MRB_BUILDDIR};
-if ( $old_build_dir ) {
-  ##print $dfh "setup_products debug info: found old build directory $old_build_dir\n";
-  print $tfh "setenv  PATH \`dropit -p \${PATH} \'${old_build_dir}\'`\n";
-  print $tfh "setenv  LD_LIBRARY_PATH \`dropit -p \${LD_LIBRARY_PATH} \'${old_build_dir}\'`\n";
-  print $tfh "setenv  DYLD_LIBRARY_PATH \`dropit -p \${DYLD_LIBRARY_PATH} \'${old_build_dir}\'\`\n";
-  print $tfh "setenv  CET_PLUGIN_PATH \`dropit -p \${CET_PLUGIN_PATH} \'${old_build_dir}\'\`\n";
+if (my $old_build_dir = $ENV{OLD_MRB_BUILDDIR}) {
+  print $tfh <<EOF;
+setenv PATH `dropit -p \"\${PATH}\" '${old_build_dir}'`
+setenv LD_LIBRARY_PATH `dropit -p \"\${LD_LIBRARY_PATH}\" '${old_build_dir}'`
+setenv DYLD_LIBRARY_PATH `dropit -p \"\${DYLD_LIBRARY_PATH}\" '${old_build_dir}'`
+setenv CET_PLUGIN_PATH `dropit -p \"\${CET_PLUGIN_PATH}\" '${old_build_dir}'`
+EOF
 }
-##print $dfh "setup_products debug info: product names @productnames\n";
-##print $dfh "setup_products debug info: product versions @productversn\n";
 
-print $tfh "# setup products\n";
-for my $i ( 0 .. $#setup_products::package_list ) {
-  my $pkg=$setup_products::package_list[$i];
-  $setup_products::product = "";
-  $setup_products::version = "";
-  ##print $dfh "setup_products debug info: calling product_setup_loop for $pkg $setup_products::dop \n";
-  ($setup_products::product, $setup_products::version) = product_setup_loop( $sourcedir, $pkg, $simple, $builddir, $dfh, $tfh );
+########################################################################
+# Now handle the environment for each checked-out package (previously
+# define_local).
+my @uname = uname();
+my $library_path_name =
+  sprintf("\%sLD_LIBRARY_PATH", ((uname())[0] eq "Darwin") ? "DY" : "");
 
-  if ( $setup_products::product ne $productnames[$i] ) {
-     print $dfh "ERROR: product names do not match: $setup_products::product vs $productnames[$i]\n";
-     exit 1;
-  }
-  if ( $setup_products::version ne $productversn[$i] ) {
-     print $dfh "ERROR: version names do not match: $setup_products::version vs $productversn[$i]\n";
-     exit 1;
+my $build_dir = $ENV{MRB_BUILDDIR};
+my $source_dir = $ENV{MRB_SOURCE};
+
+# Construct compact dependency information, required for ordering.
+foreach my $pkg (keys %{$checked_out_products}) {
+  $checked_out_products->{$pkg}->{uses} =
+    [ grep { my $dep = $_; grep { $_ eq $dep; } keys %{$checked_out_products}; }
+      keys %{$setup_products_hash->{$pkg}->{phash}} ];
+}
+# print $dfh annotated_items("checked_out_products: ", $checked_out_products), "\n";
+
+# Order the checked-out products by iteration:
+#
+# 1. Pull out those products which are not used by those remaining in
+#    the list.
+#
+# 2. Top level products are pulled out first and have the highest order
+#    number (0).
+#
+# 3. The order number is decremented with each successive iteration.
+#
+# 4. Products pulled out in the same iteration have the same order
+#    number, as they do not depend on each other. Their relative order
+#    when the keys are sorted according to order number is therefore
+#    arbitrary.
+my $ordered_products = {};
+for (my $iloop = 0;
+     scalar keys %{$checked_out_products} and
+     $iloop < $max_resolution_loops;
+     ++$iloop) {
+  my @all_uses = map { @{$checked_out_products->{$_}->{uses}}; } keys %{$checked_out_products};
+#   print $dfh annotated_items("all_uses: ", @all_uses), "\n";
+  for my $unused (grep { my $pkg = $_; not grep  { $_ eq $pkg; } @all_uses; }
+                  keys%{$checked_out_products}) {
+    $ordered_products->{$unused} = delete $checked_out_products->{$unused};
+    $ordered_products->{$unused}->{order} = -$iloop;
   }
 }
 
-my $onlyForBuild="cetbuildtools;";
-my $cetfl = cetpkg_info_file( $mrb_project, 
-                              $mrb_project_version, 
-			      $mrb_project_version, 
-			      $setup_products::mrb_quals, 
-			      $setup_products::type, 
-			      $sourcedir, 
-			      $builddir,
-                              $compiler_table->{$compiler}->{CC},
-                              $compiler_table->{$compiler}->{CXX},
-                              $compiler_table->{$compiler}->{FC},
-			      $onlyForBuild
-			   );
+scalar keys %{$checked_out_products} and
+  setup_error("problem_report",
+              "Circular dependency issue within package set:",
+              join(", ", sort keys %{$checked_out_products}));
 
-# cleanup
+# print $dfh annotated_items("ordered_products: ", $ordered_products), "\n";
+
+# Now loop through the checked-out packages in dependency order.
+foreach my $product (sort { $ordered_products->{$a}->{order} <=>
+                              $ordered_products->{$b}->{order} }
+                     keys %{$ordered_products}) {
+  my $product_hash = $ordered_products->{$product};
+  my $product_info = $all_packages->{$product};
+  my $product_version = $product_info->{version};
+  my $product_uc = uc($product);
+  my $pkgdir = "$builddir/$product";
+  unless ( -e $pkgdir or mkdir $pkgdir ) { die "Couldn't create $pkgdir"; }
+  cetpkg_info_file($product,
+                   $product_version,
+                   $product_version,
+                   $product_hash->{qual},
+                   $type,
+                   $sourcedir,
+                   $pkgdir,
+                   $compiler_table->{$compiler}->{CC},
+                   $compiler_table->{$compiler}->{CXX},
+                   $compiler_table->{$compiler}->{FC},
+                   join(";", keys %{get_only_for_build($setup_products_hash->{$product}->{phash}, $dfh)})
+                  );
+  print $tfh <<EOF;
+# >> $product <<
+setenv ${product_uc}_VERSION $product_version
+setenv ${product_uc}_DIR ${source_dir}/${product}
+setenv PATH \`dropit -esf -p "\${PATH}" '${build_dir}/${product}/bin'\`
+test \$?${library_path_name} || set_ ${library_path_name}=''
+setenv ${library_path_name} \`dropit -esf -p "\${${library_path_name}}" "${build_dir}/${product}/lib"\`
+test \$?CET_PLUGIN_PATH || set_ CET_PLUGIN_PATH=''
+setenv CET_PLUGIN_PATH \`dropit -esf -p "\${CET_PLUGIN_PATH}" "${build_dir}/${product}/lib"\`
+EOF
+  if ($product_info->{fcl_dir} ne "none") {
+    print $tfh <<EOF;
+test \$?FHICL_FILE_PATH || set_ FHICL_FILE_PATH=''
+setenv FHICL_FILE_PATH \`dropit -esf -p "\${FHICL_FILE_PATH}" "${build_dir}/$product_info->{fcl_dir}"\`
+EOF
+  }
+  if ($product_info->{perl_dir} ne "none") {
+    print $tfh <<EOF;
+test \$?PERL5LIB || set_ PERL5LIB=''
+setenv PERL5LIB \`dropit -esf -p "\${PERL5LIB}" "${build_dir}/$product_info->{perl_dir}"\`
+EOF
+  }
+  my @fw_dirs = ($product_info->{gdml_dir} ne "none" ? "${build_dir}/$product_info->{gdml_dir}" : (),
+                 $product_info->{fw_dir} ne "none" ? "${build_dir}/$product_info->{fw_dir}" : (),
+                 $product_info->{fwlist} ne "none" ? @{$product_info->{fwlist}} : ());
+  if (scalar @fw_dirs) {
+    my $fw_dirs_string = join(" ", map { "'$_'"; } @fw_dirs);
+    print $tfh <<EOF;
+test \$?FW_SEARCH_PATH || set_ FW_SEARCH_PATH=''
+setenv FW_SEARCH_PATH \`dropit -esf -p "\${FW_SEARCH_PATH}" "$fw_dirs_string";
+EOF
+  }
+  if ($product_info->{root_path} ne "none") {
+    print $tfh <<EOF;
+test \$?ROOT_INCLUDE_PATH || set_ ROOT_INCLUDE_PATH=''
+setenv ROOT_INCLUDE_PATH \`dropit -esf -p "\${ROOT_INCLUDE_PATH}" "$product_info->{root_path}"\`
+EOF
+  }
+}
+# Ensure . is at the front of FHICL_FILE_PATH.
+print $tfh <<EOF;
+test \$?FHICL_FILE_PATH || set_ FHICL_FILE_PATH=''
+setenv FHICL_FILE_PATH \`dropit -esf -p "\${FHICL_FILE_PATH}" '.'\`
+EOF
+
+# Close files.
 close($tfh);
 close($dfh);
+
+# Write the top-level info file.
+cetpkg_info_file($mrb_project,
+                 $mrb_project_version,
+                 $mrb_project_version,
+                 $mrb_quals,
+                 $type,
+                 $sourcedir,
+                 $builddir,
+                 $compiler_table->{$compiler}->{CC},
+                 $compiler_table->{$compiler}->{CXX},
+                 $compiler_table->{$compiler}->{FC},
+                 "cetbuildtools"
+                );
+
+# Finish.
 print "$tmpfl\n";
 
 exit 0;
