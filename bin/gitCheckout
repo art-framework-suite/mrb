@@ -1,4 +1,4 @@
-#!/usr/bin/perl -wd
+#!/usr/bin/perl -w
 ########################################################################
 # mrb gitCheckout - Check out repositories and suites from git into an
 #                   mrb source area.
