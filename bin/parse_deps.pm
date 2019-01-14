@@ -1057,8 +1057,9 @@ sub print_dep_setup {
 # setup of $dep is optional
 unset have_prod
 ups exist $dep $thisver$ql && set_ have_prod="true"
-test "\$have_prod" = "true" && echo "will not setup $dep $thisver$ql
+test "\$have_prod" = "true" || echo "INFO: will skip missing optional product $dep $thisver$ql"
 test "\$have_prod" = "true" && setup -B $dep $thisver$ql
+test "\$?" = 0 || test "\$have_prod" != "true" || set_ setup_fail="true"
 unset have_prod
 EOF
   } else {
@@ -1066,17 +1067,17 @@ EOF
 setup -B $dep $thisver$ql
 test "\$?" = 0 || set_ setup_fail="true"
 EOF
-    foreach my $msg_line ("setup -B $dep $thisver$ql failed", @fail_msg) {
-      chomp $msg_line;
-      $msg_line =~ s&"&\\"&go;
-      print $efl <<EOF;
+  }
+  foreach my $msg_line ("setup -B $dep $thisver$ql failed", @fail_msg) {
+    chomp $msg_line;
+    $msg_line =~ s&"&\\"&go;
+    print $efl <<EOF;
 test "\$setup_fail" = "true" && echo "ERROR: $msg_line"
 EOF
-    }
-    print $efl <<EOF;
+  }
+  print $efl <<EOF;
 test "\$setup_fail" = "true" && return 1 || /bin/true
 EOF
-  }
 }
 
 sub compiler_for_quals {
