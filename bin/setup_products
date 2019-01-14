@@ -230,6 +230,12 @@ foreach my $pkg (keys %{$all_packages}) {
           phash => prods_for_quals($all_packages->{$pkg}->{phash}, $mrb_quals),
           qhash => $qqhash->{$mrb_quals}
         };
+    } elsif (not $all_packages->{have_fq}) {
+      $setup_products_hash->{$pkg} =
+        { qual => '-nq-',
+          phash => prods_for_quals($all_packages->{$pkg}->{phash}, '-nq-'),
+          qhash => $qqhash->{'-nq-'} || {}
+        };
     } else {
       setup_error("problem_report",
                   "product $pkg must have an entry in qualifier_list corresponding to",
