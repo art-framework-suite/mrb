@@ -274,7 +274,7 @@ sub process_repo_spec {
   my ($type, $product, $repo, $user, $user_url, $tree_ish);
   my %repo_info = ();
   if (($product, $user_url, $tree_ish) =
-      ($repo_spec =~ m&^(?:(.*?)%)?(.*?://.*?)(?:@(.*))?$&)) {
+      ($repo_spec =~ m&^(?:(.*?)%)?(.*?://.*?)(?:@([^/]+))?$&)) {
     # [<product>%]<URL>[@<tree-ish>]
     $repo = $product || basename($user_url);
     %repo_info = (product => ${product} || ${repo},
