@@ -302,7 +302,9 @@ for (my $iloop = 0;
 # Check we resolved everything.
 $npkgs > scalar keys %{$setup_products_hash} and
   setup_error("problem_report",
-              "exceeded loop limit ($max_resolution_loops) attempting to resolve qualifiers for packages.");
+              "exceeded loop limit ($max_resolution_loops) attempting to resolve qualifiers for packages.",
+              sprintf("Unresolved packages: %s",
+                      join(", ", (grep { not exists $setup_products_hash->{$_}; } @package_list))));
 
 # print $dfh annotated_items("package_list: ", @package_list), "\n";
 # print $dfh annotated_items("setup_products_hash keys: ", keys %{$setup_products_hash}), "\n";
