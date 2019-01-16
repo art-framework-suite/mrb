@@ -230,7 +230,7 @@ foreach my $pkg (keys %{$all_packages}) {
           phash => prods_for_quals($all_packages->{$pkg}->{phash}, $mrb_quals),
           qhash => $qqhash->{$mrb_quals}
         };
-    } elsif (not $all_packages->{have_fq}) {
+    } elsif (not $all_packages->{$pkg}->{have_fq}) {
       $setup_products_hash->{$pkg} =
         { qual => '-nq-',
           phash => prods_for_quals($all_packages->{$pkg}->{phash}, '-nq-'),
