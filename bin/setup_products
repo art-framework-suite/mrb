@@ -358,9 +358,9 @@ foreach my $prod (keys %{$regular_products}) {
   # inconsistent qualifiers) and collapse the hierarchy.
   if (scalar keys %{$regular_products->{$prod}} > 1) {
     setup_error("problem_report",
-                "Inconsistent versions for dependency $prod from product_deps for packages:",
-                join(", ", map { sprintf("%s (%s)", $_->{origin}, $_->{version}); }
-                     keys %{$regular_products->{$prod}}));
+                "Inconsistent versions for dependency $prod:",
+                map { sprintf("  %s requires $prod %s",  $regular_products->{$prod}->{$_}->{origin}, $_); }
+                keys %{$regular_products->{$prod}});
   }
   # Collapse the hierarchy.
   $regular_products->{$prod} =
