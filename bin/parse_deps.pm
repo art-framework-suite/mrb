@@ -614,8 +614,6 @@ sub get_product_list {
         $get_phash="";
       } elsif ( $words[0] eq "defaultqual" ) {
         $get_phash="";
-      } elsif ( $words[0] eq "only_for_build" ) {
-        $get_phash="";
       } elsif ( $words[0] eq "define_pythonpath" ) {
         $get_phash="";
       } elsif ( $words[0] eq "product" ) {
@@ -629,9 +627,25 @@ sub get_product_list {
       } elsif ( $words[0] eq "qualifier" ) {
         $get_phash="";
       } elsif ( $get_phash ) {
+        # Also covers archaic "only_for_build" lines: do *not* put a
+        # special case above.
         ++$piter;
         ##print "get_product_list:  $piter  $words[0] $words[1] $words[2] $words[3]\n";
         my ($prod, $version, $qualspec, $modifier) = @words;
+
+        if ($prod eq "only_for_build") {
+          # Archaic form.
+          ($prod, $version, $qualspec, $modifier) =
+            ($version, $qualspec, '-', $prod);
+          print STDERR <<EOF;
+WARNING: Deprecated only_for_build entry found in $pfile
+WARNING: Please replace:
+WARNING: $line
+WARNING: with
+WARNING: $prod\t$version\t$qualspec\t$modifier
+WARNING: This accommodation will be removed in future.
+EOF
+        }
 
         if ($pl_format == 1 and $qualspec and $qualspec eq "-nq-") {
           # "Old" meaning of -nq- in a product_list.
