@@ -358,10 +358,12 @@ foreach my $prod (keys %{$regular_products}) {
   }
   # Check for inconsistent dependency versions (we already checked for
   # inconsistent qualifiers) and collapse the hierarchy.
-  if (scalar keys %{$regular_products->{$prod}} > 1) {
+  if (scalar keys %{$regular_products->{$prod}} > 1 and
+      not exists $setup_products_hash->{$prod}) {
     setup_error("problem_report",
                 "Inconsistent versions for dependency $prod:",
-                map { sprintf("  %s requires $prod %s",  $regular_products->{$prod}->{$_}->{origin}, $_); }
+                map { sprintf("  %s requires $prod %s",
+                              $regular_products->{$prod}->{$_}->{origin}, $_); }
                 keys %{$regular_products->{$prod}});
   }
   # Collapse the hierarchy.
@@ -378,7 +380,10 @@ my $checked_out_products =
     keys %{$setup_products_hash} };
 
 # cetbuildtools.
-print_dep_setup("cetbuildtools", delete $ofb_products->{cetbuildtools}, "-nq-", $tfh,
+print_dep_setup("cetbuildtools",
+                delete $ofb_products->{cetbuildtools},
+                "-nq-",
+                $tfh,
                 "Please type \"unsetup cetbuildtools\" and \"unsetup cmake\"");
 
 # Remaining only_for_build products.
