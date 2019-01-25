@@ -4,7 +4,6 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   changeQual.sh
 		   copy_dependency_database.sh
 		   copy_files_to_srcs.sh
-		   define_local
 		   edit_product_deps
 		   findDir.sh
 		   get_setup_list.sh
@@ -27,7 +26,8 @@ INSTALL ( PROGRAMS add_to_cmake.sh
           DESTINATION ${product}/${version}/bin )
 
 INSTALL (FILES mrb_parse_deps.pm
-               setup_local_products
-		   shell_independence
-		   unset_shell_independence
-         DESTINATION ${product}/${version}/bin )
+  parse_deps.pm
+  setup_local_products
+	shell_independence
+	unset_shell_independence
+  DESTINATION ${product}/${version}/bin )

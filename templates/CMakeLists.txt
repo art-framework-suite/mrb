@@ -9,7 +9,6 @@ INSTALL (FILES CMakeLists.txt.master
 	       dbconfig
 	       ${CMAKE_CURRENT_BINARY_DIR}/local_setup
 	       ${CMAKE_CURRENT_BINARY_DIR}/local_mid
-	       setEnv
          DESTINATION ${product}/${version}/templates )
 
 add_subdirectory(product)
