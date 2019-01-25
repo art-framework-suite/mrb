@@ -505,22 +505,13 @@ setenv PERL5LIB \`dropit -esf -p "\${PERL5LIB}" "${build_dir}/$product_info->{pe
 EOF
   }
   my @fw_dirs = ($product_info->{gdml_dir} ne "none" ? "${build_dir}/$product_info->{gdml_dir}" : (),
-                 $product_info->{fw_dir} ne "none" ? "${build_dir}/$product_info->{fw_dir}" : ());
-  #               $product_info->{fw_dir} ne "none" ? "${build_dir}/$product_info->{fw_dir}" : (),
-  #               $product_info->{fwlist} ne "none" ? @{$product_info->{fwlist}} : ());
-  my @fwlist_dirs = ($product_info->{fwlist} ne "none" ? @{$product_info->{fwlist}} : ()); 
+                 $product_info->{fw_dir} ne "none" ? "${build_dir}/$product_info->{fw_dir}" : (),
+                 $product_info->{fwlist} ne "none" ? map { "${sourcedir}/${product}${_}" } @{$product_info->{fwlist}} : ());
   if (scalar @fw_dirs) {
     my $fw_dirs_string = join(" ", map { "'$_'"; } @fw_dirs);
     print $tfh <<EOF;
 test \$?FW_SEARCH_PATH || set_ FW_SEARCH_PATH=''
 setenv FW_SEARCH_PATH \`dropit -esf -p "\${FW_SEARCH_PATH}" ${fw_dirs_string}\`
-EOF
-  }
-  if (scalar @fwlist_dirs) {
-    my $fwlist_dirs_string = join(" ", map { $sourcedir."/".$product . $_ } @fwlist_dirs);
-    print $tfh <<EOF;
-test \$?FW_SEARCH_PATH || set_ FW_SEARCH_PATH=''
-setenv FW_SEARCH_PATH \`dropit -esf -p "\${FW_SEARCH_PATH}" ${fwlist_dirs_string}\`
 EOF
   }
   if ($product_info->{root_path} ne "none") {
