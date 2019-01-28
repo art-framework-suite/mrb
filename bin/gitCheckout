@@ -54,7 +54,7 @@ my $repo_handlers =
 my @known_specs = 
   ( fnal_repo("artdaq_core", "artdaq-core", "artdaq"),
     fnal_repo("lariatfragments", "lariat-online-lariatfragments",
-                 "lariat_online"),
+                 "lariat-online"),
     fnal_repo("lariatutil", "lardbt-lariatutil", "lardbt"),
     fnal_repo("fhiclcpp", "fhicl-cpp"),
     fnal_repo("lbne_raw_data", "lbne-raw-data"),
