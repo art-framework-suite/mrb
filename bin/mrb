@@ -15,8 +15,8 @@ function run_buildtool()
       [ $isSourced ] && return || exit 2
    fi
    cd $MRB_BUILDDIR
-   echo "calling buildtool $*"
-   buildtool $*
+   echo "calling buildtool ${@}"
+   buildtool "${@}"
 }
 
 # setEnv must be sourced in order to affect your environment
@@ -115,19 +115,19 @@ EOF
   # h3. The available commands 
 
    # Set up a new development area (calls &l=bin/newDev.sh&)
-    "newDev" | "n"     ) ${mrb_bin}/newDev.sh $*
+    "newDev" | "n"     ) ${mrb_bin}/newDev.sh "${@}"
         ;;
 
    # Clone a Redmine git repository (calls &l=bin/gitCheckout&)
-    "gitCheckout" | "g" ) ${mrb_bin}/gitCheckout $*
+    "gitCheckout" | "g" ) ${mrb_bin}/gitCheckout "${@}"
         ;;
 
    # Checkout from a Redmine svn repository (calls &l=bin/svnCheckout.sh&)
-    "svnCheckout" | "svn" ) ${mrb_bin}/svnCheckout.sh $*
+    "svnCheckout" | "svn" ) ${mrb_bin}/svnCheckout.sh "${@}"
         ;;
 
    # Create a new product (calls &l=bin/newProduct.sh&)
-    "newProduct" | "p" ) ${mrb_bin}/newProduct.sh $*
+    "newProduct" | "p" ) ${mrb_bin}/newProduct.sh "${@}"
         ;; 
 
   # Set up a development environment (calls &l=bin/mrbSetEnv&)
@@ -149,31 +149,31 @@ EOF
     ;;
 
    # Run buildtool 
-    "build" | "b" ) run_buildtool -I $MRB_INSTALL -b $*
+    "build" | "b" ) run_buildtool -I $MRB_INSTALL -b "${@}"
         ;;
 
    # install into local product area
-    "install" | "i" ) run_buildtool -I $MRB_INSTALL -i $*
+    "install" | "i" ) run_buildtool -I $MRB_INSTALL -i "${@}"
         ;;
 
    # Run tests
-    "test" | "t" ) run_buildtool -I $MRB_INSTALL -b -t $*
+    "test" | "t" ) run_buildtool -I $MRB_INSTALL -b -t "${@}"
         ;;
 
    # install into local product area
-    "makePackage" | "mp" ) ${mrb_bin}/makePackage.sh $*
+    "makePackage" | "mp" ) ${mrb_bin}/makePackage.sh "${@}"
         ;;
 
    # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)
-    "zapBuild" | "z" ) ${mrb_bin}/zapBuild.sh $*
+    "zapBuild" | "z" ) ${mrb_bin}/zapBuild.sh "${@}"
         ;;
 
    # Delete everything in this build area (safely) (calls &l=bin/zapInstall.sh&)
-    "zapInstall" | "zi" ) ${mrb_bin}/zapInstall.sh $*
+    "zapInstall" | "zi" ) ${mrb_bin}/zapInstall.sh "${@}"
         ;;
 
    # Delete everything in this build area (safely) (calls &l=bin/zapDist.sh&)
-    "zapDist" | "zd" ) ${mrb_bin}/zapDist.sh $*
+    "zapDist" | "zd" ) ${mrb_bin}/zapDist.sh "${@}"
         ;;
 
    # Display a git log
@@ -187,15 +187,15 @@ EOF
        ;;  
 
    # Update CMakeLists.txt for latest dependencies (calls &l=bin/updateDepsCM.sh&)
-    "updateDepsCM" | "uc" ) ${mrb_bin}/updateDepsCM.sh $*
+    "updateDepsCM" | "uc" ) ${mrb_bin}/updateDepsCM.sh "${@}"
         ;;
 
    # Update product_deps and CMakeLists.txt to latest dependencies (calls &l=bin/updateDeps.sh&)
-    "updateDepsPV" | "uv" ) ${mrb_bin}/updateDepsPV.sh $*
+    "updateDepsPV" | "uv" ) ${mrb_bin}/updateDepsPV.sh "${@}"
         ;;
 
    # Update product_deps to latest dependencies (calls &l=bin/changeQual.sh&)
-    "changeQual" | "cq" ) ${mrb_bin}/changeQual.sh $*
+    "changeQual" | "cq" ) ${mrb_bin}/changeQual.sh "${@}"
         ;;
 
    # Update svn and git code
@@ -203,15 +203,15 @@ EOF
         ;;
 
    # build the dependency database (.product_dependency)
-    "makeDeps" | "md" ) ${mrb_bin}/makeDep.py $*
+    "makeDeps" | "md" ) ${mrb_bin}/makeDep.py "${@}"
         ;;
 
    # check for missing build packages
-    "checkDeps" | "cd" ) ${mrb_bin}/pullDep.py -n $*
+    "checkDeps" | "cd" ) ${mrb_bin}/pullDep.py -n "${@}"
         ;;
 
    # pull missing build packages
-    "pullDeps" | "pd" ) ${mrb_bin}/pullDep.py $*
+    "pullDeps" | "pd" ) ${mrb_bin}/pullDep.py "${@}"
         ;;
 
    # Dump some debug information
