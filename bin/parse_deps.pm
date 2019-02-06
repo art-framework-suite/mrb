@@ -1090,7 +1090,7 @@ test "\$setup_fail" = "true" && echo "ERROR: $msg_line"
 EOF
   }
   print $efl <<EOF;
-test "\$setup_fail" = "true" && return 1 || /bin/true
+test "\$setup_fail" = "true" && return 1 || true
 EOF
 }
 
