@@ -59,19 +59,39 @@ for file in $list
 do
   if [ -r ${file}ups/product_deps ]
   then
-    pkglist="$(basename $file) $pkglist"
+    pkglist+=($(basename $file))
   fi
 done
+
+ordered_pkglist=($(sed -ne 's&^# >> \(.*\) <<$&\1&p' \
+  "${MRB_BUILDDIR}/${MRB_PROJECT}-${MRB_PROJECT_VERSION}" 2>/dev/null))
+
+if (( ${#ordered_pkglist[@]} == ${#pkglist[@]} )); then
+  # We have the same *number* of packages -- are they the same packages?
+  TMP=`mktemp -t updateDepsCM.sh.XXXXXX`
+  trap "rm $TMP* 2>/dev/null" EXIT
+  (IFS=$'\n'; printf '%s\n' "${ordered_pkglist[*]}") | sort > "${TMP}_ordered.txt"
+  (IFS=$'\n'; printf '%s\n' "${pkglist[*]}") | sort > "${TMP}.txt"
+  cmp "${TMP}.txt" "${TMP}_ordered.txt" && (( want_ordered = 1 ))
+fi
+if (( want_ordered )); then
+  pkglist=("${ordered_pkglist[@]}")
+else
+  cat <<EOF
+updateDepsCM: Unable to guarantee correct ordering of package clauses in
+              CMakeLists.txt. Re-run mrb uc after a successful mrbsetenv.
+EOF
+fi
 
 echo ""
 echo "updateDepsCM: rewrite $MRB_SOURCE/CMakeLists.txt"
 echo "              for these packages:"
-echo "        $pkglist"
+echo "        ${pkglist[@]}"
 echo ""
 
 # Construct a new CMakeLists.txt file in srcs
 ${MRB_DIR}/bin/copy_files_to_srcs.sh ${MRB_SOURCE} || exit 1
 # add back the packages   
-${MRB_DIR}/bin/add_to_cmake.sh ${MRB_SOURCE} "${pkglist}" || exit 1;
+${MRB_DIR}/bin/add_to_cmake.sh ${MRB_SOURCE} "${pkglist[*]}" || exit 1;
 
 exit 0

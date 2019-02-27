@@ -484,23 +484,24 @@ foreach my $product (sort { $ordered_products->{$a}->{order} <=>
                   );
   print $tfh <<EOF;
 # >> $product <<
+tdefined SETUP_${product_uc} && unsetup -j ${product}
 setenv ${product_uc}_VERSION $product_version
 setenv ${product_uc}_DIR ${source_dir}/${product}
 setenv PATH \`dropit -esf -p "\${PATH}" '${build_dir}/${product}/bin'\`
-test \$?${library_path_name} || set_ ${library_path_name}=''
+tdefined ${library_path_name} || set_ ${library_path_name}=''
 setenv ${library_path_name} \`dropit -esf -p "\${${library_path_name}}" "${build_dir}/${product}/lib"\`
-test \$?CET_PLUGIN_PATH || set_ CET_PLUGIN_PATH=''
+tdefined CET_PLUGIN_PATH || set_ CET_PLUGIN_PATH=''
 setenv CET_PLUGIN_PATH \`dropit -esf -p "\${CET_PLUGIN_PATH}" "${build_dir}/${product}/lib"\`
 EOF
   if ($product_info->{fcl_dir} ne "none") {
     print $tfh <<EOF;
-test \$?FHICL_FILE_PATH || set_ FHICL_FILE_PATH=''
+tdefined FHICL_FILE_PATH || set_ FHICL_FILE_PATH=''
 setenv FHICL_FILE_PATH \`dropit -esf -p "\${FHICL_FILE_PATH}" "${build_dir}/$product_info->{fcl_dir}"\`
 EOF
   }
   if ($product_info->{perl_dir} ne "none") {
     print $tfh <<EOF;
-test \$?PERL5LIB || set_ PERL5LIB=''
+tdefined PERL5LIB || set_ PERL5LIB=''
 setenv PERL5LIB \`dropit -esf -p "\${PERL5LIB}" "${build_dir}/$product_info->{perl_dir}"\`
 EOF
   }
@@ -510,20 +511,20 @@ EOF
   if (scalar @fw_dirs) {
     my $fw_dirs_string = join(" ", map { "'$_'"; } @fw_dirs);
     print $tfh <<EOF;
-test \$?FW_SEARCH_PATH || set_ FW_SEARCH_PATH=''
+tdefined FW_SEARCH_PATH || set_ FW_SEARCH_PATH=''
 setenv FW_SEARCH_PATH \`dropit -esf -p "\${FW_SEARCH_PATH}" ${fw_dirs_string}\`
 EOF
   }
   if ($product_info->{root_path} ne "none") {
     print $tfh <<EOF;
-test \$?ROOT_INCLUDE_PATH || set_ ROOT_INCLUDE_PATH=''
+tdefined ROOT_INCLUDE_PATH || set_ ROOT_INCLUDE_PATH=''
 setenv ROOT_INCLUDE_PATH \`dropit -esf -p "\${ROOT_INCLUDE_PATH}" "$product_info->{root_path}"\`
 EOF
   }
 }
 # Ensure . is at the front of FHICL_FILE_PATH.
 print $tfh <<EOF;
-test \$?FHICL_FILE_PATH || set_ FHICL_FILE_PATH=''
+tdefined FHICL_FILE_PATH || set_ FHICL_FILE_PATH=''
 setenv FHICL_FILE_PATH \`dropit -esf -p "\${FHICL_FILE_PATH}" '.'\`
 EOF
 
