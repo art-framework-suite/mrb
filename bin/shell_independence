@@ -66,6 +66,12 @@ test "$ss" = "csh" && \
 test "$ss" = "sh" && \
     eval 'tnotnull() { eval "test -n \"\${$1-}\"" ;}'
 
+# tdefined
+test "$ss" = "csh" && \
+    alias tdefined "eval '"'test $?'"\!* -eq 1'"
+test "$ss" = "sh" && \
+    eval 'tdefined() { eval "test -n \"\${$1+x}\"" ;}'
+
 # nullout
 test "$ss" = "csh" && \
     alias nullout "\!* >& /dev/null"
