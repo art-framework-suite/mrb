@@ -114,6 +114,7 @@ $compiler_table =
                setup_error
                sort_qual
                to_string
+               version_is_at_least
                $compiler_table);
 
 sub get_parent_info {
@@ -1205,7 +1206,8 @@ sub parse_version_string {
   return $result;
 }
 
-sub by_version {
+sub by_version($$) {
+  my ($a, $b) = @_;
   # Requires dot versions.
   my $vInfoA = parse_version_string($a || shift);
   my $vInfoB = parse_version_string($b || shift);
@@ -1216,6 +1218,11 @@ sub by_version {
           $vInfoA->{extra_type} <=> $vInfoB->{extra_type} ||
             $vInfoA->{extra_text} cmp $vInfoB->{extra_text} ||
               $vInfoA->{extra_num} <=> $vInfoB->{extra_num};
+}
+
+sub version_is_at_least($$) {
+  my @sorted = sort by_version @_;
+  return not ($sorted[0] eq $_[0]);
 }
 
 sub print_setup_boilerplate {
