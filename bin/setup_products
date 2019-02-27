@@ -484,6 +484,7 @@ foreach my $product (sort { $ordered_products->{$a}->{order} <=>
                   );
   print $tfh <<EOF;
 # >> $product <<
+tdefined SETUP_${product_uc} && unsetup -j ${product}
 setenv ${product_uc}_VERSION $product_version
 setenv ${product_uc}_DIR ${source_dir}/${product}
 setenv PATH \`dropit -esf -p "\${PATH}" '${build_dir}/${product}/bin'\`
