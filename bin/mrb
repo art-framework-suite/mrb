@@ -3,12 +3,6 @@
 # mrb is a convenient "umbrella" script used to dispatch other scripts to do development 
 # releated tasks.
 
-function version_is_at_least()
-{
-  # Use our Perl version comparison function.
-  perl -we 'use strict; use parse_deps; exit 1 unless version_is_at_least('"\"${1}\", \"${2}\""');' >/dev/null 2>&1
-}
-
 function run_buildtool()
 {
    local args
@@ -21,22 +15,9 @@ function run_buildtool()
       echo "ERROR: you must \"mrbsetenv\" in $MRB_BUILDDIR"
       [ $isSourced ] && return || exit 2
    fi
-   if version_is_at_least ${CETBUILDTOOLS_VERSION} v7_12_00; then
-      args=("${@}")
-   else
-      local arg
-      # Older: workaround
-      for arg in "$@"; do
-         if [[ "$arg" == "-E" ]]; then
-            args+="-DCMAKE_EXPORT_COMPILE_COMMANDS"
-         else
-            args+="${arg}"
-         fi
-      done
-   fi
    cd $MRB_BUILDDIR
-   echo "calling buildtool ${args[@]}"
-   buildtool "${args[@]}"
+   echo "calling buildtool ${@}"
+   buildtool "${@}"
 }
 
 # setEnv must be sourced in order to affect your environment
