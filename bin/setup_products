@@ -288,6 +288,12 @@ for (my $iloop = 0;
             phash => prods_for_quals($all_packages->{$pkg}->{phash}, $qual),
             qhash => $all_packages->{$pkg}->{qqhash}->{$qual}
           };
+      } elsif ($qual eq '-nq-') { # Backward compatibility.
+        $setup_products_hash->{$pkg} =
+          { qual => $qual,
+            phash => prods_for_quals($all_packages->{$pkg}->{phash}, ''),
+            qhash => $all_packages->{$pkg}->{qqhash}->{''} || {}
+          };
       } else {
         setup_error("problem_report",
                     "could not find information for qualifier $qual of package $pkg"
