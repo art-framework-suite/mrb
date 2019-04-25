@@ -58,26 +58,20 @@ function createFiles() {
   if [ ${have_e15} = 0 ]
   then
      CETBV=v7_11_00
-     EXTRAFLAG="EXTRA_CXX_FLAGS -Wno-unused-local-typedefs"
   elif [ ${have_e17} = 0 ]
   then
      CETBV=v7_11_00
-     EXTRAFLAG="EXTRA_CXX_FLAGS -Wno-unused-local-typedefs"
   elif [ ${have_e19} = 0 ]
   then
      CETBV=v7_12_01
-     EXTRAFLAG="EXTRA_CXX_FLAGS -Wno-unused-local-typedefs"
   elif [ ${have_c2} = 0 ]
   then
      CETBV=v7_11_00
-     EXTRAFLAG="EXTRA_CXX_FLAGS -Wno-unused-local-typedefs"
   elif [ ${have_c7} = 0 ]
   then
      CETBV=v7_12_01
-     EXTRAFLAG="EXTRA_CXX_FLAGS -Wno-unused-local-typedefs"
   else
      CETBV=v7_12_01
-     EXTRAFLAG="EXTRA_CXX_FLAGS -Wno-unused-local-typedefs"
   fi
   ##echo "DEBUG: cetbuildtools version is $CETBV"
 
@@ -123,7 +117,7 @@ function createFiles() {
   if [ "$noflav" ]; then
     sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/CMakeLists.txt_top_noflav > CMakeLists.txt
   else
-    sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" -e "s/%%EXTRAFLAG%%/$EXTRAFLAG/g" < ${templateDir}/CMakeLists.txt_top > CMakeLists.txt
+    sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/CMakeLists.txt_top > CMakeLists.txt
   fi
 
   # @$PRODNAME/CMakeLists.txt@ file 
