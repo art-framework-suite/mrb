@@ -45,42 +45,41 @@ function createFiles() {
   DQ=`echo ${MRB_QUALS} | sed -e 's/debug//' -e 's/opt//' -e 's/prof//' -e 's/::/:/g' -e 's/:$//g' -e 's/^://'`
   ##echo "DEBUG: default qualifier is $DQ"
   
-  echo ${MRB_QUALS} | grep -q e5
-  have_e5=$?
-  echo ${MRB_QUALS} | grep -q e6
-  have_e6=$?
-  echo ${MRB_QUALS} | grep -q e7
-  have_e7=$?
-  echo ${MRB_QUALS} | grep -q e9
-  have_e9=$?
-  if [ ${have_e9} = 0 ]
+  echo ${MRB_QUALS} | grep -q c7
+  have_c7=$?
+  echo ${MRB_QUALS} | grep -q c2
+  have_c2=$?
+  echo ${MRB_QUALS} | grep -q e19
+  have_e19=$?
+  echo ${MRB_QUALS} | grep -q e17
+  have_e17=$?
+  echo ${MRB_QUALS} | grep -q e15
+  have_e15=$?
+  if [ ${have_e15} = 0 ]
   then
-     CETBV=v4_17_03
-     GCCV=v4_9_3
-     EXTRAFLAG=")"
-  elif [ ${have_e7} = 0 ]
+     CETBV=v7_11_00
+     EXTRAFLAG="EXTRA_CXX_FLAGS -Wno-unused-local-typedefs"
+  elif [ ${have_e17} = 0 ]
   then
-     CETBV=v4_14_01
-     GCCV=v4_9_2
-     EXTRAFLAG=")"
-  elif [ ${have_e6} = 0 ]
+     CETBV=v7_11_00
+     EXTRAFLAG="EXTRA_CXX_FLAGS -Wno-unused-local-typedefs"
+  elif [ ${have_e19} = 0 ]
   then
-     CETBV=v4_02_02
-     GCCV=v4_9_1
-     EXTRAFLAG=")"
-  elif [ ${have_e5} = 0 ]
+     CETBV=v7_12_01
+     EXTRAFLAG="EXTRA_CXX_FLAGS -Wno-unused-local-typedefs"
+  elif [ ${have_c2} = 0 ]
   then
-     CETBV=v3_13_01
-     GCCV=v4_8_2
-     EXTRAFLAG="EXTRA_CXX_FLAGS -std=c++11 )"
+     CETBV=v7_11_00
+     EXTRAFLAG="EXTRA_CXX_FLAGS -Wno-unused-local-typedefs"
+  elif [ ${have_c7} = 0 ]
+  then
+     CETBV=v7_12_01
+     EXTRAFLAG="EXTRA_CXX_FLAGS -Wno-unused-local-typedefs"
   else
-     CETBV=v3_07_11
-     GCCV=v4_8_1
-     CHECK_GCC="cet_check_gcc()"
-     EXTRAFLAG="EXTRA_CXX_FLAGS -std=c++11 )"
+     CETBV=v7_12_01
+     EXTRAFLAG="EXTRA_CXX_FLAGS -Wno-unused-local-typedefs"
   fi
   ##echo "DEBUG: cetbuildtools version is $CETBV"
-  ##echo "DEBUG: gcc version is $GCCV"
 
   # Check that the product name is all lowercase and no punctuation
   if echo $PRODNAME | egrep -q '[^a-z0-9]'; then
@@ -124,7 +123,7 @@ function createFiles() {
   if [ "$noflav" ]; then
     sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" < ${templateDir}/CMakeLists.txt_top_noflav > CMakeLists.txt
   else
-    sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" -e "s/%%CHECK_GCC%%/$CHECK_GCC/g" -e "s/%%EXTRAFLAG%%/$EXTRAFLAG/g" < ${templateDir}/CMakeLists.txt_top > CMakeLists.txt
+    sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" -e "s/%%EXTRAFLAG%%/$EXTRAFLAG/g" < ${templateDir}/CMakeLists.txt_top > CMakeLists.txt
   fi
 
   # @$PRODNAME/CMakeLists.txt@ file 
@@ -174,7 +173,7 @@ function createFiles() {
     input_product_deps=${templateDir}/product_deps
     cp ${templateDir}/setup_deps.template setup_deps
   fi
-  sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" -e "s/%%DQ%%/$DQ/g" -e "s/%%CETBV%%/$CETBV/g" -e "s/%%GCCV%%/$GCCV/g" -e "s/%%PROJECT%%/$MRB_PROJECT/g" -e "s/%%PV%%/$MRB_PROJECT_VERSION/g" < ${input_product_deps} > product_deps
+  sed -e "s/%%PD%%/$PD/g" -e "s/%%PU%%/$PU/g" -e "s/%%DQ%%/$DQ/g" -e "s/%%CETBV%%/$CETBV/g" -e "s/%%PROJECT%%/$MRB_PROJECT/g" -e "s/%%PV%%/$MRB_PROJECT_VERSION/g" < ${input_product_deps} > product_deps
 
   # From &l=templates/product/setup_for_development&
   if [ "$noflav" ]; then
