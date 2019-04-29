@@ -23,10 +23,13 @@ find_ups_product(cetbuildtools)
 
 # source code
 add_subdirectory(%%PD%%)
+
+# tests
 add_subdirectory(test)
+
+# ups - table and config files
+# must be AFTER all other subdirectories
 add_subdirectory(ups)
 
 # packaging utility
 include(UseCPack)
-
-
