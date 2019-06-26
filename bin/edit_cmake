@@ -1,0 +1,86 @@
+#!/usr/bin/env perl
+#
+
+# parse and update a product in CMakeLists.txt
+
+
+# parse and update product_deps
+
+#  ${mrb_bin}/edit_cmake ${pdfile} ${product} ${version}  || exit 1
+
+
+use File::Basename;
+use lib dirname($0);
+
+if( $#ARGV < 3 ) {
+    print "\n";
+    print "ERROR: unspecified parameters - only have $#ARGV \n";
+    print "USAGE: edit_cmake <file> <product> <version> <dryrun:yes|no>\n";
+    exit 1;
+}
+
+$pdfile = $ARGV[0];
+$product = $ARGV[1];
+$version = $ARGV[2];
+$dryrun = $ARGV[3];
+
+if ( $dryrun eq "yes" ) {
+  $pdfilebak = $pdfile;
+  print "Dry Run: these changes will be made:\n";
+  print "\n";
+} else {
+  $pdfilebak = $pdfile.".bak";
+  print "renaming $pdfile to $pdfilebak\n";
+  print "\n";
+  rename ($pdfile, $pdfilebak) || die ( "Failed to rename $pdfile" );
+  open(POUT, "> $pdfile")  || die ( "Failed to open new $pdfile" );
+}
+
+
+
+$get_phash="";
+$get_quals="";
+$get_fragment="";
+open(PIN, "< $pdfilebak") or die "Couldn't open $pdfilebak";
+while ( $line=<PIN> ) {
+  chop $line;
+  if ( index($line,"#") == 0 ) {
+    print_line ( POUT, $line, $dryrun );
+  } elsif ( $line !~ /\w+/ ) {
+    print_line ( POUT, $line, $dryrun );
+  } else {
+    @words = split(/\s+/,$line);
+    #print "found $words[0]\n";
+    if( $words[0] eq "create_product_variables(" ) {
+       #print "found create_product_variables $words[1] $words[2] in $line\n";
+       if ( $words[1]  eq $product ) {
+          $newline = $line;
+	  $newline =~ s/$words[2]/$version/;
+          if ( $dryrun eq "yes" ) {
+	    print "old line: $line\n";
+	    print "new line: $newline\n";
+	  }
+          print_line ( POUT, $newline, $dryrun );
+       } else {
+          print_line ( POUT, $line, $dryrun );
+       }
+    } else {
+       print_line ( POUT, $line, $dryrun );
+    }
+  }
+}
+close(PIN);
+
+
+exit 0;
+
+sub print_line {
+  my @params = @_;
+  my $output = $params[0];
+  my $oline = $params[1];
+  my $dr = $params[2];
+  if ( $dryrun eq "no" ) {
+    print $output "$oline\n";
+  }
+}
+
