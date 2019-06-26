@@ -44,6 +44,13 @@ function modify_product_deps()
   ${MRB_DIR}/bin/edit_product_deps ${pdfile} ${product} ${new_version} ${dryRun}  || exit 1
 }
 
+function modify_cmake()
+{
+  local cfile=$1
+  echo "editing $cfile"
+  grep ${product} ${cfile}
+  ${MRB_DIR}/bin/edit_cmake ${cfile} ${product} ${new_version} ${dryRun}  || exit 1
+}
 function get_package_list()
 {
 # Loop over directories in $MRB_SOURCE
@@ -110,9 +117,11 @@ get_package_list
 for d in $packages
 do
   # Sanity checks
-  if [ ! -r $d/CMakeLists.txt ]; then echo "Cannot find CMakeLists.txt in $d"; break; fi
-  if [ ! -r $d/ups/product_deps ]; then echo "Cannot find ups/product_deps in $d"; break; fi
-  modify_product_deps $d
+  if [ ! -r ${d}/CMakeLists.txt ]; then echo "Cannot find CMakeLists.txt in ${d}"; break; fi
+  if [ ! -r ${d}/ups/product_deps ]; then echo "Cannot find ups/product_deps in ${d}"; break; fi
+  modify_product_deps ${d}
+  if [ -r ${d}releaseDB/CMakeLists.txt ]; then modify_cmake ${d}releaseDB/CMakeLists.txt; fi
+  if [ -r ${d}bundle/CMakeLists.txt ]; then modify_cmake ${d}bundle/CMakeLists.txt; fi
 done
 
 echo
