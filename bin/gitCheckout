@@ -42,10 +42,11 @@ my $version = "2.0.1";
 # Declare prototypes for repository handlers here, implement wherever
 # you like. Specify the appropriate handler in $repo_handlers, below.
 sub fnal_repo;
+sub github_repo;
 
 my $repo_handlers =
   { fnal => \&fnal_repo,
-    github => undef, # Known but unimplemented currently.
+    github => \&github_repo, # Known but unimplemented currently.
     bitbucket => undef, # Known but unimplemented currently.
     gitlab => undef, # Known but unimplemented currently.
     local => undef # Known but unimplemented currently.
@@ -72,7 +73,24 @@ my @known_specs =
                  "artdaq-utilities"),
     fnal_repo("artdaq_mpich_plugin", "artdaq-utilities-mpich-plugin",
                  "artdaq-utilities"),
-    fnal_repo("artdaq_mfextensions", "mf-extensions-git")
+    fnal_repo("artdaq_mfextensions", "mf-extensions-git"),
+    github_repo("larana", "larana", "LArSoft"),
+    github_repo("larcore", "larcore", "LArSoft"),
+    github_repo("larcorealg", "larcorealg", "LArSoft"),
+    github_repo("larcoreobj", "larcoreobj", "LArSoft"),
+    github_repo("lardata", "lardata", "LArSoft"),
+    github_repo("lardataalg", "lardataalg", "LArSoft"),
+    github_repo("lardataobj", "lardataobj", "LArSoft"),
+    github_repo("larevt", "larevt", "LArSoft"),
+    github_repo("lareventdisplay", "lareventdisplay", "LArSoft"),
+    github_repo("larexamples", "larexamples", "LArSoft"),
+    github_repo("larpandora", "larpandora", "LArSoft"),
+    github_repo("larsim", "larsim", "LArSoft"),
+    github_repo("larreco", "larreco", "LArSoft"),
+    github_repo("larg4", "larg4", "LArSoft"),
+    github_repo("larwirecell", "larwirecell", "LArSoft"),
+    github_repo("larsoftobj", "larsoftobj", "LArSoft"),
+    github_repo("larsoft", "larsoft", "LArSoft")
   );
 
 my ($known_products, $known_repos); # Initialized on startup.
@@ -172,6 +190,23 @@ sub fnal_repo {
           ssh_access => "p-${user}\@cdcvs.fnal.gov",
           rw_url => "ssh://p-${user}\@cdcvs.fnal.gov/cvs/projects/${repo}",
           ro_url => "http://cdcvs.fnal.gov/projects/${repo}"};
+}
+
+
+####################################
+# github_repo - Handle a Github repository specification.
+#
+# Usage: github_repo($product, $repo, $githuborg, $githubuser)
+#
+# Returns a repo_info hashref.
+sub github_repo {
+  my ($product, $repo, $ghorg) = repo_args(@_);
+  return {type => "github",
+          product => "${product}",
+          repo => "${repo}",
+          ssh_access => "git\@github.com",
+          rw_url => "https://github.com/${ghorg}/${repo}.git",
+          ro_url => "https://github.com/${ghorg}/${repo}.git"};
 }
 
 ####################################
@@ -459,6 +494,43 @@ sub git_flow_init {
 }
 
 ####################################
+# hub_fork - Run hub fork for the specified repository.
+#
+# Usage: hub_fork($destination)
+#
+sub hub_fork {
+  my $destination = shift;
+  report("Forking Github repo for $destination", -level => 'VERBOSE');
+  my $path = File::Spec->catdir($ENV{MRB_SOURCE}, $destination);
+  my $output = `(cd \"${path}\" && hub fork) 2>&1`;
+  if ($? == 0) {
+    my $remote = `(cd \"${path}\" && git remote | grep -v origin | head -1) 2>&1`;
+    $? == 0 or error("Forked repo $remote is not defined.");
+    # If we had to create any branches, inform the user how they should
+    # be pushed.
+    my @remotebranches= `( cd \"${path}\" && git branch -a | grep remotes ) 2>&1`;
+    $? == 0 or error("Unable to execute git branch -a to examine all branches.");
+    report("remote branches:\n @remotebranches\n",-level => 'VERBOSE');
+    my @localbranches=`( cd \"${path}\" && git branch -a | grep -v remotes | tr '*' ' ') 2>&1`;
+    $? == 0 or error("Unable to execute git branch -a to examine all branches.");
+    report("local  branches:\n @localbranches\n", -level => 'VERBOSE') ;
+    foreach my $branch (@localbranches) {
+      $branch  =~  s/^\s+|\s+$//g;
+      $remote  =~  s/^\s+|\s+$//g;
+      if(grep m&remotes/$remote/$branch&, @remotebranches) {
+        my $out = `(cd \"${path}\" && git branch --set-upstream-to $remote/$branch) 2>&1`;
+        $? == 0 or report($out);
+      } else {
+        report("Branch `$branch' has been created: when pushing upstream, use `git push -u $remote $branch' to configure future pull operations.");
+      }
+    }
+  } else {
+    error("Unable to hub fork in $path: exit, code ",
+          $? >> 8, ", output:\n", $output);
+  }
+}
+
+####################################
 # update_cmake - Add an entry for the specified product to
 #                CMakeLists.txt.
 #
@@ -515,6 +587,9 @@ sub get_repo(\%) {
     clone_repo($url, $destination);
   }
   git_flow_init($destination);
+  if ($repo_info->{type} = "github") {
+    hub_fork($destination);
+  }
   my $tree_ish = $repo_info->{"tree-ish"} || $global_tree_ish;
   checkout_tree_ish($destination, $tree_ish) if $tree_ish;
   update_cmake($destination);
