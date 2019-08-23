@@ -502,9 +502,9 @@ sub hub_fork {
   my $destination = shift;
   report("Forking Github repo for $destination", -level => 'VERBOSE');
   my $path = File::Spec->catdir($ENV{MRB_SOURCE}, $destination);
-  my $output = `(cd \"${path}\" && hub fork) 2>&1`;
+  my $output = `(cd \"${path}\" && hub fork --remote-name=origin) 2>&1`;
   if ($? == 0) {
-    my $remote = `(cd \"${path}\" && git remote | grep -v origin | head -1) 2>&1`;
+    my $remote = `(cd \"${path}\" && git remote | grep -v upstream | head -1) 2>&1`;
     $? == 0 or error("Forked repo $remote is not defined.");
     # If we had to create any branches, inform the user how they should
     # be pushed.
