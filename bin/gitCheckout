@@ -586,7 +586,7 @@ sub get_repo(\%) {
     my $url = verified_url($repo_info);
     clone_repo($url, $destination);
   }
-  if ($repo_info->{type} = "github" and not $options->{"read-only"}) {
+  if ($repo_info->{type} eq "github" and not $options->{"read-only"}) {
     hub_fork($destination);
     #tbd add hub_flow_init function?
   } else {
