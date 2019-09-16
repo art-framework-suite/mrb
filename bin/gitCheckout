@@ -205,7 +205,7 @@ sub github_repo {
           product => "${product}",
           repo => "${repo}",
           ssh_access => "git\@github.com",
-          rw_url => "https://github.com/${ghorg}/${repo}.git",
+          rw_url => "git\@github.com:${ghorg}/${repo}.git",
           ro_url => "https://github.com/${ghorg}/${repo}.git"};
 }
 
