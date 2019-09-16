@@ -586,9 +586,11 @@ sub get_repo(\%) {
     my $url = verified_url($repo_info);
     clone_repo($url, $destination);
   }
-  git_flow_init($destination);
-  if ($repo_info->{type} = "github") {
+  if ($repo_info->{type} = "github" and not $options->{"read-only"}) {
     hub_fork($destination);
+    #tbd add hub_flow_init function?
+  } else {
+    git_flow_init($destination);
   }
   my $tree_ish = $repo_info->{"tree-ish"} || $global_tree_ish;
   checkout_tree_ish($destination, $tree_ish) if $tree_ish;
