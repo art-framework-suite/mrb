@@ -12,7 +12,7 @@
 
 CMAKE_MINIMUM_REQUIRED (VERSION 2.8)
 
-PROJECT (mrb)
+PROJECT (mrb LANGUAGES NONE)
 set (product mrb)
 set (version v3_02_01)
 

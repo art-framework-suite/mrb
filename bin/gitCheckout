@@ -37,63 +37,112 @@ my $known_suites =
   };
 my $global_tree_ish;
 
-my $version = "2.0.1";
+my $version = "2.1.0";
 
 # Declare prototypes for repository handlers here, implement wherever
 # you like. Specify the appropriate handler in $repo_handlers, below.
 sub fnal_repo;
 sub github_repo;
+sub repo_info;
 
+# Declare known repo handlers.
 my $repo_handlers =
   { fnal => \&fnal_repo,
-    github => \&github_repo, # Known but unimplemented currently.
+    github => \&github_repo,
     bitbucket => undef, # Known but unimplemented currently.
     gitlab => undef, # Known but unimplemented currently.
     local => undef # Known but unimplemented currently.
   };
 
-my @known_specs = 
-  ( fnal_repo("artdaq_core", "artdaq-core", "artdaq"),
-    fnal_repo("lariatfragments", "lariat-online-lariatfragments",
-                 "lariat-online"),
-    fnal_repo("lariatutil", "lardbt-lariatutil", "lardbt"),
-    fnal_repo("fhiclcpp", "fhicl-cpp"),
-    fnal_repo("lbne_raw_data", "lbne-raw-data"),
-    fnal_repo("artdaq_core_demo", "artdaq-core-demo"),
-    fnal_repo("artdaq_demo", "artdaq-demo"),
-    fnal_repo("artdaq_utilities", "artdaq-utilities"),
-    fnal_repo("artdaq_ganglia_plugin",
-                 "artdaq-utilities-ganglia-plugin",
-                 "artdaq-utilities"),
-    fnal_repo("artdaq_epics_plugin", "artdaq-utilities-epics-plugin",
-                 "artdaq-utilities"),
-    fnal_repo("artdaq_database", "artdaq-utilities-database",
-                 "artdaq-utilities"),
-    fnal_repo("artdaq_daqinterface", "artdaq-utilities-daqinterface",
-                 "artdaq-utilities"),
-    fnal_repo("artdaq_mpich_plugin", "artdaq-utilities-mpich-plugin",
-                 "artdaq-utilities"),
-    fnal_repo("artdaq_mfextensions", "mf-extensions-git"),
-    github_repo("larana", "larana", "LArSoft"),
-    github_repo("larcore", "larcore", "LArSoft"),
-    github_repo("larcorealg", "larcorealg", "LArSoft"),
-    github_repo("larcoreobj", "larcoreobj", "LArSoft"),
-    github_repo("lardata", "lardata", "LArSoft"),
-    github_repo("lardataalg", "lardataalg", "LArSoft"),
-    github_repo("lardataobj", "lardataobj", "LArSoft"),
-    github_repo("larevt", "larevt", "LArSoft"),
-    github_repo("lareventdisplay", "lareventdisplay", "LArSoft"),
-    github_repo("larexamples", "larexamples", "LArSoft"),
-    github_repo("larpandora", "larpandora", "LArSoft"),
-    github_repo("larsim", "larsim", "LArSoft"),
-    github_repo("larreco", "larreco", "LArSoft"),
-    github_repo("larg4", "larg4", "LArSoft"),
-    github_repo("larwirecell", "larwirecell", "LArSoft"),
-    github_repo("larsoftobj", "larsoftobj", "LArSoft"),
-    github_repo("larsoft", "larsoft", "LArSoft")
+# Declare prototypes for repository post-processors here.
+sub hub_fork($);
+sub git_flow_init($);
+
+# Declare URL verifiers here.
+sub verified_fnal_url;
+sub verified_github_url;
+
+my @known_specs =
+  ( repo_info("artdaq_core", fnal_repo("artdaq-core", "artdaq")),
+    repo_info("lariatfragments",
+              fnal_repo("lariat-online-lariatfragments", "lariat-online")),
+    repo_info("lariatutil", fnal_repo("lardbt-lariatutil", "lardbt")),
+    repo_info("fhiclcpp", fnal_repo("fhicl-cpp")),
+    repo_info("lbne_raw_data", fnal_repo("lbne-raw-data")),
+    repo_info("artdaq_core_demo", fnal_repo("artdaq-core-demo")),
+    repo_info("artdaq_demo", fnal_repo("artdaq-demo")),
+    repo_info("artdaq_utilities", fnal_repo("artdaq-utilities")),
+    repo_info("artdaq_ganglia_plugin",
+              fnal_repo("artdaq-utilities-ganglia-plugin",
+                        "artdaq-utilities")),
+    repo_info("artdaq_epics_plugin",
+              fnal_repo("artdaq-utilities-epics-plugin",
+                        "artdaq-utilities")),
+    repo_info("artdaq_database",
+              fnal_repo("artdaq-utilities-database",
+                        "artdaq-utilities")),
+    repo_info("artdaq_daqinterface",
+              fnal_repo("artdaq-utilities-daqinterface",
+                        "artdaq-utilities")),
+    repo_info("artdaq_mpich_plugin",
+              fnal_repo("artdaq-utilities-mpich-plugin",
+                        "artdaq-utilities")),
+    repo_info("artdaq_mfextensions",
+              fnal_repo("mf-extensions-git")),
+    repo_info("larana",
+              fnal_repo("larana"),
+              github_repo("larana", "LArSoft")),
+    repo_info("larcore",
+              fnal_repo("larcore"),
+              github_repo("larcore", "LArSoft")),
+    repo_info("larcorealg",
+              fnal_repo("larcorealg"),
+              github_repo("larcorealg", "LArSoft")),
+    repo_info("larcoreobj",
+              fnal_repo("larcoreobj"),
+              github_repo("larcoreobj", "LArSoft")),
+    repo_info("lardata",
+              fnal_repo("lardata"),
+              github_repo("lardata", "LArSoft")),
+    repo_info("lardataalg",
+              fnal_repo("lardataalg"),
+              github_repo("lardataalg", "LArSoft")),
+    repo_info("lardataobj",
+              fnal_repo("lardataobj"),
+              github_repo("lardataobj", "LArSoft")),
+    repo_info("larevt",
+              fnal_repo("larevt"),
+              github_repo("larevt", "LArSoft")),
+    repo_info("lareventdisplay",
+              fnal_repo("lareventdisplay"),
+              github_repo("lareventdisplay", "LArSoft")),
+    repo_info("larexamples",
+              fnal_repo("larexamples"),
+              github_repo("larexamples", "LArSoft")),
+    repo_info("larpandora",
+              fnal_repo("larpandora"),
+              github_repo("larpandora", "LArSoft")),
+    repo_info("larsim",
+              fnal_repo("larsim"),
+              github_repo("larsim", "LArSoft")),
+    repo_info("larreco",
+              fnal_repo("larreco"),
+              github_repo("larreco", "LArSoft")),
+    repo_info("larg4",
+              fnal_repo("larg4"),
+              github_repo("larg4", "LArSoft")),
+    repo_info("larwirecell",
+              fnal_repo("larwirecell"),
+              github_repo("larwirecell", "LArSoft")),
+    repo_info("larsoftobj",
+              fnal_repo("larsoftobj"),
+              github_repo("larsoftobj", "LArSoft")),
+    repo_info("larsoft",
+              fnal_repo("larsoft"),
+              github_repo("larsoft", "LArSoft"))
   );
 
-my ($known_products, $known_repos); # Initialized on startup.
+my ($known_products); # Initialized on startup.
 
 ########################################################################
 # Subroutines.
@@ -173,7 +222,7 @@ sub repo_args {
   $product or error("Product not specified!");
   my $repo = shift || $product;
   my $user = shift || $repo;
-  return ($product, $repo, $user);
+  return ($product, $repo, $user), @_;
 }
 
 ####################################
@@ -181,32 +230,54 @@ sub repo_args {
 #
 # Usage: fnal_repo($product, $repo, $user)
 #
-# Returns a repo_info hashref.
+# Returns a repo type info hashref.
 sub fnal_repo {
-  my ($product, $repo, $user) = repo_args(@_);
-  return {type => "fnal",
-          product => ${product},
-          repo => ${repo},
-          ssh_access => "p-${user}\@cdcvs.fnal.gov",
-          rw_url => "ssh://p-${user}\@cdcvs.fnal.gov/cvs/projects/${repo}",
-          ro_url => "http://cdcvs.fnal.gov/projects/${repo}"};
-}
-
+  my ($repo, $user) = @_;
+  $user = $repo unless $user;
+  return { fnal => { repo => ${repo},
+                     ssh_access => "p-${user}\@cdcvs.fnal.gov",
+                     rw_url => "ssh://p-${user}\@cdcvs.fnal.gov/cvs/projects/${repo}",
+                     ro_url => "http://cdcvs.fnal.gov/projects/${repo}",
+                     post => \&git_flow_init,
+                     url_picker => \&verified_fnal_url
+                   }
+         };
+};
 
 ####################################
-# github_repo - Handle a Github repository specification.
+# github_repo - Handle a GitHub repository specification.
 #
 # Usage: github_repo($product, $repo, $githuborg, $githubuser)
 #
-# Returns a repo_info hashref.
+# Returns a repo type info hashref.
 sub github_repo {
-  my ($product, $repo, $ghorg) = repo_args(@_);
-  return {type => "github",
-          product => "${product}",
-          repo => "${repo}",
-          ssh_access => "git\@github.com",
-          rw_url => "git\@github.com:${ghorg}/${repo}.git",
-          ro_url => "https://github.com/${ghorg}/${repo}.git"};
+  my ($repo, $ghorg) = @_;
+  $ghorg = $repo unless $ghorg;
+  return { github => { repo => "${repo}",
+                       ssh_access => "git\@github.com",
+                       rw_url => "git\@github.com:${ghorg}/${repo}.git",
+                       ro_url => "https://github.com/${ghorg}/${repo}.git",
+                       post => \&hub_fork,
+                       url_picker => \&verified_github_url
+                     }
+         };
+}
+
+####################################
+# repo_info - Return a composite repository info specification.
+#
+# Returns a composite repo info hashref
+sub repo_info {
+  my $result = { product => shift };
+  foreach my $hashref (@_) {
+    %$result = (%$result, %$hashref);
+    if (exists $result->{types}) {
+      push @{$result->{types}}, keys %$hashref;
+    } else {
+      $result->{types} = [keys %$hashref];
+    }
+  }
+  return $result;
 }
 
 ####################################
@@ -257,26 +328,27 @@ sub handle_repo {
 }
 
 ####################################
-# init_known_repos - Initialize the $known_products and $known_repos
-#                    global hashes.
-#
-# Usage: init_known_repos()
-sub init_known_repos {
-  foreach my $repo_spec (@known_specs) {
-    $known_products->{$repo_spec->{product}} = $repo_spec;
-    $known_repos->{$repo_spec->{repo}} = $repo_spec;
-  }
-}
-
-####################################
 # split_type_repo - Split the repo into type:repo
 #
 # Usage: split_type_repo($repo_clause)
 #
-# Returns a tuple of ($type, $value).
+# Returns a tuple of ($type, $value) from an input string of
+# [<type>:]<value>.
 sub split_type_repo {
   my $repo = shift;
   return ($repo =~ m&^(?:(.*?):)?(.*)$&);
+}
+
+
+####################################
+# init_known_products - Initialize the $known_products and $known_products
+#                    global hashes.
+#
+# Usage: init_known_products()
+sub init_known_products {
+  foreach my $repo_spec (@known_specs) {
+    $known_products->{$repo_spec->{product}} = $repo_spec;
+  }
 }
 
 ####################################
@@ -288,14 +360,20 @@ sub split_type_repo {
 # hash.
 sub format_repo_info(\%) {
   my $repo_info = shift;
-  my $repo = $repo_info->{repo};
-  return
-    sprintf("%s => { %s\n%s    }\n",
-            $repo,
-            join(sprintf(",\n%s", ' '  x ((length $repo) + 6)),
-                 map { sprintf("%s => %s", $_, $repo_info->{$_}); }
-                 sort keys %$repo_info),
-            ' ' x length $repo);
+  my @result =
+    map { my $type = $_;
+          my $repo = $repo_info->{$type}->{repo};
+          sprintf("%s (%s) =>\n  { %s\n  }\n",
+                  $repo, $type,
+                  join(",\n    ",
+                       sprintf("%s => %s", "product", $repo_info->{product}),
+                       map { sprintf("%s => %s",
+                                     $_,
+                                     $repo_info->{$type}->{$_}); }
+                       sort keys %{$repo_info->{$type}})
+                 );
+        } @{$repo_info->{types}};
+  return join ('', @result);
 }
 
 ####################################
@@ -312,31 +390,64 @@ sub process_repo_spec {
       ($repo_spec =~ m&^(?:(.*?)%)?(.*?://.*?)(?:@([^/]+))?$&)) {
     # [<product>%]<URL>[@<tree-ish>]
     $repo = $product || basename($user_url);
+    $type = "user";
     %repo_info = (product => ${product} || ${repo},
-                  repo => ${repo},
-                  type => "user",
-                  user_url => ${user_url},
-                  origin => "user_url");
+                  origin => "user_url",
+                  $type => {
+                            repo => ${repo},
+                            user_url => ${user_url},
+                           });
   } elsif (($product, $repo, $user, $tree_ish) =
            ($repo_spec =~ m&^(.*?)(?:%(.*?)(?:%(.*))?)?(?:@(.*))?$&)) {
     # [<product>%][<type>:]<repo>[%<user>][@<tree-ish>] OR
-    # <type>:<product>[@<tree-ish>]
+    # [<type>:]<product>[@<tree-ish>]
     if ($repo) {
       ($type, $repo) = split_type_repo(${repo});
     } else {
       ($type, $repo) = split_type_repo(${product});
       $product = basename(${repo});
     }
-    if ($known_products->{$product} and not $options->{"no-expand"}) {
-      %repo_info = %{$known_products->{$product}};
-      $repo_info{origin} = "known_products";
-    } elsif ($known_repos->{$repo} and not $options->{"no-expand"}) {
-      %repo_info = %{$known_repos->{$repo}};
-      $repo_info{origin} = "known_repos";
-    } else {
-      $user = basename($repo) unless ${user};
+    if (not $options->{"no-expand"}) {
+      if (exists $known_products->{$product}) {
+        %repo_info = %{$known_products->{$product}};
+        $repo_info{origin} = "known_products";
+      } else {
+        my %candidate_products =
+          map { my $ri = $_; if (grep { $_->{repo} eq $repo }
+                                 (map { $ri->{$_}; } @{$ri->{types} }) ) { ($ri => 1); } else { (); } }
+                   @known_specs;
+        if (scalar keys  %candidate_products > 1) {
+          error("Multiple products referring to the same repository are not supported at this time.");
+        } elsif (scalar keys %candidate_products) {
+          %repo_info = %{(values %candidate_products)[0]};
+          $repo_info{origin} = "known_repos";
+          if ($type) {
+            if ($repo_info{$type}->{repo} ne $repo) {
+              error("Specified repository $repo is not valid for specified repository type $type.");
+            }
+          } else {
+            my @candidate_types =
+              grep { $repo_info{$_}->{repo} eq $repo } @{$repo_info{types}};
+            if (scalar @candidate_types == 1) {
+              $type = shift @candidate_types;
+            } elsif ($options->{"repo-type"}) {
+              if (grep { $options->{"repo-type"} eq $_; } @candidate_types) {
+                $type = $options->{"repo-type"};
+              } elsif (grep { $default_repo_type eq $_ ; } @candidate_types) {
+                $type = $default_repo_type;
+              } else {
+                error("Unable to resolve ambiguous repository specification $repo: please specify repository type.");
+              }
+            }
+          }
+        }
+      }
+    }
+    unless ($repo_info{origin}) {
       $type = $options->{"repo-type"} unless ${type};
-      %repo_info = %{handle_repo($type ? lc $type : undef, $product, $repo, $user)};
+      $user = basename($repo) unless ${user};
+      %repo_info = (product => $product,
+                    %{handle_repo($type ? lc $type : undef, $repo, $user)});
       $repo_info{origin} = "handled_repo";
     }
   } else {
@@ -345,6 +456,7 @@ sub process_repo_spec {
   if (${tree_ish}) {
     $repo_info{"tree-ish"} = ${tree_ish};
   }
+  $repo_info{type} = $type || $options->{"repo-type"} || $default_repo_type;
   report("Repository info:\n",
          format_repo_info(%repo_info),
          -level => "VERBOSE");
@@ -405,28 +517,30 @@ sub have_read_access {
 #
 # Returns a verified URL.
 sub verified_url {
+  my $type = shift;
   my $repo_info = shift;
   my $read_only = shift || $options->{"read-only"};
-  if ($repo_info->{user_url}) {
-    # No verification: assume the user knows what they want.
-    return $repo_info->{user_url};
-  } elsif ($read_only and exists $repo_info->{ro_url}) {
+  return $repo_info->{url_picker} ? &{$repo_info->{url_picker}}($type, $repo_info, $read_only) :
+    ($repo_info->{user_url} || $repo_info->{rw_url} || $repo_info->{ro_url});
+}
+
+sub verified_fnal_url {
+  my ($type, $repo_info, $read_only)  = @_;
+  if ($read_only and exists $repo_info->{ro_url}) {
     if (have_read_access($repo_info->{ro_url})) {
       return $repo_info->{ro_url};
     } else {
       error("Unable to verify read access to remote $repo_info->{ro_url}");
     }
   } elsif ($repo_info->{rw_url}) {
-    # FIXME expand this to use a handler system when we implement more
-    # repo types.
-    if ($repo_info->{type} eq "fnal" and
+    if ($type eq "fnal" and
         exists $repo_info->{ssh_access}) {
       # We can verify write access to this one.
       report("Checking write access to $repo_info->{ssh_access}", -level => "VERBOSE");
       my $bad = `ssh $repo_info->{ssh_access} echo hi 2>&1 | grep -E 'Permission|authentication' | grep -v 'fake authentication' | wc -l`;
       if ($bad == 1) {
         report("Unable to verify write access for $repo_info->{repo}, falling back to read-only");
-        return verified_url($repo_info, 1);
+        return verified_fnal_url($type, $repo_info, 1);
       } else {
         return $repo_info->{rw_url};
       }
@@ -440,6 +554,25 @@ sub verified_url {
   }
 }
 
+sub verified_github_url {
+  my ($type, $repo_info, $read_only)  = @_;
+  if ($read_only and exists $repo_info->{ro_url}) {
+    if (have_read_access($repo_info->{ro_url})) {
+      return $repo_info->{ro_url};
+    } else {
+      error("Unable to verify read access to remote $repo_info->{ro_url}");
+    }
+  } elsif ($repo_info->{rw_url} and have_read_access($repo_info->{rw_url})) {
+    # FIXME Could verify permission access using REST, but do simple
+    # verificiation for now:
+    return $repo_info->{rw_url};
+  } elsif ($repo_info->{ro_url}) {
+    return $repo_info->{ro_url};
+  } else {
+    error("Unable to verify at least read access to remote $repo_info->{rw_url} and no fallback R/O URL.");
+  }
+}
+
 ####################################
 # clone_repo - Execute git clone for the specified URL.
 #
@@ -447,8 +580,13 @@ sub verified_url {
 sub clone_repo {
   my ($url, $destination) = @_;
   my @clone_cmd = (qw(git clone), $url, $destination);
-  system(@clone_cmd) == 0 or
-    error("Unable to execute clone command: ", join(" ", @clone_cmd));
+  if ($options->{"dry-run"}) {
+    report(sprintf("Would execute command %s", join(" ", @clone_cmd)),
+           -level => "INFO");
+  } else {
+    system(@clone_cmd) == 0 or
+      error("Unable to execute clone command: ", join(" ", @clone_cmd));
+  }
 }
 
 ####################################
@@ -471,7 +609,7 @@ sub checkout_tree_ish {
 #
 # Usage: git_flow_init($destination)
 #
-sub git_flow_init {
+sub git_flow_init($) {
   my $destination = shift;
   report("Initializing git flow for $destination", -level => 'VERBOSE');
   my $path = File::Spec->catdir($ENV{MRB_SOURCE}, $destination);
@@ -498,7 +636,7 @@ sub git_flow_init {
 #
 # Usage: hub_fork($destination)
 #
-sub hub_fork {
+sub hub_fork($) {
   my $destination = shift;
   report("Forking Github repo for $destination", -level => 'VERBOSE');
   my $path = File::Spec->catdir($ENV{MRB_SOURCE}, $destination);
@@ -576,6 +714,14 @@ sub get_repo(\%) {
     report("Read-only global specification ignored for repo $repo_info->{repo} with user-specified url $repo_info->{user_url}",
            -level => "INFO")
   }
+  my $type = $repo_info->{type};
+  error("Repo type ${type} not supported for checkout of $repo_info->{product}")
+    unless exists $repo_info->{$type};
+  if ($type eq "github" and $options->{"github-org"}) {
+    # Update the github info hash with updated github org / user.
+    $repo_info->{$type} = {%{$repo_info->{$type}},
+                           %{github_repo($repo_info->{$type}->{repo}, $options->{"github-org"})}};
+  }
   my $destination = $options->{destination} ||
     $repo_info->{product} ||
     basename($repo_info->{repo});
@@ -583,18 +729,33 @@ sub get_repo(\%) {
     report("Repository $repo_info->{repo} already exists at $destination.",
            -level => "WARNING");
   } else {
-    my $url = verified_url($repo_info);
+    my $url = verified_url($type, $repo_info->{$type});
     clone_repo($url, $destination);
   }
-  if ($repo_info->{type} eq "github" and not $options->{"read-only"}) {
-    hub_fork($destination);
-    #tbd add hub_flow_init function?
-  } else {
-    git_flow_init($destination);
+  # Post-processing for checked-out repository.
+  if (exists $repo_info->{$type}->{post}) {
+    if ($options->{"dry-run"}) {
+      report("Would apply post-processing to checked-out repository $destination.",
+            -level => "INFO");
+    } else {
+      &{$repo_info->{$type}->{post}}($destination)
+    }
   }
   my $tree_ish = $repo_info->{"tree-ish"} || $global_tree_ish;
-  checkout_tree_ish($destination, $tree_ish) if $tree_ish;
-  update_cmake($destination);
+  if ($tree_ish) {
+    if ($options->{"dry-run"}) {
+      report("Would check out $tree_ish for repository $destination",
+             -level => "INFO");
+    } else {
+      checkout_tree_ish($destination, $tree_ish) if $tree_ish;
+    }
+  }
+  if ($options->{"dry-run"}) {
+    report ("Would update CMakeLists.txt for checked-out repository $destination.",
+            -level => "INFO");
+  } else {
+    update_cmake($destination);
+  }
 }
 
 ####################################
@@ -609,7 +770,7 @@ sub expand_and_process_repo_specs {
       () :
       expand_suite(${repo_spec});
     if (@suite_items) {
-      report(sprintf("Exapanded $repo_spec to %s items: %s",
+      report(sprintf("Expanded $repo_spec to %s items: %s",
                      scalar @suite_items,
                     join(", ", @suite_items)),
              -level => "VERBOSE");
@@ -679,22 +840,28 @@ sub print_repo_types {
 #                     information.
 sub print_known_repos() {
   print "Known repositories: \n\n";
-  my $rl = length longest_string(map { $known_repos->{$_}->{repo}; } keys %$known_repos);
-  my $pl = length longest_string(map { $known_repos->{$_}->{product}; } keys %$known_repos);
-  my $tl = length longest_string(map { $known_repos->{$_}->{type}; } keys %$known_repos);
+  my $rl = length longest_string(map { my $repo_info = $_;
+                                       map { $repo_info->{$_}->{repo}; } @{$repo_info->{types}};
+                                     } @known_specs);
+  my $pl = length longest_string(map { $_->{product}; } @known_specs);
+  my $tl = length longest_string(grep { defined $repo_handlers->{$_}; }
+                                 sort keys %$repo_handlers);
   my $url_indent = ' ' x ($rl + $pl + $tl + 12);
   printf "%-${rl}s    %-${pl}s    %-${tl}s    URLs\n", "Repository", "Product", "Type";
-  print map { sprintf("%-${rl}s    %-${pl}s    %-${tl}s    %s\n",
-                      $known_repos->{$_}->{repo},
-                      $known_repos->{$_}->{product},
-                      $known_repos->{$_}->{type},
-                      join(",\n$url_indent",
-                           ($known_repos->{$_}->{user_url} || (),
-                            $known_repos->{$_}->{rw_url} || (),
-                            $known_repos->{$_}->{ro_url} || ())));
-            } sort keys %$known_repos;
+  foreach my $repo_info (@known_specs) {
+    foreach my $type (@{$repo_info->{types}}) {
+      my $typed_repo = $repo_info->{$type};
+      printf("%-${rl}s    %-${pl}s    %-${tl}s    %s\n",
+             $typed_repo->{repo},
+             $repo_info->{product},
+             $type,
+             join(",\n$url_indent",
+                  ($typed_repo->{user_url} || (),
+                   $typed_repo->{rw_url} ? "$typed_repo->{rw_url} (r/w)" : (),
+                   $typed_repo->{ro_url} ? "$typed_repo->{ro_url} (r/o)" : ())));
+    }
+  }
 }
-
 
 ####################################
 # print_known_suites - Print the known suites and their pertinent
@@ -711,13 +878,15 @@ sub print_known_suites() {
 
 ########################################################################
 # Main code.
-init_known_repos();
+init_known_products();
 
 GetOptions($options,
            "help|h|?",
            "branch|b=s",
            "commit|c=s",
            "destination|directory|product|d=s",
+           "dry-run|n",
+           "github-org|ghorg|ghuser|g=s",
            "help-repos",
            "help-suites",
            "help-repo-types",
@@ -788,7 +957,7 @@ B<mrb gitCheckout|g> B<-h|--help|-?> | B<--help-repo-types> | B<--help-repos> | 
 
 B<mrb gitCheckout|g> B<-V>
 
-B<mrb gitCheckout|g> [B<-b|--branch> I<branch> | B<-c|--commit> I<commit> | B<-t|--tag> I<tag>] [B<-d|--destination|--directory|--product> I<name>] [B<--no-expand>] [B<-q|--quiet>] [B<-r|--read-only>] [B<--repo-type> I<type>] [B<-V|--version>] [B<-v|--verbose>] [--] I<spec>+
+B<mrb gitCheckout|g> [B<-b|--branch> I<branch> | B<-c|--commit> I<commit> | B<-t|--tag> I<tag>] [B<-d|--destination|--directory|--product> I<name>] [B<--dry-run|-n>] [B<--github-org|--ghorg|-g> I<ghorg>] [B<--no-expand>] [B<-q|--quiet>] [B<-r|--read-only>] [B<--repo-type> I<type>] [B<-V|--version>] [B<-v|--verbose>] [--] I<spec>+
 
 B<+> implies optional repeated arguments.
 
@@ -823,6 +992,20 @@ After cloning, check out the specified I<commit>. Mutually-exclusive with B<--br
 =item B<--product> I<name>
 
 Clone the repository into the specified I<name>. It is an error to specify B<--directory> with multiple repository specifications. It is an error to specify B<--directory> if it is inconsistent with a product's name as specified in F<ups/product_deps>. This option overrides the I<product> component of I<spec>, if given. The latter, however, is the recommended mechanism for specifying the product name as it is more flexible and specific.
+
+=item B<--dry-run>
+
+=item B<-n>
+
+Don't actually check out any repositories.
+
+=item B<--github-org> I<ghorg>
+
+=item B<--ghorg> I<ghorg>
+
+=item B<-g> I<ghorg>
+
+Use the provided ghorg for github checkouts. Overrides known repository information (see B<--help-repos>); is in turn overridden by specified URIs.
 
 =item B<--help>
 
@@ -892,17 +1075,19 @@ A I<spec> may be:
 
 =item I<suite>[@I<branch|tag>]
 
-If known, suite is expanded to its list of repositories, otherwise I<spec> is interpreted per below. See B<--help-suites> for a table of known suites. This form is not available if the B<--no-expand> option is used. While B<mrb b> is not capable of detecting the specification of a commit rather than a branch or tag here, its use is contraindicated and will almost certainly not do what you want.
+If known, suite is expanded to its list of repositories, otherwise I<spec> is interpreted per below. See B<--help-suites> for a table of known suites. This form is not available if the B<--no-expand> option is used. While B<mrb gitCheckout> is not capable of detecting the specification of a commit rather than a branch or tag here, its use is contraindicated and will almost certainly not do what you want.
 
 =item [I<product>%]I<URL>[@I<branch|commit|tag>]
 
 If not specified, I<product> is inferred from the basename of the URL.
 
-=item [I<product>%][I<type>:]I<repo>[%I<user>][@I<branch|commit|tag>]
+=item S<[I<product>%] [I<type>:]I<repo>[%I<user>] [@I<branch|commit|tag>]>
 
-=item I<type>:I<product>[@<branch|commit|tag>]
+=item [I<type>:]I<product>[@I<branch|commit|tag>]
 
-If not specified, I<type> defaults to C<fnal>. See B<--help-repo-types> for a full list of known types.
+[Spaces in the above are for formating clarity only and should be omitted in actual usage.]
+
+If not specified, I<type> defaults to C<fnal>, or as specified with B<--repo-type>. See B<--help-repo-types> for a full list of known types.
 
 If not specified, I<product> defaults to I<repo> and vice-versa.
 
@@ -924,11 +1109,11 @@ Check out all the constituent repositories of the larsoft suite at the specified
 
 Check out the (known) art repository on the specified branch in read-only mode.
 
-=item B<mrb g> -v my_repo%fnal:my-project_my-repo%my-project@feature/cool-stuff
+=item S<B<mrb g> -v my_repo%fnal:my-prj_my-repo%my-prj@feature/cool-stuff>
 
-=item B<mrb g> -v -b feature/cool-stuff my_repo%fnal:my-project_my-repo%my-project
+=item S<B<mrb g> -v -b feature/cool-stuff my_repo%fnal:my-prj_my-repo%my-prj>
 
-Check out the B<feature/cool-stuff> branch of the C<my-repository_my-repo> branch from FNAL Redmine as the product C<my_repo> with the URL as calculated to be C<ssh://p-my-project@cdcvs.fnal.gov/cvs/projects/my-project_my-repo>, per the rules for FNAL Redmine repositories. Provide verbose messages.
+Check out the B<feature/cool-stuff> branch of the C<my-repository_my-repo> branch from FNAL Redmine as the product C<my_repo> with the URL as calculated to be C<ssh://p-my-prj@cdcvs.fnal.gov/cvs/projects/my-prj_my-repo>, per the rules for FNAL Redmine repositories. Provide verbose messages.
 
 =back
 
