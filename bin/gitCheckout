@@ -584,6 +584,8 @@ sub clone_repo {
     report(sprintf("Would execute command %s", join(" ", @clone_cmd)),
            -level => "INFO");
   } else {
+    report("Executing clone command: ", join(" ", @clone_cmd),
+           -level => "VERBOSE");
     system(@clone_cmd) == 0 or
       error("Unable to execute clone command: ", join(" ", @clone_cmd));
   }
@@ -720,7 +722,7 @@ sub get_repo(\%) {
   if ($type eq "github" and $options->{"github-org"}) {
     # Update the github info hash with updated github org / user.
     $repo_info->{$type} = {%{$repo_info->{$type}},
-                           %{github_repo($repo_info->{$type}->{repo}, $options->{"github-org"})}};
+                           %{github_repo($repo_info->{$type}->{repo}, $options->{"github-org"})->{$type}}};
   }
   my $destination = $options->{destination} ||
     $repo_info->{product} ||
