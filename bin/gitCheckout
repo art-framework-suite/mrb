@@ -55,8 +55,8 @@ my $repo_handlers =
   };
 
 # Declare prototypes for repository post-processors here.
-sub hub_fork($);
-sub git_flow_init($);
+sub hub_fork($$);
+sub git_flow_init($$);
 
 # Declare URL verifiers here.
 sub verified_fnal_url;
@@ -609,10 +609,10 @@ sub checkout_tree_ish {
 ####################################
 # git_flow_init - Initialize git flow for the specified repository.
 #
-# Usage: git_flow_init($destination)
+# Usage: git_flow_init($destination, $options)
 #
-sub git_flow_init($) {
-  my $destination = shift;
+sub git_flow_init($$) {
+  my ($destination, $options) = @_;
   report("Initializing git flow for $destination", -level => 'VERBOSE');
   my $path = File::Spec->catdir($ENV{MRB_SOURCE}, $destination);
   # This elaborate procedure is necessary for those packages where the
@@ -636,10 +636,11 @@ sub git_flow_init($) {
 ####################################
 # hub_fork - Run hub fork for the specified repository.
 #
-# Usage: hub_fork($destination)
+# Usage: hub_fork($destination, $options)
 #
-sub hub_fork($) {
-  my $destination = shift;
+sub hub_fork($$) {
+  my ($destination, $options) = @_;
+  return if $options->{"read-only"};
   report("Forking Github repo for $destination", -level => 'VERBOSE');
   my $path = File::Spec->catdir($ENV{MRB_SOURCE}, $destination);
   my $output = `(cd \"${path}\" && hub fork --remote-name=origin) 2>&1`;
@@ -740,7 +741,8 @@ sub get_repo(\%) {
       report("Would apply post-processing to checked-out repository $destination.",
             -level => "INFO");
     } else {
-      &{$repo_info->{$type}->{post}}($destination)
+      &{$repo_info->{$type}->{post}}($destination, $options)
+        if $repo_info->{$type}->{post};
     }
   }
   my $tree_ish = $repo_info->{"tree-ish"} || $global_tree_ish;
