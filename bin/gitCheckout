@@ -642,6 +642,10 @@ sub hub_fork($$) {
   my ($destination, $options) = @_;
   return if $options->{"read-only"};
   report("Forking Github repo for $destination", -level => 'VERBOSE');
+  my $hubcred = File::Spec->catdir($ENV{HOME},'.config/hub');
+  unless (-e $hubcred || defined $ENV{GITHUB_TOKEN}) {
+       error("The hub utility requires a GitHub personal access token. Run \'hub api\' and enter your GitHub username and password at the prompt.\nAlternatively set the environment variable GITHUB_TOKEN.");
+    }
   my $path = File::Spec->catdir($ENV{MRB_SOURCE}, $destination);
   my $output = `(cd \"${path}\" && hub fork --remote-name=origin) 2>&1`;
   if ($? == 0) {
