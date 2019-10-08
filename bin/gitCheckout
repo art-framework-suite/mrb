@@ -414,7 +414,7 @@ sub process_repo_spec {
       } else {
         my %candidate_products =
           map { my $ri = $_; if (grep { $_->{repo} eq $repo }
-                                 (map { $ri->{$_}; } @{$ri->{types} }) ) { ($ri => 1); } else { (); } }
+                                 (map { $ri->{$_}; } @{$ri->{types} }) ) { ($ri->{product} => $ri); } else { (); } }
                    @known_specs;
         if (scalar keys  %candidate_products > 1) {
           error("Multiple products referring to the same repository are not supported at this time.");
