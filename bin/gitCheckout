@@ -729,6 +729,12 @@ sub get_repo(\%) {
     $repo_info->{$type} = {%{$repo_info->{$type}},
                            %{github_repo($repo_info->{$type}->{repo}, $options->{"github-org"})->{$type}}};
   }
+
+  if ($type eq "github" and $options->{"read-only"}) {
+    # remove call to hub_fork for RO github checkout
+    delete($repo_info->{$type}->{post});
+  }
+
   my $destination = $options->{destination} ||
     $repo_info->{product} ||
     basename($repo_info->{repo});
