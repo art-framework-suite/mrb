@@ -564,8 +564,7 @@ sub verified_github_url {
       error("Unable to verify read access to remote $typed_repo_info->{ro_url}.");
     }
   } elsif ($typed_repo_info->{rw_url} and have_read_access($typed_repo_info->{rw_url})) {
-    # FIXME Could verify permission access using REST, but do simple
-    # verificiation for now:
+    # Write access can only be verified once repo is cloned.
     return $typed_repo_info->{rw_url};
   } elsif ($typed_repo_info->{ro_url}) {
     return $typed_repo_info->{ro_url};
@@ -750,7 +749,7 @@ sub get_repo(\%) {
 
   if ($type eq "github" and $options->{"read-only"}) {
     # remove call to hub_fork for RO github checkout
-    delete($repo_info->{$type}->{post});
+    delete($prod_info->{$type}->{post});
   }
 
   my $destination = $options->{destination} ||
@@ -763,9 +762,13 @@ sub get_repo(\%) {
   } else {
     my $url = verified_url($type, $prod_info->{$type});
     clone_repo($url, $destination);
-    if ($type eq "github" and $url eq $repo_info->{$type}->{rw_url}) {
-      # remove call to hub_fork for RW github checkout
-      delete($repo_info->{$type}->{post});
+    if ($type eq "github" and $url eq $prod_info->{$type}->{rw_url}) {
+      my $path = File::Spec->catdir($ENV{MRB_SOURCE}, $destination);
+      my $out_err = `(cd \"${path}\" && git push --set-upstream origin HEAD) 2>&1`;
+      report("git push --set-upstream origin HEAD returned error code $? and output $out_err",
+            -level => "DEBUG");
+      # remove call to hub_fork for RW github checkout if we have write permissions for primary repo
+      if ($? == 0) {delete($prod_info->{$type}->{post});}
     }
   }
   # Post-processing for checked-out repository.
