@@ -643,8 +643,25 @@ sub hub_fork($$) {
   return if $options->{"read-only"};
   report("Forking Github repo for $destination", -level => 'VERBOSE');
   my $hubcred = File::Spec->catdir($ENV{HOME},'.config/hub');
-  unless (-e $hubcred || defined $ENV{GITHUB_TOKEN}) {
-       error("The hub utility requires a GitHub personal access token. Run \'hub api\' and enter your GitHub username and password at the prompt.\nAlternatively set the environment variable GITHUB_TOKEN.");
+  unless (-e $hubcred or defined $ENV{GITHUB_TOKEN} or (defined $ENV{GITHUB_USER} and defined $ENV{GITHUB_PASSWORFD})) {
+       my $err_msg = << 'EOM';
+
+   The Hub utility requires GitHub OAuth authentication to create forks of the repo(s).
+
+   From 'man hub':
+
+   GitHub OAuth authentication
+       Hub will prompt for GitHub username  password the first time it needs to access the API and exchange it for an OAuth token, which it
+       saves in ~/.config/hub.
+
+       To avoid being prompted, use GITHUB_USER and GITHUB_PASSWORD environment variables.
+
+       Alternatively, you may provide GITHUB_TOKEN, an access token with repo permissions. This will not be written to ~/.config/hub.
+
+   Please run 'hub api -t'.
+
+EOM
+       error("$err_msg");
     }
   my $path = File::Spec->catdir($ENV{MRB_SOURCE}, $destination);
   my $output = `(cd \"${path}\" && hub fork --remote-name=origin) 2>&1`;
