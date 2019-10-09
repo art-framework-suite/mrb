@@ -364,7 +364,7 @@ sub format_prod_info(\%) {
   my @result =
     map { my $type = $_;
           my $repo = $prod_info->{$type}->{repo};
-          sprintf("%s (%s) =>\n  { %s\n  }\n",
+          sprintf("%s (%s) =>\n  { %s\n  }",
                   $repo, $type,
                   join(",\n    ",
                        sprintf("%s => %s", "product", $prod_info->{product}),
@@ -374,7 +374,7 @@ sub format_prod_info(\%) {
                        sort keys %{$prod_info->{$type}})
                  );
         } @{$prod_info->{types}};
-  return join ('', @result);
+  return join ('', @result) || "<empty>";
 }
 
 ####################################
@@ -452,13 +452,13 @@ sub process_repo_spec {
       $prod_info{origin} = "handled_repo";
     }
   } else {
-    error("Unrecognized repo spec ${repo_spec}\n");
+    error("Unrecognized repo spec ${repo_spec}.\n");
   }
   if (${tree_ish}) {
     $prod_info{"tree-ish"} = ${tree_ish};
   }
   $prod_info{selected_type} = $type || $options->{"repo-type"} || $default_repo_type;
-  report("Repository info:\n",
+  report("Repository info: ",
          format_prod_info(%prod_info),
          -level => "VERBOSE");
   return %prod_info;
@@ -479,16 +479,16 @@ sub expand_suite {
   my $repo_spec = shift;
   my ($suite, $treeish);
   my $known_suites_expr = join("|", sort keys %{$known_suites});
-  report("Checking $repo_spec against $known_suites_expr", -level => "VERBOSE");
+  report("Checking $repo_spec against $known_suites_expr.", -level => "VERBOSE");
   if (($suite, $treeish) =
       ($repo_spec =~ m&^($known_suites_expr)_suite(?:@(.*))?$&o)) {
-    report("Expanding $repo_spec");
+    report("Expanding $repo_spec.");
   } else {
     return ();
   }
   if ($treeish and $treeish =~ m&^v\d+.*$&o) {
     $treeish = sprintf("%s_SUITE_${treeish}", uc ${suite});
-    report("Using tag $treeish for suite $suite");
+    report("Using tag $treeish for suite $suite.");
   }
   return map { sprintf("${_}%s", $treeish ? "\@${treeish}" : ""); }
     @{$known_suites->{$suite}};
@@ -531,16 +531,16 @@ sub verified_fnal_url {
     if (have_read_access($typed_repo_info->{ro_url})) {
       return $typed_repo_info->{ro_url};
     } else {
-      error("Unable to verify read access to remote $typed_repo_info->{ro_url}");
+      error("Unable to verify read access to remote $typed_repo_info->{ro_url}.");
     }
   } elsif ($typed_repo_info->{rw_url}) {
     if ($type eq "fnal" and
         exists $typed_repo_info->{ssh_access}) {
       # We can verify write access to this one.
-      report("Checking write access to $typed_repo_info->{ssh_access}", -level => "VERBOSE");
+      report("Checking write access to $typed_repo_info->{ssh_access}.", -level => "VERBOSE");
       my $bad = `ssh $typed_repo_info->{ssh_access} echo hi 2>&1 | grep -E 'Permission|authentication' | grep -v 'fake authentication' | wc -l`;
       if ($bad == 1) {
-        report("Unable to verify write access for $typed_repo_info->{repo}, falling back to read-only");
+        report("Unable to verify write access for $typed_repo_info->{repo}, falling back to read-only.");
         return verified_fnal_url($type, $typed_repo_info, 1);
       } else {
         return $typed_repo_info->{rw_url};
@@ -548,10 +548,10 @@ sub verified_fnal_url {
     } elsif (have_read_access($typed_repo_info->{rw_url})) {
       return $typed_repo_info->{rw_url};
     } else {
-      error("Unable to verify at least read access to remote $typed_repo_info->{rw_url}");
+      error("Unable to verify at least read access to remote $typed_repo_info->{rw_url}.");
     }
   } else {
-    error("Unable to ascertain URL for $typed_repo_info->{repo}");
+    error("Unable to ascertain URL for $typed_repo_info->{repo}.");
   }
 }
 
@@ -561,7 +561,7 @@ sub verified_github_url {
     if (have_read_access($typed_repo_info->{ro_url})) {
       return $typed_repo_info->{ro_url};
     } else {
-      error("Unable to verify read access to remote $typed_repo_info->{ro_url}");
+      error("Unable to verify read access to remote $typed_repo_info->{ro_url}.");
     }
   } elsif ($typed_repo_info->{rw_url} and have_read_access($typed_repo_info->{rw_url})) {
     # FIXME Could verify permission access using REST, but do simple
@@ -582,10 +582,10 @@ sub clone_repo {
   my ($url, $destination) = @_;
   my @clone_cmd = (qw(git clone), $url, $destination);
   if ($options->{"dry-run"}) {
-    report(sprintf("Would execute command %s", join(" ", @clone_cmd)),
+    report(sprintf("Would execute command %s.", join(" ", @clone_cmd)),
            -level => "INFO");
   } else {
-    report("Executing clone command: ", join(" ", @clone_cmd),
+    report(sprintf("Executing clone command: %s.", join(" ", @clone_cmd)),
            -level => "VERBOSE");
     system(@clone_cmd) == 0 or
       error("Unable to execute clone command: ", join(" ", @clone_cmd));
@@ -604,7 +604,7 @@ sub checkout_tree_ish {
             File::Spec->catdir($ENV{MRB_SOURCE}, $destination),
             $tree_ish);
   system($checkout_cmd) == 0 or
-    error("Unable to check out ${tree_ish} in ${destination}");
+    error("Unable to check out ${tree_ish} in ${destination}.");
 }
 
 ####################################
@@ -614,7 +614,7 @@ sub checkout_tree_ish {
 #
 sub git_flow_init($$) {
   my ($destination, $options) = @_;
-  report("Initializing git flow for $destination", -level => 'VERBOSE');
+  report("Initializing git flow for $destination.", -level => 'VERBOSE');
   my $path = File::Spec->catdir($ENV{MRB_SOURCE}, $destination);
   # This elaborate procedure is necessary for those packages where the
   # default branch is not master and master does not exist.
@@ -642,7 +642,7 @@ sub git_flow_init($$) {
 sub hub_fork($$) {
   my ($destination, $options) = @_;
   return if $options->{"read-only"};
-  report("Forking Github repo for $destination", -level => 'VERBOSE');
+  report("Forking Github repo for $destination.", -level => 'VERBOSE');
   my $hubcred = File::Spec->catdir($ENV{HOME},'.config/hub');
   unless (-e $hubcred or defined $ENV{GITHUB_TOKEN} or (defined $ENV{GITHUB_USER} and defined $ENV{GITHUB_PASSWORFD})) {
        my $err_msg = << 'EOM';
@@ -716,11 +716,11 @@ sub update_cmake {
               File::Spec->devnull());
     my @update_cmake_cmd = ("add_to_cmake.sh", "$ENV{MRB_SOURCE}", "${destination}");
     (system($check_cmake_entry_cmd) == 0 and
-     (report("CMakeLists.txt entry for product $destination already exists"), 1)) or
+     (report("CMakeLists.txt entry for product $destination already exists."), 1)) or
        (system(@update_cmake_cmd) == 0 and
         (report("Entry added to CMakeLists.txt for product ${destination}.",
                 -level => "VERBOSE"), 1)) or
-                  error("Unable to add product $destination to CMakeLists.txt");
+                  error("Unable to add product $destination to CMakeLists.txt.");
   } else {
     report("Product ${destination} does not appear to have a ${product_deps} file: not adding to CMakeLists.txt.",
            "\nExecute add_to_cmake.sh \"$ENV{MRB_SOURCE}\" \"${destination}\" when you have created it.",
@@ -736,11 +736,11 @@ sub update_cmake {
 sub get_repo(\%) {
   my $prod_info = shift;
   if ($options->{"read-only"} and exists $prod_info->{user_url}) {
-    report("Read-only global specification ignored for repo $prod_info->{repo} with user-specified url $prod_info->{user_url}",
+    report("Read-only global specification ignored for repo $prod_info->{repo} with user-specified url $prod_info->{user_url}.",
            -level => "INFO")
   }
   my $type = $prod_info->{selected_type};
-  error("Repo type $type not supported for checkout of $prod_info->{product}")
+  error("Repo type $type not supported for checkout of $prod_info->{product}.")
     unless exists $prod_info->{$type};
   if ($type eq "github" and $options->{"github-org"}) {
     # Update the github info hash with updated github org / user.
@@ -781,7 +781,7 @@ sub get_repo(\%) {
   my $tree_ish = $prod_info->{"tree-ish"} || $global_tree_ish;
   if ($tree_ish) {
     if ($options->{"dry-run"}) {
-      report("Would check out $tree_ish for repository $destination",
+      report("Would check out $tree_ish for repository $destination.",
              -level => "INFO");
     } else {
       checkout_tree_ish($destination, $tree_ish) if $tree_ish;
@@ -968,10 +968,10 @@ scalar @REP or
   error("No products specified!", -exitval => 2, -usage => 1);
 
 $ENV{MRB_SOURCE} or
-error("MRB_SOURCE must be defined and non-empty: source the appropriate localProductsXXX/setup");
+error("MRB_SOURCE must be defined and non-empty: source the appropriate localProductsXXX/setup.");
 
 chdir($ENV{MRB_SOURCE}) or
-error("Unable to change directory to MRB_SOURCE ($ENV{MRB_SOURCE})");
+error("Unable to change directory to MRB_SOURCE ($ENV{MRB_SOURCE}).");
 
 if ($options->{destination} and
     scalar File::Spec->splitdir($options->{destination}) > 1) {
