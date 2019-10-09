@@ -157,7 +157,8 @@ my ($known_products); # Initialized on startup.
 # $hash->{positional}.
 sub process_args {
   my $args = { positional => [] };
-  while (my $arg = shift) {
+  while (scalar @_ > 0) {
+    next unless defined (my $arg = shift); # Not an argument.
     if ($arg =~ m&^-(\w+)$&o) {
       $args->{${1}} = shift;
     } else {
