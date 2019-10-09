@@ -744,6 +744,10 @@ sub get_repo(\%) {
   } else {
     my $url = verified_url($type, $repo_info->{$type});
     clone_repo($url, $destination);
+    if ($type eq "github" and $url eq $repo_info->{$type}->{rw_url}) {
+      # remove call to hub_fork for RW github checkout
+      delete($repo_info->{$type}->{post});
+    }
   }
   # Post-processing for checked-out repository.
   if (exists $repo_info->{$type}->{post}) {
