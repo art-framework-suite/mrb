@@ -375,7 +375,7 @@ sub format_prod_info(\%) {
                        sort keys %{$prod_info->{$type}})
                  );
         } @{$prod_info->{types}};
-  return join ('', @result) || "<empty>";
+  return join ("\n", @result) || "<empty>";
 }
 
 ####################################
@@ -459,7 +459,7 @@ sub process_repo_spec {
     $prod_info{"tree-ish"} = ${tree_ish};
   }
   $prod_info{selected_type} = $type || $options->{"repo-type"} || $default_repo_type;
-  report("Repository info: ",
+  report("Repository info:\n",
          format_prod_info(%prod_info),
          -level => "VERBOSE");
   return %prod_info;
