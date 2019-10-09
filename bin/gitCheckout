@@ -173,7 +173,7 @@ sub process_args {
 #
 # Usage: report(@msgs, kwargs)
 #
-# Keyword arguments: -level => "INFO"|"WARNING"|"ERROR"|"VERBOSE"
+# Keyword arguments: -level => "INFO"|"WARNING"|"ERROR"|"VERBOSE"|"DEBUG"
 #                      Level of the provided message.
 #
 # WARNING and ERROR messages are sent to STDERR, all others to
@@ -185,7 +185,8 @@ sub report {
   if ($level eq "WARNING" or $level eq "ERROR") {
     $out = \*STDERR;
   } elsif ($options->{quiet} or
-             ($level eq "VERBOSE" and not $options->{verbose})) {
+           ($level eq "VERBOSE" and not $options->{verbose}) or
+           ($level eq "DEBUG" and not $options->{debug})) {
     return;
   }
   print $out "$level: ", join("", @{$args->{positional}}), "\n";
@@ -924,6 +925,7 @@ GetOptions($options,
            "help|h|?",
            "branch|b=s",
            "commit|c=s",
+           "debug",
            "destination|directory|product|d=s",
            "dry-run|n",
            "github-org|ghorg|ghuser|g=s",
@@ -954,6 +956,10 @@ if ($options->{help}) {
   print_version();
   exit(1);
 }
+
+# Linked options.
+$options->{verbose} = 1 if ($options->{debug});
+delete $options->{quiet} if $options->{verbose};
 
 my @tree_ish_args = grep m&(branch|commit|tree)&, sort keys %{$options};
 
@@ -997,7 +1003,7 @@ B<mrb gitCheckout|g> B<-h|--help|-?> | B<--help-repo-types> | B<--help-repos> | 
 
 B<mrb gitCheckout|g> B<-V>
 
-B<mrb gitCheckout|g> [B<-b|--branch> I<branch> | B<-c|--commit> I<commit> | B<-t|--tag> I<tag>] [B<-d|--destination|--directory|--product> I<name>] [B<--dry-run|-n>] [B<--github-org|--ghorg|-g> I<ghorg>] [B<--no-expand>] [B<-q|--quiet>] [B<-r|--read-only>] [B<--repo-type> I<type>] [B<-V|--version>] [B<-v|--verbose>] [--] I<spec>+
+B<mrb gitCheckout|g> [B<-b|--branch> I<branch> | B<-c|--commit> I<commit> | B<-t|--tag> I<tag>] [B<--debug>] [B<-d|--destination|--directory|--product> I<name>] [B<--dry-run|-n>] [B<--github-org|--ghorg|-g> I<ghorg>] [B<--no-expand>] [B<-q|--quiet>] [B<-r|--read-only>] [B<--repo-type> I<type>] [B<-V|--version>] [B<-v|--verbose>] [--] I<spec>+
 
 B<+> implies optional repeated arguments.
 
@@ -1022,6 +1028,10 @@ After cloning, check out the specified I<branch>. Mutually-exclusive with B<--co
 =item B<-c> I<commit>
 
 After cloning, check out the specified I<commit>. Mutually-exclusive with B<--branch> and B<--tag>. Overridden by per-repository I<tree-ish> specification. It is an error to specify --commit with multiple repository specifications.
+
+=item B<--debug>
+
+Show messages to aid debugging (implies B<-v>)
 
 =item B<--destination> I<name>
 
