@@ -641,7 +641,6 @@ sub git_flow_init($$) {
 #
 sub hub_fork($$) {
   my ($destination, $options) = @_;
-  return if $options->{"read-only"};
   report("Forking Github repo for $destination.", -level => 'VERBOSE');
   my $hubcred = File::Spec->catdir($ENV{HOME},'.config/hub');
   unless (-e $hubcred or defined $ENV{GITHUB_TOKEN} or (defined $ENV{GITHUB_USER} and defined $ENV{GITHUB_PASSWORFD})) {
@@ -748,9 +747,9 @@ sub get_repo(\%) {
                            %{github_repo($prod_info->{$type}->{repo}, $options->{"github-org"})->{$type}}};
   }
 
-  if ($type eq "github" and $options->{"read-only"}) {
-    # remove call to hub_fork for RO github checkout
-    delete($prod_info->{$type}->{post});
+  if ($type eq "github") {
+    # remove call to hub_fork for Github repos unless fork option is specified
+    unless (exists $options->{"fork"}) {delete($prod_info->{$type}->{post});}
   }
 
   my $destination = $options->{destination} ||
@@ -763,14 +762,6 @@ sub get_repo(\%) {
   } else {
     my $url = verified_url($type, $prod_info->{$type});
     clone_repo($url, $destination);
-    if ($type eq "github" and $url eq $prod_info->{$type}->{rw_url}) {
-      my $path = File::Spec->catdir($ENV{MRB_SOURCE}, $destination);
-      my $out_err = `(cd \"${path}\" && git push --set-upstream origin HEAD) 2>&1`;
-      report("git push --set-upstream origin HEAD returned error code $? and output $out_err",
-            -level => "DEBUG");
-      # remove call to hub_fork for RW github checkout if we have write permissions for primary repo
-      if ($? == 0) {delete($prod_info->{$type}->{post});}
-    }
   }
   # Post-processing for checked-out repository.
   if (exists $prod_info->{$type}->{post}) {
@@ -928,6 +919,7 @@ GetOptions($options,
            "debug",
            "destination|directory|product|d=s",
            "dry-run|n",
+           "fork|f",
            "github-org|ghorg|ghuser|g=s",
            "help-repos",
            "help-suites",
@@ -1003,7 +995,7 @@ B<mrb gitCheckout|g> B<-h|--help|-?> | B<--help-repo-types> | B<--help-repos> | 
 
 B<mrb gitCheckout|g> B<-V>
 
-B<mrb gitCheckout|g> [B<-b|--branch> I<branch> | B<-c|--commit> I<commit> | B<-t|--tag> I<tag>] [B<--debug>] [B<-d|--destination|--directory|--product> I<name>] [B<--dry-run|-n>] [B<--github-org|--ghorg|-g> I<ghorg>] [B<--no-expand>] [B<-q|--quiet>] [B<-r|--read-only>] [B<--repo-type> I<type>] [B<-V|--version>] [B<-v|--verbose>] [--] I<spec>+
+B<mrb gitCheckout|g> [B<-b|--branch> I<branch> | B<-c|--commit> I<commit> | B<-t|--tag> I<tag>] [B<--debug>] [B<-d|--destination|--directory|--product> I<name>] [B<--fork|-f>] [B<--dry-run|-n>] [B<--github-org|--ghorg|-g> I<ghorg>] [B<--no-expand>] [B<-q|--quiet>] [B<-r|--read-only>] [B<--repo-type> I<type>] [B<-V|--version>] [B<-v|--verbose>] [--] I<spec>+
 
 B<+> implies optional repeated arguments.
 
@@ -1048,6 +1040,12 @@ Clone the repository into the specified I<name>. It is an error to specify B<--d
 =item B<-n>
 
 Don't actually check out any repositories.
+
+=item B<--fork>
+
+=item B<-f>
+
+Run `hub fork` after cloning GitHub repo.
 
 =item B<--github-org> I<ghorg>
 
