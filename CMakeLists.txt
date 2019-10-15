@@ -10,7 +10,7 @@
 #  make install
 #  make package (tar file for ups)
 
-CMAKE_MINIMUM_REQUIRED (VERSION 2.8)
+CMAKE_MINIMUM_REQUIRED (VERSION 3.2)
 
 PROJECT (mrb LANGUAGES NONE)
 set (product mrb)
