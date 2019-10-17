@@ -24,7 +24,7 @@ fullCom="${mrb_command} $thisCom"
 function usage() 
 {
   cat 1>&2 << EOF
-Usage: $fullCom [-n | -p] [-f] [-b] [-T dir] [-S dir] [-v project_version] [-q qualifiers]
+Usage: $fullCom [-n | -p] [-f] [-b] [-T dir] [-S dir] [-B dir] [-P dir] [-v project_version] [-q qualifiers]
   Make a new development area by creating srcs, build, and products directories.
   Options:
 
@@ -41,7 +41,11 @@ Usage: $fullCom [-n | -p] [-f] [-b] [-T dir] [-S dir] [-v project_version] [-q q
      -S <dir>  = Where to put the source code directory (default is srcs in current directory)
      
      -T <dir>  = Where to put the build and localProducts directories (default is current directory next to srcs)
-    
+
+     -B <dir>  = Where to put the build directory (default is current directory next to srcs)
+
+     -P <dir>  = Where to put the localProducts directory (default is current directory next to srcs)
+
      -v <version> = Build for this version instead of the default
      
      -q <qualifiers> = Build for these qualifiers instead of the default
@@ -86,6 +90,38 @@ function make_srcs_directory()
   # Record the mrb version
   ups active | grep ^mrb >  ${MRB_SOURCE}/.mrbversion
 
+}
+
+function make_build_directory()
+{
+  # Make directories
+  cd ${currentDir}
+
+  # If we are just making a new build directory, we need to be were local products sits
+  if [ ${doNewBuildDir} ]; then
+    if ls -1 $topDir | egrep -q '^localProducts';
+      then ok=1
+      else echo 'ERROR: Your current directory must be where localProducts lives' ; exit 8
+    fi 
+  fi
+
+  # Determine the subdirectory 
+  # Using the function supplied by cetpkgsupport
+  flav=`get-directory-name subdir`
+  buildDirName="build_${flav}"
+
+  # Make sure we don't already have the build directory
+  if [ -d ${topDir}/${buildDirName} ]; then
+     echo "Build directory ${buildDirName} already exists"
+  else
+    mkdir -p ${topDir}/${buildDirName}
+    ##echo "Created build directory"
+  fi
+  # get the full path to the new directory
+  cd ${topDir}/${buildDirName}
+  MRB_BUILDDIR=`pwd`
+  cd ${currentDir}
+  echo "MRB_BUILDDIR is ${MRB_BUILDDIR}"
 }
 
 function create_local_setup()
@@ -195,7 +231,7 @@ makeSrcs="yes"
 printDebug=""
 
 # Process options
-while getopts ":hdnfbpq:S:T:v:" OPTION
+while getopts ":hdnfbpq:B:P:S:T:v:" OPTION
 do
     case $OPTION in
         h   ) 
@@ -224,6 +260,16 @@ do
             ;;
         f   ) 
 	    doForce="yes"
+	    ;;
+        B   ) 
+	    echo "NOTICE: build area will go to $OPTARG" 
+            topDirGiven="yes"
+	    buildTopDir=$OPTARG 
+	    ;;
+        P   ) 
+	    echo "NOTICE: localPproducts area will go to $OPTARG" 
+            topDirGiven="yes"
+	    productTopDir=$OPTARG 
 	    ;;
         S   ) 
 	    echo "NOTICE: source code srcs will go into $OPTARG" 
@@ -367,6 +413,17 @@ if echo $pwda | grep -q '/build[^/]*$';
   then echo 'ERROR: Cannot be within a build directory' ; exit 4
 fi
 
+if [ -z "${buildTopDir}" ]; then buildTopDir=${topDir}; fi
+if [ -z "${productTopDir}" ]; then productTopDir=${topDir}; fi
+
+echo
+echo "The following configuration is defined:"
+echo "  The top level directory is ${topDir}"
+echo "  The source code directory will be under ${srcTopDir}"
+echo "  The build directory will be under ${buildTopDir}"
+echo "  The local product directory will be under ${productTopDir}"
+echo
+
 # make sure the directories we are about to create are empty
 
 if [ ${makeSrcs} ]
@@ -386,11 +443,12 @@ fi
 if [ ${makeBuild} ]
 then
      # Make sure the directory for build and local products is empty
-    if [ "$topDir" != "$srcTopDir" ] && [ -d ${topDir} ] && [ "$(ls -A $topDir)" ]; then
+    if [ "$buildTopDir" != "$srcbuildTopDir" ] && [ -d ${buildTopDir} ] && [ "$(ls -A $buildTopDir)" ]; then
 
       # Directory has stuff in it, error unless force option is given.
       if [ ! $doForce ]; then
         echo 'ERROR: Directory for build and localProducts has stuff in it!'
+	echo "   Attempting to use ${buildTopDir}"
         echo '   You should make a new empty directory there or add -f to use that directory anyway'
         exit 6
       fi
@@ -400,8 +458,8 @@ fi
 # If we're just making the localProducts area, then we MUST be where build lives
 if [ ${makeLP} ] && [ ! ${makeBuild} ]
 then
-    if [ ${printDebug} ]; then echo "DEBUG: topDir is ${topDir}"; fi
-    if ls -1 $topDir | egrep -q '^build';
+    if [ ${printDebug} ]; then echo "DEBUG: buildTopDir is ${buildTopDir}"; fi
+    if ls -1 $buildTopDir | egrep -q '^build';
       then ok=1
       else echo 'ERROR: No build directory. Must be in a development area with build to make localProducts' ; exit 7
     fi
@@ -411,34 +469,7 @@ fi
 #  Do we need to make the @build/@ directory?
 if [ ${makeBuild} ]
 then
-  # Make directories
-  cd ${currentDir}
-
-  # If we are just making a new build directory, we need to be were local products sits
-  if [ ${doNewBuildDir} ]; then
-    if ls -1 $topDir | egrep -q '^localProducts';
-      then ok=1
-      else echo 'ERROR: Your current directory must be where localProducts lives' ; exit 8
-    fi 
-  fi
-
-  # Determine the subdirectory 
-  # Using the function supplied by cetpkgsupport
-  flav=`get-directory-name subdir`
-  buildDirName="build_${flav}"
-
-  # Make sure we don't already have the build directory
-  if [ -d ${topDir}/${buildDirName} ]; then
-     echo "Build directory ${buildDirName} already exists"
-  else
-    mkdir -p ${topDir}/${buildDirName}
-    ##echo "Created build directory"
-  fi
-  # get the full path to the new directory
-  cd ${topDir}/${buildDirName}
-  MRB_BUILDDIR=`pwd`
-  cd ${currentDir}
-  echo "MRB_BUILDDIR is ${MRB_BUILDDIR}"
+    make_build_directory
 else
     # If we are not making the build area, then we MUST know where build lives
     if ls -1 $topDir | egrep -q '^build';
