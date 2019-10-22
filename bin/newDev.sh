@@ -404,22 +404,21 @@ echo
 pwda="$(pwd)/"
 if [ ${printDebug} ]; then echo "DEBUG: pwda is ${pwda}"; fi
 
-set -x
 # Are we within srcs?
-if echo $pwda | egrep -q '/srcs[^/]*$';
+if pwd | egrep -q '/srcs[^/]*$';
     then echo 'ERROR: Cannot be within a srcs directory' ; exit 3
 fi
 
 # Are we within build?
-if echo $pwda | egrep -q '/build*[^/]*$';
+if pwd | egrep -q '/build[^/]*$';
   then echo 'ERROR: Cannot be within a build directory' ; exit 4
 fi
 
 # Are we within localProducts?
-if echo $pwda | egrep -q '/localProducts*[^/]*$';
+if pwd | egrep -q '/localProducts[^/]*$';
+##if echo $pwda | egrep -q '/localProducts*[^/]*$';
   then echo 'ERROR: Cannot be within a localProducts directory' ; exit 4
 fi
-set +x
 
 if [ -z "${buildTopDir}" ]; then buildTopDir=${topDir}; fi
 if [ -z "${lpTopDir}" ]; then lpTopDir=${topDir}; fi
