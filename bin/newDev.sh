@@ -6,12 +6,12 @@
 # * Create a local products area
 # * Construct a @setup@ script in local products
 
-# Within the srcs area is a top level @CMakeLists.txt@ file so that, if you want, you can
-# build everything in @srcs@.
+# Within the srcs area is a top level @CMakeLists.txt@ file so that
+# you can build everything in @srcs@.
 
-# The local products area directory name has the version and qualifier of @${MRB_PROJECT}@ that you
-# currently have set up. It also makes a setup script in there that is necessary to set up
-# to use this products area. 
+# The local products area directory name has the version and qualifier of @${MRB_PROJECT}@
+# that you currently have set up. It also makes a setup script in there that is necessary
+# to source when using mrb. 
 
 # Determine the name of this command
 thisComFull=$(basename $0)
@@ -34,9 +34,9 @@ Usage: $fullCom [-n | -p] [-f] [-b] [-T dir] [-S dir] [-B dir] [-P dir] [-v proj
      2) srcs, build, and products live in different areas of the filesystem. 
           This configuration is useful if you want to have your sources in your
           backed up home area with build and products in non-backed up scratch
-          or some other area. For this configuration, the srcs area will be placed in your
-          current directory along with a set up script. You use the -T option (below) 
-          to place the products and build areas elsewhere. 
+          or some other area. For this configuration, the srcs area will be placed
+          in yourcurrent directory. You use the -T, -B, and/or -P options (below)
+	  to place the products and build areas elsewhere. 
 
      -S <dir>  = Where to put the source code directory (default is srcs in current directory)
      
@@ -248,6 +248,7 @@ do
         p   ) 
 	    echo 'NOTICE: Just make products area' 
 	    makeBuild=""
+            makeLP="yes"
 	    makeSrcs=""
 	    ;;
         b   )
@@ -262,17 +263,17 @@ do
 	    doForce="yes"
 	    ;;
         B   ) 
-	    echo "NOTICE: build area will go to $OPTARG" 
+	    echo "NOTICE: build area be under $OPTARG" 
             topDirGiven="yes"
 	    buildTopDir=$OPTARG 
 	    ;;
         P   ) 
-	    echo "NOTICE: localPproducts area will go to $OPTARG" 
+	    echo "NOTICE: localPproducts area be under $OPTARG" 
             topDirGiven="yes"
-	    productTopDir=$OPTARG 
+	    lpTopDir=$OPTARG 
 	    ;;
         S   ) 
-	    echo "NOTICE: source code srcs will go into $OPTARG" 
+	    echo "NOTICE: source code srcs will be under $OPTARG" 
             srcTopDirGiven="yes"
 	    srcTopDir=$OPTARG 
 	    ;;
@@ -365,7 +366,7 @@ if [ -z ${prjdir} ] && [ -z ${qualList} ]
 then
     echo "ERROR: ${MRB_PROJECT} product is not setup."
     echo "       You must EITHER setup the desired version of ${MRB_PROJECT} OR specify the qualifiers"
-    echo "       e.g., mrb newDev -v vX_YY_ZZ -q e2:debug"
+    echo "       e.g., mrb newDev -v vX_YY_ZZ -q e17:debug"
     exit 2
 fi
 # now sort out the qualifier list
@@ -403,25 +404,32 @@ echo
 pwda="$(pwd)/"
 if [ ${printDebug} ]; then echo "DEBUG: pwda is ${pwda}"; fi
 
+set -x
 # Are we within srcs?
-if echo $pwda | grep -q '/srcs[^/]*$';
+if echo $pwda | egrep -q '/srcs[^/]*$';
     then echo 'ERROR: Cannot be within a srcs directory' ; exit 3
 fi
 
 # Are we within build?
-if echo $pwda | grep -q '/build[^/]*$';
+if echo $pwda | egrep -q '/build*[^/]*$';
   then echo 'ERROR: Cannot be within a build directory' ; exit 4
 fi
 
+# Are we within localProducts?
+if echo $pwda | egrep -q '/localProducts*[^/]*$';
+  then echo 'ERROR: Cannot be within a localProducts directory' ; exit 4
+fi
+set +x
+
 if [ -z "${buildTopDir}" ]; then buildTopDir=${topDir}; fi
-if [ -z "${productTopDir}" ]; then productTopDir=${topDir}; fi
+if [ -z "${lpTopDir}" ]; then lpTopDir=${topDir}; fi
 
 echo
 echo "The following configuration is defined:"
 echo "  The top level directory is ${topDir}"
 echo "  The source code directory will be under ${srcTopDir}"
 echo "  The build directory will be under ${buildTopDir}"
-echo "  The local product directory will be under ${productTopDir}"
+echo "  The local product directory will be under ${lpTopDir}"
 echo
 
 # make sure the directories we are about to create are empty
