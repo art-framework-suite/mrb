@@ -416,7 +416,6 @@ fi
 
 # Are we within localProducts?
 if pwd | egrep -q '/localProducts[^/]*$';
-##if echo $pwda | egrep -q '/localProducts*[^/]*$';
   then echo 'ERROR: Cannot be within a localProducts directory' ; exit 4
 fi
 
@@ -431,6 +430,7 @@ echo "  The build directory will be under ${buildTopDir}"
 echo "  The local product directory will be under ${lpTopDir}"
 echo
 
+# Continue the sanity checks
 # make sure the directories we are about to create are empty
 
 if [ ${makeSrcs} ]
@@ -449,13 +449,28 @@ fi
 
 if [ ${makeBuild} ]
 then
+     # Make sure the directory for build is empty
+    if [ "$buildTopDir" != "$srcTopDir" ] && [ -d ${buildTopDir} ] && [ "$(ls -A $buildTopDir)" ]; then
+
+      # Directory has stuff in it, error unless force option is given.
+      if [ ! $doForce ]; then
+        echo 'ERROR: Directory for build has stuff in it!'
+	echo "   Attempting to use ${buildTopDir}"
+        echo '   You should make a new empty directory there or add -f to use that directory anyway'
+        exit 6
+      fi
+    fi
+fi
+
+if [ ${makeLP} ]
+then
      # Make sure the directory for build and local products is empty
-    if [ "$buildTopDir" != "$srcbuildTopDir" ] && [ -d ${buildTopDir} ] && [ "$(ls -A $buildTopDir)" ]; then
+    if [ "$lpTopDir" != "$srcTopDir" ] && [ -d ${lpTopDir} ] && [ "$(ls -A $lpTopDir)" ]; then
 
       # Directory has stuff in it, error unless force option is given.
       if [ ! $doForce ]; then
         echo 'ERROR: Directory for build and localProducts has stuff in it!'
-	echo "   Attempting to use ${buildTopDir}"
+	echo "   Attempting to use ${lpTopDir}"
         echo '   You should make a new empty directory there or add -f to use that directory anyway'
         exit 6
       fi
@@ -472,6 +487,7 @@ then
     fi
 fi
 
+# Finally done with the sanity checks
 # h3. Build area
 #  Do we need to make the @build/@ directory?
 if [ ${makeBuild} ]
