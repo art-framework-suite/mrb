@@ -6,6 +6,7 @@ INSTALL ( PROGRAMS add_to_cmake.sh
 		   copy_files_to_srcs.sh
 		   edit_cmake
 		   edit_product_deps
+		   edit_product_deps_qual
 		   findDir.sh
 		   get_setup_list.sh
 		   gitCheckout

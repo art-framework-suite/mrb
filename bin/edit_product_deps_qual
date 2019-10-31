@@ -1,0 +1,115 @@
+#!/usr/bin/env perl
+#
+
+# parse and update product_deps
+# Search and replace any instances of the qualifier
+
+
+use File::Basename;
+use lib dirname($0);
+
+if( $#ARGV < 3 ) {
+    print "\n";
+    print "ERROR: unspecified parameters - only have $#ARGV \n";
+    print "USAGE: edit_old qual_deps <file> <old qual> <new_qual> <dryrun:yes|no>\n";
+    exit 1;
+}
+
+$pdfile = $ARGV[0];
+$old_qual = $ARGV[1];
+$new_qual = $ARGV[2];
+$dryrun = $ARGV[3];
+
+if ( $dryrun eq "yes" ) {
+  $pdfilebak = $pdfile;
+  print "Dry Run: these changes will be made:\n";
+  print "\n";
+} else {
+  $pdfilebak = $pdfile.".bak";
+  print "renaming $pdfile to $pdfilebak\n";
+  print "\n";
+  rename ($pdfile, $pdfilebak) || die ( "Failed to rename $pdfile" );
+  open(POUT, "> $pdfile")  || die ( "Failed to open new $pdfile" );
+}
+
+
+
+$get_phash="";
+$get_quals="";
+$get_fragment="";
+open(PIN, "< $pdfilebak") or die "Couldn't open $pdfilebak";
+while ( $line=<PIN> ) {
+  chop $line;
+  if ( index($line,"#") == 0 ) {
+    print_line ( POUT, $line, $dryrun );
+  } elsif ( $line !~ /\w+/ ) {
+    print_line ( POUT, $line, $dryrun );
+  } else {
+    @words = split(/\s+/,$line);
+    if( $words[0] eq "parent" ) {
+       print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "no_fq_dir" ) {
+       print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "incdir" ) {
+       print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "fcldir" ) {
+       print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "gdmldir" ) {
+       print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "perllib" ) {
+       print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "fwdir" ) {
+       print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "set_fwdir" ) {
+       print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "libdir" ) {
+       print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "bindir" ) {
+       print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "defaultqual" ) {
+          $newline = $line;
+	  $newline =~ s/$old_qual/$new_qual/;
+          if ( $dryrun eq "yes" ) {
+	    print "old line: $line\n";
+	    print "new line: $newline\n";
+	  }
+          print_line ( POUT, $newline, $dryrun );
+    } elsif( $words[0] eq "only_for_build" ) {
+       print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "product" ) {
+       print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "end_product_list" ) {
+       print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "qualifier" ) {
+       print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "end_qualifier_list" ) {
+       print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "table_fragment_begin" ) {
+       print_line ( POUT, $line, $dryrun );
+    } elsif( $words[0] eq "table_fragment_end" ) {
+       print_line ( POUT, $line, $dryrun );
+    } else {
+          $newline = $line;
+	  $newline =~ s/$old_qual/$new_qual/g;
+          if ( $dryrun eq "yes" ) {
+	    print "old line: $line\n";
+	    print "new line: $newline\n";
+	  }
+          print_line ( POUT, $newline, $dryrun );
+    }
+  }
+}
+close(PIN);
+
+
+exit 0;
+
+sub print_line {
+  my @params = @_;
+  my $output = $params[0];
+  my $oline = $params[1];
+  my $dr = $params[2];
+  if ( $dryrun eq "no" ) {
+    print $output "$oline\n";
+  }
+}

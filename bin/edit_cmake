@@ -64,6 +64,20 @@ while ( $line=<PIN> ) {
        } else {
           print_line ( POUT, $line, $dryrun );
        }
+    } elsif ( $words[0] eq "set(" ) {
+       if ( $words[1] eq "SQUAL" ) {
+       print "edit $line - $product to $version\n";
+          $newline = $line;
+	  $newline =~ s/$product/$version/;
+          if ( $dryrun eq "yes" ) {
+	    print "old line: $line\n";
+	    print "new line: $newline\n";
+	  }
+	    print "new line: $newline\n";
+          print_line ( POUT, $newline, $dryrun );
+       } else {
+          print_line ( POUT, $line, $dryrun );
+       }
     } else {
        print_line ( POUT, $line, $dryrun );
     }
