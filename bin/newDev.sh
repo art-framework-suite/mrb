@@ -6,12 +6,12 @@
 # * Create a local products area
 # * Construct a @setup@ script in local products
 
-# Within the srcs area is a top level @CMakeLists.txt@ file so that, if you want, you can
-# build everything in @srcs@.
+# Within the srcs area is a top level @CMakeLists.txt@ file so that
+# you can build everything in @srcs@.
 
-# The local products area directory name has the version and qualifier of @${MRB_PROJECT}@ that you
-# currently have set up. It also makes a setup script in there that is necessary to set up
-# to use this products area. 
+# The local products area directory name has the version and qualifier of @${MRB_PROJECT}@
+# that you currently have set up. It also makes a setup script in there that is necessary
+# to source when using mrb. 
 
 # Determine the name of this command
 thisComFull=$(basename $0)
@@ -24,7 +24,7 @@ fullCom="${mrb_command} $thisCom"
 function usage() 
 {
   cat 1>&2 << EOF
-Usage: $fullCom [-n | -p] [-f] [-b] [-T dir] [-S dir] [-v project_version] [-q qualifiers]
+Usage: $fullCom [-n | -p] [-f] [-b] [-T dir] [-S dir] [-B dir] [-P dir] [-v project_version] [-q qualifiers]
   Make a new development area by creating srcs, build, and products directories.
   Options:
 
@@ -34,14 +34,18 @@ Usage: $fullCom [-n | -p] [-f] [-b] [-T dir] [-S dir] [-v project_version] [-q q
      2) srcs, build, and products live in different areas of the filesystem. 
           This configuration is useful if you want to have your sources in your
           backed up home area with build and products in non-backed up scratch
-          or some other area. For this configuration, the srcs area will be placed in your
-          current directory along with a set up script. You use the -T option (below) 
-          to place the products and build areas elsewhere. 
+          or some other area. For this configuration, the srcs area will be placed
+          in yourcurrent directory. You use the -T, -B, and/or -P options (below)
+	  to place the products and build areas elsewhere. 
 
      -S <dir>  = Where to put the source code directory (default is srcs in current directory)
      
      -T <dir>  = Where to put the build and localProducts directories (default is current directory next to srcs)
-    
+
+     -B <dir>  = Where to put the build directory (default is current directory next to srcs)
+
+     -P <dir>  = Where to put the localProducts directory (default is current directory next to srcs)
+
      -v <version> = Build for this version instead of the default
      
      -q <qualifiers> = Build for these qualifiers instead of the default
@@ -88,6 +92,116 @@ function make_srcs_directory()
 
 }
 
+function make_build_directory()
+{
+  # Make directories
+  cd ${currentDir}
+
+  # If we are just making a new build directory, we need to be were local products sits
+  if [ ${doNewBuildDir} ]; then
+    if ls -1 $topDir | egrep -q '^localProducts';
+      then ok=1
+      else echo 'ERROR: Your current directory must be where localProducts lives' ; exit 8
+    fi 
+  fi
+
+  # Determine the subdirectory 
+  # Using the function supplied by cetpkgsupport
+  flav=`get-directory-name subdir`
+  buildDirName="build_${flav}"
+
+  # Make sure we don't already have the build directory
+  if [ -d ${buildTopDir}/${buildDirName} ]; then
+     echo "Build directory ${buildDirName} already exists"
+  else
+    mkdir -p ${buildTopDir}/${buildDirName}
+    ##echo "Created build directory"
+  fi
+  # get the full path to the new directory
+  cd ${buildTopDir}/${buildDirName}
+  MRB_BUILDDIR=`pwd`
+  cd ${currentDir}
+  cd ${buildTopDir}
+  fullBuildDir=`pwd`
+  cd ${currentDir}
+  echo "MRB_BUILDDIR is ${MRB_BUILDDIR}"
+}
+
+function make_localProducts_directory()
+{
+    # Prepare the setup script in @local_products@
+
+    MRB_QUALS=${MRB_QUALS}
+
+    # Construct the version and qualifier string
+    qualdir=`echo ${MRB_QUALS} | sed s'/:/_/g'`
+    if [ "$MRB_QUALS" = "-nq-" ]
+    then
+      dirVerQual="_${MRB_PROJECT}_${prjver}"
+    else
+      dirVerQual="_${MRB_PROJECT}_${prjver}_${qualdir}"
+    fi
+    # Construct the name of the @local_products@ directory
+    # First get the full path 
+    cd ${currentDir}
+    cd ${lpTopDir}
+    fullLPDir=`pwd`
+    dirName="$fullLPDir/localProducts${dirVerQual}"
+    MRB_INSTALL=${dirName}
+    cd ${currentDir}
+
+    #  Make sure the directory does not exist already
+    if [ -e "$dirName" ]
+    then
+        echo "ERROR: $dirName already exists. Delete it first"
+        exit 8
+    fi
+
+    # Make the local products directory
+    mkdir -p $dirName || { echo "ERROR: failed to create $dirName"; exit 1; }
+    ##echo "NOTICE: Created local products directory $dirName"
+
+    # Record the mrb version
+    ups active | grep ^mrb >  ${dirName}/.mrbversion
+
+    # Make a @.upsfiles@ directory for local products
+    mkdir -p $dirName/.upsfiles || { echo "ERROR: failed to create $dirName/.upsfiles"; exit 1; }
+    cp $MRB_DIR/templates/dbconfig $dirName/.upsfiles/ || { echo "ERROR: failed to copy dbconfig"; exit 1; }
+    #cp -R $project_dir/.upsfiles $dirName
+    ##echo "NOTICE: Copied .upsfiles to $dirName"
+    
+    if [ ${printDebug} ]
+    then
+        echo
+	echo "DEBUG: MRB_SOURCE ${MRB_SOURCE}"
+	echo "DEBUG: MRB_INSTALL ${MRB_INSTALL}"
+	echo "DEBUG: prjdir ${prjdir}"
+	echo "DEBUG: prjcodedir ${prjcodedir}"
+    fi
+    if [ ! -z ${prjdir} ] && [ -d ${prjdir} ]
+    then
+        $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}_DIR
+    elif [ ! -z ${prjcodedir} ] && [ -d ${prjcodedir} ] 
+    then
+       $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}CODE_DIR
+    else      
+        ##echo "look for ${MRB_PROJECT} ${MRB_PROJECT_VERSION}"
+	if ups exist ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS} >/dev/null 2>&1; then
+            source `${UPS_DIR}/bin/ups setup -j ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}`
+            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}_DIR
+	    unsetup -j ${MRB_PROJECT}
+	elif ups exist ${MRB_PROJECT}code ${MRB_PROJECT_VERSION} -q ${MRB_QUALS} >/dev/null 2>&1; then
+            source `${UPS_DIR}/bin/ups setup -j ${MRB_PROJECT}code ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}`
+            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}CODE_DIR
+	    unsetup -j ${MRB_PROJECT}
+	else
+            echo "INFO: cannot find ${MRB_PROJECT}/${MRB_PROJECT_VERSION}/releaseDB/base_dependency_database"
+            echo "      or ${MRB_PROJECT}code/${MRB_PROJECT_VERSION}/releaseDB/base_dependency_database"
+	    echo "      mrb checkDeps and pullDeps will not have complete information"
+	fi
+    fi
+}
+
 function create_local_setup()
 {
     # We want to avoid full paths, but we do need a full path for MRB_SOURCE
@@ -106,8 +220,9 @@ setenv MRB_PROJECT "${MRB_PROJECT}"
 setenv MRB_PROJECT_VERSION "${MRB_PROJECT_VERSION}"
 setenv MRB_QUALS "${MRB_QUALS}"
 setenv MRB_TOP "${fullTopDir}"
-setenv MRB_SOURCE ${MRB_SOURCE}
-setenv MRB_INSTALL \${MRB_TOP}/localProducts${dirVerQual}
+setenv MRB_BUILD_TOP "${fullBuildDir}"
+setenv MRB_SOURCE "${MRB_SOURCE}"
+setenv MRB_INSTALL "${MRB_INSTALL}"
 setenv PRODUCTS "\${MRB_INSTALL}:\${PRODUCTS}"
 
 EOF
@@ -195,7 +310,7 @@ makeSrcs="yes"
 printDebug=""
 
 # Process options
-while getopts ":hdnfbpq:S:T:v:" OPTION
+while getopts ":hdnfbpq:B:P:S:T:v:" OPTION
 do
     case $OPTION in
         h   ) 
@@ -212,6 +327,7 @@ do
         p   ) 
 	    echo 'NOTICE: Just make products area' 
 	    makeBuild=""
+            makeLP="yes"
 	    makeSrcs=""
 	    ;;
         b   )
@@ -225,8 +341,18 @@ do
         f   ) 
 	    doForce="yes"
 	    ;;
+        B   ) 
+	    echo "NOTICE: build area be under $OPTARG" 
+            topDirGiven="yes"
+	    buildTopDir=$OPTARG 
+	    ;;
+        P   ) 
+	    echo "NOTICE: localPproducts area be under $OPTARG" 
+            topDirGiven="yes"
+	    lpTopDir=$OPTARG 
+	    ;;
         S   ) 
-	    echo "NOTICE: source code srcs will go into $OPTARG" 
+	    echo "NOTICE: source code srcs will be under $OPTARG" 
             srcTopDirGiven="yes"
 	    srcTopDir=$OPTARG 
 	    ;;
@@ -319,7 +445,7 @@ if [ -z ${prjdir} ] && [ -z ${qualList} ]
 then
     echo "ERROR: ${MRB_PROJECT} product is not setup."
     echo "       You must EITHER setup the desired version of ${MRB_PROJECT} OR specify the qualifiers"
-    echo "       e.g., mrb newDev -v vX_YY_ZZ -q e2:debug"
+    echo "       e.g., mrb newDev -v vX_YY_ZZ -q e17:debug"
     exit 2
 fi
 # now sort out the qualifier list
@@ -358,15 +484,32 @@ pwda="$(pwd)/"
 if [ ${printDebug} ]; then echo "DEBUG: pwda is ${pwda}"; fi
 
 # Are we within srcs?
-if echo $pwda | grep -q '/srcs[^/]*$';
+if pwd | egrep -q '/srcs[^/]*$';
     then echo 'ERROR: Cannot be within a srcs directory' ; exit 3
 fi
 
 # Are we within build?
-if echo $pwda | grep -q '/build[^/]*$';
+if pwd | egrep -q '/build[^/]*$';
   then echo 'ERROR: Cannot be within a build directory' ; exit 4
 fi
 
+# Are we within localProducts?
+if pwd | egrep -q '/localProducts[^/]*$';
+  then echo 'ERROR: Cannot be within a localProducts directory' ; exit 4
+fi
+
+if [ -z "${buildTopDir}" ]; then buildTopDir=${topDir}; fi
+if [ -z "${lpTopDir}" ]; then lpTopDir=${topDir}; fi
+
+echo
+echo "The following configuration is defined:"
+echo "  The top level directory is ${topDir}"
+echo "  The source code directory will be under ${srcTopDir}"
+echo "  The build directory will be under ${buildTopDir}"
+echo "  The local product directory will be under ${lpTopDir}"
+echo
+
+# Continue the sanity checks
 # make sure the directories we are about to create are empty
 
 if [ ${makeSrcs} ]
@@ -385,12 +528,28 @@ fi
 
 if [ ${makeBuild} ]
 then
+     # Make sure the directory for build is empty
+    if [ "$buildTopDir" != "$srcTopDir" ] && [ -d ${buildTopDir} ] && [ "$(ls -A $buildTopDir)" ]; then
+
+      # Directory has stuff in it, error unless force option is given.
+      if [ ! $doForce ]; then
+        echo 'ERROR: Directory for build has stuff in it!'
+	echo "   Attempting to use ${buildTopDir}"
+        echo '   You should make a new empty directory there or add -f to use that directory anyway'
+        exit 6
+      fi
+    fi
+fi
+
+if [ ${makeLP} ]
+then
      # Make sure the directory for build and local products is empty
-    if [ "$topDir" != "$srcTopDir" ] && [ -d ${topDir} ] && [ "$(ls -A $topDir)" ]; then
+    if [ "$lpTopDir" != "$srcTopDir" ] && [ -d ${lpTopDir} ] && [ "$(ls -A $lpTopDir)" ]; then
 
       # Directory has stuff in it, error unless force option is given.
       if [ ! $doForce ]; then
         echo 'ERROR: Directory for build and localProducts has stuff in it!'
+	echo "   Attempting to use ${lpTopDir}"
         echo '   You should make a new empty directory there or add -f to use that directory anyway'
         exit 6
       fi
@@ -400,45 +559,20 @@ fi
 # If we're just making the localProducts area, then we MUST be where build lives
 if [ ${makeLP} ] && [ ! ${makeBuild} ]
 then
-    if [ ${printDebug} ]; then echo "DEBUG: topDir is ${topDir}"; fi
-    if ls -1 $topDir | egrep -q '^build';
+    if [ ${printDebug} ]; then echo "DEBUG: buildTopDir is ${buildTopDir}"; fi
+    if ls -1 $buildTopDir | egrep -q '^build';
       then ok=1
       else echo 'ERROR: No build directory. Must be in a development area with build to make localProducts' ; exit 7
     fi
 fi
 
+# Finally done with the sanity checks
+
 # h3. Build area
 #  Do we need to make the @build/@ directory?
 if [ ${makeBuild} ]
 then
-  # Make directories
-  cd ${currentDir}
-
-  # If we are just making a new build directory, we need to be were local products sits
-  if [ ${doNewBuildDir} ]; then
-    if ls -1 $topDir | egrep -q '^localProducts';
-      then ok=1
-      else echo 'ERROR: Your current directory must be where localProducts lives' ; exit 8
-    fi 
-  fi
-
-  # Determine the subdirectory 
-  # Using the function supplied by cetpkgsupport
-  flav=`get-directory-name subdir`
-  buildDirName="build_${flav}"
-
-  # Make sure we don't already have the build directory
-  if [ -d ${topDir}/${buildDirName} ]; then
-     echo "Build directory ${buildDirName} already exists"
-  else
-    mkdir -p ${topDir}/${buildDirName}
-    ##echo "Created build directory"
-  fi
-  # get the full path to the new directory
-  cd ${topDir}/${buildDirName}
-  MRB_BUILDDIR=`pwd`
-  cd ${currentDir}
-  echo "MRB_BUILDDIR is ${MRB_BUILDDIR}"
+    make_build_directory
 else
     # If we are not making the build area, then we MUST know where build lives
     if ls -1 $topDir | egrep -q '^build';
@@ -490,76 +624,12 @@ fi
 # h3. Local Products area
 # Create local products area if necessary
 if [ ${makeLP} ]; then
-    # Prepare the setup script in @local_products@
+    make_localProducts_directory
 
-    MRB_QUALS=${MRB_QUALS}
-
-    # Construct the version and qualifier string
-    qualdir=`echo ${MRB_QUALS} | sed s'/:/_/g'`
-    if [ "$MRB_QUALS" = "-nq-" ]
-    then
-      dirVerQual="_${MRB_PROJECT}_${prjver}"
-    else
-      dirVerQual="_${MRB_PROJECT}_${prjver}_${qualdir}"
-    fi
-    # Construct the name of the @local_products@ directory
-    # First get the full path 
+    # get full top dir
+    cd ${currentDir}
     cd ${topDir}
     fullTopDir=`pwd`
-    dirName="$fullTopDir/localProducts${dirVerQual}"
-    MRB_INSTALL=${dirName}
-    cd ${currentDir}
-
-    #  Make sure the directory does not exist already
-    if [ -e "$dirName" ]
-    then
-        echo "ERROR: $dirName already exists. Delete it first"
-        exit 8
-    fi
-
-    # Make the local products directory
-    mkdir -p $dirName || { echo "ERROR: failed to create $dirName"; exit 1; }
-    ##echo "NOTICE: Created local products directory $dirName"
-
-    # Record the mrb version
-    ups active | grep ^mrb >  ${dirName}/.mrbversion
-
-    # Make a @.upsfiles@ directory for local products
-    mkdir -p $dirName/.upsfiles || { echo "ERROR: failed to create $dirName/.upsfiles"; exit 1; }
-    cp $MRB_DIR/templates/dbconfig $dirName/.upsfiles/ || { echo "ERROR: failed to copy dbconfig"; exit 1; }
-    #cp -R $project_dir/.upsfiles $dirName
-    ##echo "NOTICE: Copied .upsfiles to $dirName"
-    
-    if [ ${printDebug} ]
-    then
-        echo
-	echo "DEBUG: MRB_SOURCE ${MRB_SOURCE}"
-	echo "DEBUG: MRB_INSTALL ${MRB_INSTALL}"
-	echo "DEBUG: prjdir ${prjdir}"
-	echo "DEBUG: prjcodedir ${prjcodedir}"
-    fi
-    if [ ! -z ${prjdir} ] && [ -d ${prjdir} ]
-    then
-        $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}_DIR
-    elif [ ! -z ${prjcodedir} ] && [ -d ${prjcodedir} ] 
-    then
-       $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}CODE_DIR
-    else      
-        ##echo "look for ${MRB_PROJECT} ${MRB_PROJECT_VERSION}"
-	if ups exist ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS} >/dev/null 2>&1; then
-            source `${UPS_DIR}/bin/ups setup -j ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}`
-            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}_DIR
-	    unsetup -j ${MRB_PROJECT}
-	elif ups exist ${MRB_PROJECT}code ${MRB_PROJECT_VERSION} -q ${MRB_QUALS} >/dev/null 2>&1; then
-            source `${UPS_DIR}/bin/ups setup -j ${MRB_PROJECT}code ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}`
-            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}CODE_DIR
-	    unsetup -j ${MRB_PROJECT}
-	else
-            echo "INFO: cannot find ${MRB_PROJECT}/${MRB_PROJECT_VERSION}/releaseDB/base_dependency_database"
-            echo "      or ${MRB_PROJECT}code/${MRB_PROJECT_VERSION}/releaseDB/base_dependency_database"
-	    echo "      mrb checkDeps and pullDeps will not have complete information"
-	fi
-    fi
 
     create_local_setup
 
