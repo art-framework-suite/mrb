@@ -5,7 +5,7 @@ set_ buildDirName="build_${flav}"
 
 test "$ss" =  sh && test -n "${MRB_BUILDDIR}" && setenv OLD_MRB_BUILDDIR "${MRB_BUILDDIR}"
 test "$ss" = csh && tnotnull MRB_BUILDDIR && setenv OLD_MRB_BUILDDIR "${MRB_BUILDDIR}"
-setenv MRB_BUILDDIR ${MRB_BUILD_TOP}/${buildDirName}
+setenv MRB_BUILDDIR ${MRB_TOP_BUILD}/${buildDirName}
 
 # Note: This is done by the small bit added on the end by the newDev.sh script.
 #source "${MRB_DIR}/bin/unset_shell_independence"
