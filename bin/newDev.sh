@@ -630,6 +630,16 @@ if [ ${makeLP} ]; then
     cd ${currentDir}
     cd ${topDir}
     fullTopDir=`pwd`
+    if [ -z ${fullBuildDir} ]; then
+      cd ${currentDir}
+      cd ${buildTopDir}
+      fullBuildDir=`pwd`
+      cd ${currentDir}
+    fi
+    if [ ${printDebug} ]; then
+      echo "DEBUG: fullTopDir is ${fullTopDir}"
+      echo "DEBUG: fullBuildDir is ${fullBuildDir}"
+    fi
 
     create_local_setup
 
