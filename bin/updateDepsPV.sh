@@ -50,6 +50,7 @@ function modify_cmake()
   echo "editing $cfile"
   grep ${product} ${cfile}
   ${MRB_DIR}/bin/edit_cmake ${cfile} ${product} ${new_version} ${dryRun}  || exit 1
+  grep ${product} ${cfile}
 }
 function get_package_list()
 {
