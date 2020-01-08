@@ -41,6 +41,8 @@ if ( $dryrun eq "yes" ) {
 $get_phash="";
 $get_quals="";
 $get_fragment="";
+my $this_prod;
+my $oldver;
 open(PIN, "< $pdfilebak") or die "Couldn't open $pdfilebak";
 while ( $line=<PIN> ) {
   chop $line;
@@ -49,13 +51,19 @@ while ( $line=<PIN> ) {
   } elsif ( $line !~ /\w+/ ) {
     print_line ( POUT, $line, $dryrun );
   } else {
-    @words = split(/\s+/,$line);
+    # use the parens to split instead of whitespace which might not exist
+    #@words = split(/\(/,$line);
     #print "found $words[0]\n";
-    if( $words[0] eq "create_product_variables(" ) {
-       #print "found create_product_variables $words[1] $words[2] in $line\n";
-       if ( $words[1]  eq $product ) {
+    #if( $words[0] =~ m/create_product_variables/  ) {
+    if( $line =~  /create_product_variables\s*[(]\s*(\w+)\s+(\w+)\s*[)]/ ) {
+       #@word2  = split(/\s+/,$words[1]);
+       $this_prod = $1;
+       $oldver = $2;
+       #print "found create_product_variables $words[0] $words[1] in $line\n";
+       #print "found create_product_variables $this_prod $oldver in $line\n";
+       if ( $this_prod  eq $product ) {
           $newline = $line;
-	  $newline =~ s/$words[2]/$version/;
+	  $newline =~ s/$oldver/$version/;
           if ( $dryrun eq "yes" ) {
 	    print "old line: $line\n";
 	    print "new line: $newline\n";
@@ -64,16 +72,18 @@ while ( $line=<PIN> ) {
        } else {
           print_line ( POUT, $line, $dryrun );
        }
-    } elsif ( $words[0] eq "set(" ) {
-       if ( $words[1] eq "SQUAL" ) {
-       print "edit $line - $product to $version\n";
+    #} elsif ( $words[0] eq "set(" ) {
+    } elsif ( $line =~ /set\s*[(]\s*(\w+)\s+(\w+)\s*[)]/ ) {
+       $this_prod = $1;
+       $oldver = $2;
+       if ( $this_prod eq $product ) {
+          print "edit $line - $product to $version\n";
           $newline = $line;
-	  $newline =~ s/$product/$version/;
+	  $newline =~ s/$oldver/$version/;
           if ( $dryrun eq "yes" ) {
 	    print "old line: $line\n";
 	    print "new line: $newline\n";
 	  }
-	    print "new line: $newline\n";
           print_line ( POUT, $newline, $dryrun );
        } else {
           print_line ( POUT, $line, $dryrun );
