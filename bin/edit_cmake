@@ -56,8 +56,14 @@ while ( $line=<PIN> ) {
     @words = split(/\(/,$line);
     #print "found $words[0]\n";
     if( $words[0] =~ m/create_product_variables/  ) {
+      # all this jiggery pokery is to deal with lines like: 
+      #   create_product_variables(art v3_04_00${suite_rc_level})
+      #   create_product_variables( systematicstools v00_05_00 )
+      #   create_product_variables( lardata     v08_13_00 )
+      $tmpline = $line;
+      $tmpline =~ s/create_product_variables\( /create_product_variables\(/;
       #print "parsing $line\n";
-      @word1 = split(/\(/,$line);
+      @word1 = split(/\(/,$tmpline);
       #print "found word1: $word1[0] -- $word1[1]\n";
       @word2  = split(/\s+/,$word1[1]);
       #print "found word2: $word2[0] -- $word2[1]\n";
@@ -65,10 +71,8 @@ while ( $line=<PIN> ) {
       #print "found word3: $word3[0]\n";
       @word4 = split(/\$/,$word3[0]);
       #print "found word4: $word4[0]\n";
-      #if( $line =~  /create_product_variables\s*[(]\s*(\w+)\s+(\w+)\s*[)]/ ) {
       $this_prod = $word2[0];
       $oldver = $word4[0];
-      #print "found create_product_variables $words[0] $words[1] in $line\n";
       #print "found create_product_variables $this_prod $oldver in $line\n";
       if ( $this_prod  eq $product ) {
          $newline = $line;
