@@ -21,6 +21,7 @@ Getopt::Long::Configure(qw(no_ignore_case bundling require_order));
 my $prog = basename($0);
 my $options = {};
 my $default_repo_type = "fnal";
+#my $default_repo_type = "github";
 my $known_suites =
   { larsoft => [qw(larcore lardata larevt larsim larg4 larreco
                    larana larexamples lareventdisplay larpandora
@@ -138,6 +139,12 @@ my @known_specs =
     prod_info("larsoftobj",
               fnal_repo("larsoftobj"),
               github_repo("larsoftobj", "LArSoft")),
+    prod_info("larbatch",
+              fnal_repo("larbatch"),
+              github_repo("larbatch", "LArSoft")),
+    prod_info("larutils",
+              fnal_repo("larutils"),
+              github_repo("larutils", "LArSoft")),
     prod_info("larsoft",
               fnal_repo("larsoft"),
               github_repo("larsoft", "LArSoft"))
@@ -740,6 +747,9 @@ sub get_repo(\%) {
            -level => "INFO")
   }
   my $type = $prod_info->{selected_type};
+  if ($prod_info->{$type}->{repo} =~ /^lar/ ) {
+    if ($prod_info->{$type}->{repo} !~ /lariat/ ) { $type = "github"; }
+  }
   error("Repo type $type not supported for checkout of $prod_info->{product}.")
     unless exists $prod_info->{$type};
   if ($type eq "github" and $options->{"github-org"}) {
