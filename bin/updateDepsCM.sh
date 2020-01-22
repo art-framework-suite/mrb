@@ -54,7 +54,7 @@ fi
 
 # find the directories
 # ignore any directory that does not contain ups/product_deps
-list=$(ls -d $MRB_SOURCE/*/)
+list=$(ls -d $MRB_SOURCE/*/ 2>/dev/null)
 for file in $list
 do
   if [ -r ${file}ups/product_deps ]
@@ -86,12 +86,20 @@ fi
 echo ""
 echo "updateDepsCM: rewrite $MRB_SOURCE/CMakeLists.txt"
 echo "              for these packages:"
-echo "        ${pkglist[@]}"
+printf "        "
+if (( ${#pkglist[*]} )); then
+  echo "${pkglist[@]}"
+else
+  echo "<none>"
+fi
 echo ""
 
 # Construct a new CMakeLists.txt file in srcs
-${MRB_DIR}/bin/copy_files_to_srcs.sh ${MRB_SOURCE} || exit 1
-# add back the packages   
-${MRB_DIR}/bin/add_to_cmake.sh ${MRB_SOURCE} "${pkglist[*]}" || exit 1;
+${MRB_DIR}/bin/copy_files_to_srcs.sh ${MRB_SOURCE} || exit $?
 
-exit 0
+# Add back the packages
+if (( ${#pkglist[*]} )); then
+  ${MRB_DIR}/bin/add_to_cmake.sh ${MRB_SOURCE} "${pkglist[*]}"
+fi
+
+exit $?
