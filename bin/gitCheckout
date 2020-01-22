@@ -34,11 +34,15 @@ my $known_suites =
     larsoftobj => [qw(larcoreobj lardataobj larcorealg lardataalg larsoftobj)],
     nu => [qw(nusimdata nuevdb nug4 nugen nurandom nutools)],
     uboone=> [qw(uboonecode ubutil uboonedata ublite ubana ubreco ubsim
-                 ubevt ubraw ubcrt ubcore ubcv ubobj)]
+                 ubevt ubraw ubcrt ubcore ubcv ubobj)],
+    artdaq => [qw(artdaq_core artdaq_core_demo artdaq_utilities
+                  artdaq_ganglia_plugin artdaq_epics_plugin
+                  artdaq_database artdaq_daqinterface
+                  artdaq_mpich_plugin artdaq_mfextensions)]
   };
 my $global_tree_ish;
 
-my $version = "2.2.1";
+my $version = "2.3.0";
 
 # Declare prototypes for repository handlers here, implement wherever
 # you like. Specify the appropriate handler in $repo_handlers, below.
@@ -63,13 +67,25 @@ sub git_flow_init($$);
 sub verified_fnal_url;
 sub verified_github_url;
 
-my @known_specs =
+########################################################################
+# Known specs.
+#
+# Repo type is chosen for a known spec in the following order:
+#
+# 1. As specified in the spec on the command line.
+# 2. --repo-type.
+# 3. First listed type from the corresponding entry in @known_specs.
+# 4. $default_repo_type.
+#
+########################################################################
+my @known_specs_art =
+  ( prod_info("fhiclcpp", fnal_repo("fhicl-cpp"))) ;
+
+push @known_specs_art, map { prod_info($_, fnal_repo($_)); }
+  grep { $_ ne "fhiclcpp"; } @{$known_suites->{art}};
+
+my @known_specs_artdaq =
   ( prod_info("artdaq_core", fnal_repo("artdaq-core", "artdaq")),
-    prod_info("lariatfragments",
-              fnal_repo("lariat-online-lariatfragments", "lariat-online")),
-    prod_info("lariatutil", fnal_repo("lardbt-lariatutil", "lardbt")),
-    prod_info("fhiclcpp", fnal_repo("fhicl-cpp")),
-    prod_info("lbne_raw_data", fnal_repo("lbne-raw-data")),
     prod_info("artdaq_core_demo", fnal_repo("artdaq-core-demo")),
     prod_info("artdaq_demo", fnal_repo("artdaq-demo")),
     prod_info("artdaq_utilities", fnal_repo("artdaq-utilities")),
@@ -89,59 +105,24 @@ my @known_specs =
               fnal_repo("artdaq-utilities-mpich-plugin",
                         "artdaq-utilities")),
     prod_info("artdaq_mfextensions",
-              fnal_repo("mf-extensions-git")),
-    prod_info("larana",
-              fnal_repo("larana"),
-              github_repo("larana", "LArSoft")),
-    prod_info("larcore",
-              fnal_repo("larcore"),
-              github_repo("larcore", "LArSoft")),
-    prod_info("larcorealg",
-              fnal_repo("larcorealg"),
-              github_repo("larcorealg", "LArSoft")),
-    prod_info("larcoreobj",
-              fnal_repo("larcoreobj"),
-              github_repo("larcoreobj", "LArSoft")),
-    prod_info("lardata",
-              fnal_repo("lardata"),
-              github_repo("lardata", "LArSoft")),
-    prod_info("lardataalg",
-              fnal_repo("lardataalg"),
-              github_repo("lardataalg", "LArSoft")),
-    prod_info("lardataobj",
-              fnal_repo("lardataobj"),
-              github_repo("lardataobj", "LArSoft")),
-    prod_info("larevt",
-              fnal_repo("larevt"),
-              github_repo("larevt", "LArSoft")),
-    prod_info("lareventdisplay",
-              fnal_repo("lareventdisplay"),
-              github_repo("lareventdisplay", "LArSoft")),
-    prod_info("larexamples",
-              fnal_repo("larexamples"),
-              github_repo("larexamples", "LArSoft")),
-    prod_info("larpandora",
-              fnal_repo("larpandora"),
-              github_repo("larpandora", "LArSoft")),
-    prod_info("larsim",
-              fnal_repo("larsim"),
-              github_repo("larsim", "LArSoft")),
-    prod_info("larreco",
-              fnal_repo("larreco"),
-              github_repo("larreco", "LArSoft")),
-    prod_info("larg4",
-              fnal_repo("larg4"),
-              github_repo("larg4", "LArSoft")),
-    prod_info("larwirecell",
-              fnal_repo("larwirecell"),
-              github_repo("larwirecell", "LArSoft")),
-    prod_info("larsoftobj",
-              fnal_repo("larsoftobj"),
-              github_repo("larsoftobj", "LArSoft")),
-    prod_info("larsoft",
-              fnal_repo("larsoft"),
-              github_repo("larsoft", "LArSoft"))
+              fnal_repo("mf-extensions-git"))
   );
+
+my @known_specs_expt =
+  ( prod_info("lariatfragments",
+              fnal_repo("lariat-online-lariatfragments", "lariat-online")),
+    prod_info("lariatutil", fnal_repo("lardbt-lariatutil", "lardbt")),
+    prod_info("lbne_raw_data", fnal_repo("lbne-raw-data"))
+  );
+
+my @known_specs_larsoft =
+  map { prod_info($_, github_repo($_, "LArSoft"), fnal_repo($_)); }
+  @{$known_suites->{larsoftobj}}, @{$known_suites->{larsoft}};
+
+my @known_specs = (@known_specs_art,
+                   @known_specs_artdaq,
+                   @known_specs_expt,
+                   @known_specs_larsoft);
 
 my ($known_products); # Initialized on startup.
 
@@ -459,7 +440,12 @@ sub process_repo_spec {
   if (${tree_ish}) {
     $prod_info{"tree-ish"} = ${tree_ish};
   }
-  $prod_info{selected_type} = $type || $options->{"repo-type"} || $default_repo_type;
+  $prod_info{selected_type} = $type ||
+    $options->{"repo-type"} ||
+    (exists $prod_info{types} and
+     scalar @{$prod_info{types}} and
+     ${$prod_info{types}}[0]) ||
+    $default_repo_type;
   report("Repository info:\n",
          format_prod_info(%prod_info),
          -level => "VERBOSE");
