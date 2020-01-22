@@ -117,7 +117,9 @@ my @known_specs_expt =
 
 my @known_specs_larsoft =
   map { prod_info($_, github_repo($_, "LArSoft"), fnal_repo($_)); }
-  @{$known_suites->{larsoftobj}}, @{$known_suites->{larsoft}};
+  @{$known_suites->{larsoftobj}},
+  @{$known_suites->{larsoft}},
+  qw(larbatch larutils);
 
 my @known_specs = (@known_specs_art,
                    @known_specs_artdaq,
