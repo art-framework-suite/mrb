@@ -28,8 +28,9 @@ INSTALL ( PROGRAMS add_to_cmake.sh
           DESTINATION ${product}/${version}/bin )
 
 INSTALL (FILES mrb_parse_deps.pm
-  parse_deps.pm
-  setup_local_products
+        ssh-init.sh
+        parse_deps.pm
+        setup_local_products
 	shell_independence
 	unset_shell_independence
   DESTINATION ${product}/${version}/bin )
