@@ -10,9 +10,9 @@
 # * ssh-init: connect the current shell to an ssh-agent if necessary,
 #   then add a key from file to the keyring.
 #
-# * ssh-drop: Remove a key from the current ssh-agent.
+# * ssh-drop: remove a key from the current ssh-agent.
 #
-# * ssh-release: disconnect the current shell from an ssh-agent.
+# * ssh-release: disconnect or kill ssh-agent(s).
 #
 # * ssh-ensure-agent: find an existing ssh-agent, or start a new one. May be
 #   invoked explicitly, but more usually used by the above functions.
@@ -48,6 +48,9 @@
 # * -V
 #     Version number for ssh-init.sh (common to all functions).
 #
+# * -v
+#     Verbose (negates -q or ${ssh_init_quiet})
+#
 # Commonly used environment variables:
 #
 # * SSH_INIT_PUBKEYFILE
@@ -58,11 +61,17 @@
 #
 # * SSH_INIT_CACHEFILE
 #     Default value for <cachefile>.
+#
+# Common shell variables:
+#
+# * ssh_init_quiet
+#   If this exists and is non-empty, default to quiet operation. Use -v
+#   to restore normal operation for particular functions.
 ########################################################################
 
 # Print version information.
 function ssh-init-version() {
-  local version="1.00.00"
+  local version="1.01.00"
   local date="2020-01-24"
   local author="Chris Green, FNAL"
   local msg="ssh-init.sh version ${version}, ${date} - ${author}"
@@ -76,7 +85,9 @@ function ssh-init-version() {
 # Find or start an ssh-agent .
 function ssh-ensure-agent() {
   local quiet reconnect_only OPT OPTIND
-  while getopts :hrqV OPT; do
+  # Only honor ssh_init_quiet if we're a top-level call.
+  [[ "${FUNCNAME[1]}" == ssh-* ]] || quiet=${ssh_init_quiet:+1}
+  while getopts :hrqVv OPT; do
     case $OPT in
       q)
         (( quiet = 1 ))
@@ -88,8 +99,11 @@ function ssh-ensure-agent() {
         ssh-init-version
         return 2
         ;;
+      v)
+        (( quiet = 0 ))
+        ;;
       *)
-        echo "usage: ${FUNCNAME[0]} [-qr] [--] [<cachefile>]"
+        echo "usage: ${FUNCNAME[0]} [-q|-v] [-r] [--] [<cachefile>]"
         echo "usage: ${FUNCNAME[0]} -h"
         [[ "$OPT" = "h" ]] || return 2
         cat <<EOF
@@ -106,6 +120,8 @@ OPTIONS
     Quiet: errors only.
   -V
     Version number for ssh-init.sh (common to all functions).
+  -v
+    Verbose (negates -q or ${ssh_init_quiet})
 
 ARGUMENTS
   [<cachefile>]
@@ -167,9 +183,10 @@ EOF
 }
 
 function ssh-init() {
-  local force quiet OPT OPTIND OPTARG
+  local force OPT OPTIND OPTARG
+  local quiet=${ssh_init_quiet:+1}
   local cachefile=${SSH_INIT_CACHEFILE:-~/.ssh_cache}
-  while getopts :c:fhqV OPT; do
+  while getopts :c:fhqVv OPT; do
     case $OPT in
       c)
         cachefile="$OPTARG"
@@ -183,6 +200,9 @@ function ssh-init() {
       V)
         ssh-init-version
         return 2
+        ;;
+      v)
+        (( quiet = 0 ))
         ;;
       *)
         echo "usage: ${FUNCNAME[0]} [-c <cachefile>] [-f] [-q] [--] [<keyfile>]"
@@ -204,6 +224,8 @@ OPTIONS
     Quiet: errors only.
   -V
     Version number for ssh-init.sh (common to all functions).
+  -v
+    Verbose (negates -q or ${ssh_init_quiet})
 
 ARGUMENTS
   [<keyfile>]
@@ -255,9 +277,10 @@ EOF
 
 # Drop the specified key from the current agent.
 function ssh-drop() {
-  local quiet OPT OPTIND OPTARG
+  local OPT OPTIND OPTARG
+  local quiet=${ssh_init_quiet:+1}
   local cachefile=${SSH_INIT_CACHEFILE:-~/.ssh_cache}
-  while getopts :c:hqV OPT; do
+  while getopts :c:hqVv OPT; do
     case $OPT in
       c)
         cachefile="$OPTARG"
@@ -268,6 +291,9 @@ function ssh-drop() {
       V)
         ssh-init-version
         return 2
+        ;;
+      v)
+        (( quiet = 0 ))
         ;;
       *)
         echo "usage: ${FUNCNAME[0]} [-c <cachefile>] [-q] [--] [<pubkeyfile>...]"
@@ -287,6 +313,8 @@ OPTIONS
     Quiet: errors only.
   -V
     Version number for ssh-init.sh (common to all functions).
+  -v
+    Verbose (negates -q or ${ssh_init_quiet})
 
 ARGUMENTS
   [<pubkeyfile>]
@@ -321,10 +349,12 @@ EOF
   fi
 }
 
+# Disconnect or kill ssh-agent(s).
 function ssh-release() {
-  local killall quiet want_kill OPT OPTIND OPTARG
+  local killall want_kill OPT OPTIND OPTARG
+  local quiet=${ssh_init_quiet:+1}
   local cachefile=${SSH_INIT_CACHEFILE:-~/.ssh_cache}
-  while getopts :c:kKhqV OPT; do
+  while getopts :c:kKhqVv OPT; do
     case $OPT in
       c)
         cachefile="$OPTARG"
@@ -342,6 +372,9 @@ function ssh-release() {
       V)
         ssh-init-version
         return 2
+        ;;
+      v)
+        (( quiet = 0 ))
         ;;
       *)
         echo "usage: ${FUNCNAME[0]} [-c <cachefile>] [-kq] [--]"
@@ -367,6 +400,8 @@ OPTIONS
     Quiet: errors only.
   -V
     Version number for ssh-init.sh (common to all functions).
+  -v
+    Verbose (negates -q or ${ssh_init_quiet})
 
 ENVIRONMENT
   SSH_INIT_CACHEFILE
