@@ -13,10 +13,10 @@
 # ======================================================================
 
 
-# use cmake 3.11 or later
-cmake_minimum_required (VERSION 3.11)
+# use cmake 3.12 or later
+cmake_minimum_required (VERSION 3.12)
 
-project(%%PD%%)
+project(%%PD%% LANGUAGES CXX C)
 
 # cetbuildtools contains our cmake modules
 find_package(cetbuildtools REQUIRED)

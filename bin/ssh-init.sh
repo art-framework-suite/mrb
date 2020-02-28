@@ -10,12 +10,16 @@
 # * ssh-init: connect the current shell to an ssh-agent if necessary,
 #   then add a key from file to the keyring.
 #
-# * ssh-drop: Remove a key from the current ssh-agent.
+# * ssh-drop: remove a key from the current ssh-agent.
 #
-# * ssh-release: disconnect the current shell from an ssh-agent.
+# * ssh-release: disconnect or kill ssh-agent(s).
 #
-# * ssh-ensure-agent: find an existing ssh-agent, or start a new one.
-#   Not generally called separately.
+# * ssh-ensure-agent: find an existing ssh-agent, or start a new one. May be
+#   invoked explicitly, but more usually used by the above functions.
+#
+# * ssh-init-version: print the current version of ssh-init.sh. May be invoked
+#   explicitly, but usually used to provide output for -V option to the other
+#   functions.
 #
 # Common concepts:
 #
@@ -30,24 +34,60 @@
 #   ssh-agent. Defaults to ${SSH_INIT_CACHEFILE} if non-null, otherwise
 #   ~/.ssh_cache.
 #
-# Common options:
+# Commonly-available options:
 #
 # * -h
-#   Long help.
+#     Long help.
 #
 # * -q
-#   Quiet: suppress non-error screen output.
+#     Quiet: suppress non-error screen output.
 #
 # * -c <cachefile>
-#   Specify a particular cache file to use,
+#     Specify a particular cache file to use.
 #
-# Common environment variables.
+# * -V
+#     Version number for ssh-init.sh (common to all functions).
+#
+# * -v
+#     Verbose (negates -q or ${ssh_init_quiet})
+#
+# Commonly used environment variables:
+#
+# * SSH_INIT_PUBKEYFILE
+#    Default value for <pubkeyfile>.
+#
+# * SSH_INIT_KEYFILE
+#     Default value for <keyfile>.
+#
+# * SSH_INIT_CACHEFILE
+#     Default value for <cachefile>.
+#
+# Common shell variables:
+#
+# * ssh_init_quiet
+#   If this exists and is non-empty, default to quiet operation. Use -v
+#   to restore normal operation for particular functions.
+########################################################################
 
+# Print version information.
+function ssh-init-version() {
+  local version="1.01.00"
+  local date="2020-01-24"
+  local author="Chris Green, FNAL"
+  local msg="ssh-init.sh version ${version}, ${date} - ${author}"
+  if [[ -n "${FUNCNAME[1]}" ]]; then
+    echo "${FUNCNAME[1]} (${msg})."
+  else
+    echo "${msg}."
+  fi
+}
 
 # Find or start an ssh-agent .
 function ssh-ensure-agent() {
   local quiet reconnect_only OPT OPTIND
-  while getopts :hrq OPT; do
+  # Only honor ssh_init_quiet if we're a top-level call.
+  [[ "${FUNCNAME[1]}" == ssh-* ]] || quiet=${ssh_init_quiet:+1}
+  while getopts :hrqVv OPT; do
     case $OPT in
       q)
         (( quiet = 1 ))
@@ -55,8 +95,15 @@ function ssh-ensure-agent() {
       r)
         (( reconnect_only = 1 ))
         ;;
+      V)
+        ssh-init-version
+        return 2
+        ;;
+      v)
+        (( quiet = 0 ))
+        ;;
       *)
-        echo "usage: ${FUNCNAME[0]} [-qr] [--] [<cachefile>]"
+        echo "usage: ${FUNCNAME[0]} [-q|-v] [-r] [--] [<cachefile>]"
         echo "usage: ${FUNCNAME[0]} -h"
         [[ "$OPT" = "h" ]] || return 2
         cat <<EOF
@@ -71,10 +118,19 @@ OPTIONS
     Reconnect only: do not start an agent if one is not there to find.
   -q
     Quiet: errors only.
+  -V
+    Version number for ssh-init.sh (common to all functions).
+  -v
+    Verbose (negates -q or ${ssh_init_quiet})
+
 ARGUMENTS
   [<cachefile>]
     Specify the cache file where we keep track of the current agent.
     Default \$SSH_INIT_CACHEFILE; fall back to ~/.ssh_cache
+
+ENVIRONMENT
+  SSH_INIT_CACHEFILE
+    Default value for <cachefile>.
 EOF
         return 1
     esac
@@ -127,9 +183,10 @@ EOF
 }
 
 function ssh-init() {
-  local force quiet OPT OPTIND OPTARG
+  local force OPT OPTIND OPTARG
+  local quiet=${ssh_init_quiet:+1}
   local cachefile=${SSH_INIT_CACHEFILE:-~/.ssh_cache}
-  while getopts :c:fhq OPT; do
+  while getopts :c:fhqVv OPT; do
     case $OPT in
       c)
         cachefile="$OPTARG"
@@ -139,6 +196,13 @@ function ssh-init() {
         ;;
       q)
         (( quiet = 1 ))
+        ;;
+      V)
+        ssh-init-version
+        return 2
+        ;;
+      v)
+        (( quiet = 0 ))
         ;;
       *)
         echo "usage: ${FUNCNAME[0]} [-c <cachefile>] [-f] [-q] [--] [<keyfile>]"
@@ -158,13 +222,21 @@ OPTIONS
     This help.
   -q
     Quiet: errors only.
+  -V
+    Version number for ssh-init.sh (common to all functions).
+  -v
+    Verbose (negates -q or ${ssh_init_quiet})
+
 ARGUMENTS
   [<keyfile>]
     The file from which to load keys.
     Default \$SSH_INIT_KEYFILE; fall back to ssh-add default.
+
 ENVIRONMENT
-  SSH_INIT_KEYFILE: default value for <keyfile>
-  SSH_INIT_CACHEFILE: default value for <cachefile>
+  SSH_INIT_KEYFILE
+    Default value for <keyfile>.
+  SSH_INIT_CACHEFILE
+    Default value for <cachefile>.
 EOF
         return 1
     esac
@@ -203,16 +275,25 @@ EOF
   fi
 }
 
+# Drop the specified key from the current agent.
 function ssh-drop() {
-  local quiet OPT OPTIND OPTARG
+  local OPT OPTIND OPTARG
+  local quiet=${ssh_init_quiet:+1}
   local cachefile=${SSH_INIT_CACHEFILE:-~/.ssh_cache}
-  while getopts :c:hq OPT; do
+  while getopts :c:hqVv OPT; do
     case $OPT in
       c)
         cachefile="$OPTARG"
         ;;
       q)
         (( quiet = 1 ))
+        ;;
+      V)
+        ssh-init-version
+        return 2
+        ;;
+      v)
+        (( quiet = 0 ))
         ;;
       *)
         echo "usage: ${FUNCNAME[0]} [-c <cachefile>] [-q] [--] [<pubkeyfile>...]"
@@ -230,14 +311,24 @@ OPTIONS
     This help.
   -q
     Quiet: errors only.
+  -V
+    Version number for ssh-init.sh (common to all functions).
+  -v
+    Verbose (negates -q or ${ssh_init_quiet})
+
 ARGUMENTS
   [<pubkeyfile>]
     The public key file from which to drop keys.
     Default \$SSH_INIT_PUBKEYFILE; fall back to deducing from
     \$SSH_INIT_KEYFILE, then ssh-add default credentials.
+
 ENVIRONMENT
-  SSH_INIT_PUBKEYFILE: default value for <pubkeyfile>
-  SSH_INIT_CACHEFILE: default value for <cachefile>
+  SSH_INIT_PUBKEYFILE
+    Default value for <pubkeyfile>.
+  SSH_INIT_KEYFILE
+    Fallback to deduce default value for <pubkeyfile>.
+  SSH_INIT_CACHEFILE
+    Default value for <cachefile>.
 EOF
         return 1
     esac
@@ -246,7 +337,7 @@ EOF
   (( $# )) || set -- ${SSH_INIT_PUBKEYFILE:-${SSH_INIT_KEYFILE%.dat}}
   if ssh-ensure-agent -q -r "${cachefile}"; then
     output=$(ssh-add -d "${@}" 2>&1)
-    status=$?
+    local status=$?
     if (( ${status:-0} )); then
       echo "ERROR: $output" 1>&2
       return $status
@@ -258,10 +349,12 @@ EOF
   fi
 }
 
+# Disconnect or kill ssh-agent(s).
 function ssh-release() {
-  local force quiet OPT OPTIND OPTARG
+  local killall want_kill OPT OPTIND OPTARG
+  local quiet=${ssh_init_quiet:+1}
   local cachefile=${SSH_INIT_CACHEFILE:-~/.ssh_cache}
-  while getopts :c:khq OPT; do
+  while getopts :c:kKhqVv OPT; do
     case $OPT in
       c)
         cachefile="$OPTARG"
@@ -269,8 +362,19 @@ function ssh-release() {
       k)
         (( want_kill = 1 ))
         ;;
+      K)
+        (( want_kill = 1 )) # Clean up records in this shell if appropriate.
+        (( killall = 1 ))
+        ;;
       q)
         (( quiet = 1 ))
+        ;;
+      V)
+        ssh-init-version
+        return 2
+        ;;
+      v)
+        (( quiet = 0 ))
         ;;
       *)
         echo "usage: ${FUNCNAME[0]} [-c <cachefile>] [-kq] [--]"
@@ -284,21 +388,30 @@ OPTIONS
   -c <cachefile>
     Specify the cache file where we keep track of the current agent.
     Default \$SSH_INIT_CACHEFILE; fall back to ~/.ssh_cache.
-    Ignored without -k.
+    Ignored without -[kK].
+  -K
+    Kill *all* ssh-agents owned by you (assumes -k). Use with caution!
   -k
-    Kill the running agent. If SSH_AGENT_PID is not set, find it using
-    <cachefile>.
+    Kill the ssh-agent known to the shell or cached in <cachefile>. Appropriate
+    accounting will be done in the environment and/or <cachefile>.
   -h
     This help.
   -q
     Quiet: errors only.
+  -V
+    Version number for ssh-init.sh (common to all functions).
+  -v
+    Verbose (negates -q or ${ssh_init_quiet})
+
 ENVIRONMENT
-  SSH_INIT_CACHEFILE: default value for <cachefile>
+  SSH_INIT_CACHEFILE
+    Default value for <cachefile>.
 EOF
         return 1
     esac
   done
   shift $(( OPTIND - 1 ))
+  local killed_agent
   if (( ${want_kill:-0} )); then
     ssh-ensure-agent -q -r "${cachefile}"
     if (( $? == 0 )); then
@@ -310,10 +423,11 @@ EOF
       if (( ${quiet:-0} == 0 )); then
         echo "INFO: killed running ssh-agent PID $SSH_AGENT_PID."
       fi
+      (( killed_agent = ${SSH_AGENT_PID} ))
       eval `cat "${cachefile}"` >/dev/null 2>&1
       rm -f "${cachefile}"
     elif (( ${quiet:-0} == 0 )); then
-      echo "INFO: no running ssh-agent."
+      echo "INFO: no running ssh-agent known to this shell or cached in ${cachefile}."
     fi
   elif [[ -n "$SSH_AGENT_PID" ]]; then
     if (( ${quiet:-0} == 0 )); then
@@ -322,5 +436,27 @@ EOF
     unset SSH_AGENT_PID SSH_AUTH_SOCK
   elif (( ${quiet:-0} == 0 )); then
     echo "INFO: no connected ssh-agent in this shell."
+  fi
+  if (( ${killall:-0} )); then
+    if [[ ! -n "${EUID}" ]]; then
+      echo "ERROR: unable to ascertain effective UID from current shell: fail-safe."
+      exit 1
+    fi
+    local euname
+    if [[ "${OSTYPE}" == darwin* ]]; then
+      euname=$(dscl . -list /Users UniqueID | awk '{ if ($2 == '$EUID') print $1 }')
+    else
+      euname=$(getent passwd ${EUID} | cut -d: -f 1)
+    fi
+    if ! [[ -n "${euname}" ]]; then
+      echo "ERROR: unable to ascertain username for EUID ${EUID}" 1>&2
+      exit 1
+    fi
+    local vkill
+    if (( ${quiet:-0} == 0 )); then
+      echo "INFO: killing all ${killed_agent:+remaining }ssh-agents owned by UID ${EUID} (${euname})."
+      vkill=" -v"
+    fi
+    killall${vkill} -u ${euname} ssh-agent
   fi
 }
