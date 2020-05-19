@@ -115,6 +115,10 @@ my @known_specs_expt =
     prod_info("lbne_raw_data", fnal_repo("lbne-raw-data"))
   );
 
+my @known_specs_sbn =
+  map { prod_info($_, github_repo($_, "SBNSoftware"), fnal_repo($_)); }
+  qw(icarusutil sbndcode icaruscode icarus_signal_processing sbncode sbndutil);
+
 my @known_specs_larsoft =
   map { prod_info($_, github_repo($_, "LArSoft"), fnal_repo($_)); }
   @{$known_suites->{larsoftobj}},
@@ -124,6 +128,7 @@ my @known_specs_larsoft =
 my @known_specs = (@known_specs_art,
                    @known_specs_artdaq,
                    @known_specs_expt,
+                   @known_specs_sbn,
                    @known_specs_larsoft);
 
 my ($known_products); # Initialized on startup.
