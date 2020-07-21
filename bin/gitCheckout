@@ -22,7 +22,7 @@ my $prog = basename($0);
 my $options = {};
 my $default_repo_type = "fnal";
 my $known_suites =
-  { larsoft => [qw(larcore lardata larevt larsim larg4 larreco larrecodnn
+  { larsoft => [qw(larcore lardata larevt larsim larsimrad larg4 larreco larrecodnn
                    larana larexamples lareventdisplay larpandora
                    larwirecell larsoft)],
     art => [qw(cetlib_except cetlib fhiclcpp messagefacility
