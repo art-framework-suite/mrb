@@ -117,7 +117,17 @@ my @known_specs_expt =
 
 my @known_specs_sbn =
   map { prod_info($_, github_repo($_, "SBNSoftware"), fnal_repo($_)); }
-  qw(icaruscode icarusutil sbndcode sbndutil icarus_signal_processing sbncode sbnobj sbndqm sbndaq-online sbndaq-decode);
+  qw(icaruscode icarusutil sbndcode sbndutil icarus_signal_processing sbncode sbnobj sbndqm);
+
+my @known_specs_sbndaq =
+  ( prod_info("sbndaq", github_repo("sbndaq", "SBNSoftware")),
+    prod_info("sbndaq_artdaq", github_repo("sbndaq-artdaq", "SBNSoftware")),
+    prod_info("sbndaq_artdaq_core", github_repo("sbndaq-artdaq-core", "SBNSoftware")),
+    prod_info("sbndaq_xporter", github_repo("sbndaq-xporter", "SBNSoftware")),
+    prod_info("sbndaq_minargon", github_repo("sbndaq-minargon", "SBNSoftware")),
+    prod_info("sbndaq_online", github_repo("sbndaq-online", "SBNSoftware")),
+    prod_info("sbndaq_decode", github_repo("sbndaq-decode", "SBNSoftware"))
+  );
 
 my @known_specs_larsoft =
   map { prod_info($_, github_repo($_, "LArSoft"), fnal_repo($_)); }
@@ -129,6 +139,7 @@ my @known_specs = (@known_specs_art,
                    @known_specs_artdaq,
                    @known_specs_expt,
                    @known_specs_sbn,
+                   @known_specs_sbndaq,
                    @known_specs_larsoft);
 
 my ($known_products); # Initialized on startup.
