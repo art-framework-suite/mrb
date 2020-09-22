@@ -415,7 +415,7 @@ fi
 if [ -z ${MRB_PROJECT} ]
 then
     echo "ERROR: MRB_PROJECT is not defined."
-    echo "       Please set \${MRB_PROJECT} to the master product (e.g., larsoft, uboone, etc.)"
+    echo "       Please set \${MRB_PROJECT} to the main product (e.g., larsoft, uboone, etc.)"
     exit 2
 fi
 MRB_PROJECTUC=`echo ${MRB_PROJECT} | tr '[:lower:]' '[:upper:]'`

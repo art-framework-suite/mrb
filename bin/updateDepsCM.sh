@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Update the master CMakeLists.txt file with whatever is found in $MRB_SOURCE
+# Update the main CMakeLists.txt file with whatever is found in $MRB_SOURCE
 
 # No arguments
 

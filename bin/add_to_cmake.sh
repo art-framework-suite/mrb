@@ -54,7 +54,7 @@ else
 fi
 
 cd ${MRB_SOURCE}
-cp ${MRB_DIR}/templates/CMakeLists.txt.master CMakeLists.txt || exit 1;
+cp ${MRB_DIR}/templates/CMakeLists.txt.main CMakeLists.txt || exit 1;
 
 # have to accumulate the include_directories command in one fragment
 # and the add_subdirectory commands in another fragment
