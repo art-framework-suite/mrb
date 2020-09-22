@@ -35,7 +35,7 @@ cmake_subdir_fragment=${MRB_SOURCE}/.cmake_add_subdir
 cmake_include_fragment=${MRB_SOURCE}/.cmake_include_dirs
 
 # Construct a new CMakeLists.txt file in srcs
-cp ${MRB_DIR}/templates/CMakeLists.txt.master ${MRB_SOURCE}/CMakeLists.txt || exit 1;
+cp ${MRB_DIR}/templates/CMakeLists.txt.main ${MRB_SOURCE}/CMakeLists.txt || exit 1;
 if [ -e ${cmake_subdir_fragment} ]; then rm -f ${cmake_subdir_fragment}; fi
 if [ -e ${cmake_include_fragment} ]; then rm -f ${cmake_include_fragment}; fi
 echo "# DO NOT DELETE " > ${cmake_include_fragment}
