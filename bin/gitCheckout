@@ -25,8 +25,8 @@ my $known_suites =
   { larsoft => [qw(larcore lardata larevt larsim larsimrad larg4 larreco larrecodnn
                    larana larexamples lareventdisplay larpandora
                    larwirecell larsoft)],
-    art => [qw(cetlib_except cetlib fhiclcpp messagefacility
-               canvas canvas_root_io art gallery critic)],
+    art => [qw(cetlib_except cetlib fhiclcpp messagefacility hep_concurrency
+               canvas canvas_root_io art art_root_io gallery critic)],
     critic => [qw(cetlib_except cetlib fhiclcpp messagefacility
                   canvas canvas_root_io art gallery critic)],
     gallery => [qw(cetlib_except cetlib fhiclcpp messagefacility
