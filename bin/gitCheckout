@@ -27,10 +27,10 @@ my $known_suites =
                    larwirecell larsoft)],
     art => [qw(cetlib_except cetlib fhiclcpp messagefacility hep_concurrency
                canvas canvas_root_io art art_root_io gallery critic)],
-    critic => [qw(cetlib_except cetlib fhiclcpp messagefacility
-                  canvas canvas_root_io art gallery critic)],
-    gallery => [qw(cetlib_except cetlib fhiclcpp messagefacility
-                   canvas canvas_root_io gallery)],
+    critic => [qw(cetlib_except cetlib hep_concurrency fhiclcpp messagefacility
+                  canvas canvas_root_io art art_root_io gallery critic)],
+    gallery => [qw(cetlib_except cetlib hep_concurrency fhiclcpp messagefacility
+                   canvas canvas_root_io fhiclpy gallery)],
     larsoftobj => [qw(larcoreobj lardataobj larcorealg lardataalg larsoftobj)],
     nu => [qw(nusimdata nuevdb nug4 nugen nurandom nutools)],
     uboone=> [qw(uboonecode ubutil uboonedata ublite ubana ubreco ubsim
@@ -79,7 +79,9 @@ sub verified_github_url;
 #
 ########################################################################
 my @known_specs_art =
-  ( prod_info("fhiclcpp", fnal_repo("fhicl-cpp"))) ;
+  ( prod_info("fhiclcpp", fnal_repo("fhicl-cpp")),
+    prod_info("fhiclpy", fnal_repo("fhicl-py")),
+  ) ;
 
 push @known_specs_art, map { prod_info($_, fnal_repo($_)); }
   grep { $_ ne "fhiclcpp"; } @{$known_suites->{art}};
