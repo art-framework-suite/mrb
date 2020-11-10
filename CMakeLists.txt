@@ -14,7 +14,7 @@ CMAKE_MINIMUM_REQUIRED (VERSION 3.2)
 
 PROJECT (mrb LANGUAGES NONE)
 set (product mrb)
-set (version v4_02_03)
+set (version v4_03_00)
 
 # Throw a fatal error if cmake is invoked from within the source code directory tree
 string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" in_source)
