@@ -41,7 +41,7 @@ function modify_product_deps()
 
   echo " "
   echo "Updating ${pdfile}"
-  ${MRB_DIR}/bin/edit_product_deps ${pdfile} ${product} ${new_version} ${dryRun}  || exit 1
+  $MRB_DIR/libexec/edit_product_deps ${pdfile} ${product} ${new_version} ${dryRun}  || exit 1
 }
 
 function modify_cmake()
@@ -49,7 +49,7 @@ function modify_cmake()
   local cfile=$1
   echo "editing $cfile"
   grep ${product} ${cfile}
-  ${MRB_DIR}/bin/edit_cmake ${cfile} ${product} ${new_version} ${dryRun}  || exit 1
+  $MRB_DIR/libexec/edit_cmake ${cfile} ${product} ${new_version} ${dryRun}  || exit 1
   grep ${product} ${cfile}
 }
 function get_package_list()

@@ -26,8 +26,8 @@ done
 if pwd | egrep -q '/local[^/]*$';
   then
      pwda=`pwd`
-     reldir=`${MRB_DIR}/bin/findDir.sh ${pwda}`
-     bdir=`${MRB_DIR}/bin/findDir.sh ${MRB_INSTALL}`
+     reldir=`$MRB_DIR/libexec/findDir.sh ${pwda}`
+     bdir=`$MRB_DIR/libexec/findDir.sh ${MRB_INSTALL}`
      if [ ${reldir} != ${bdir} ];
        then
          echo "ERROR: You are sitting in ${reldir}, but \$MRB_INSTALL=${MRB_INSTALL} !!"

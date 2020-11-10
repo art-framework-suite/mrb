@@ -5,7 +5,6 @@
 test $?shell = 1 && set ss="csh" || ss="sh"
 
 # Special trick for bash to make aliases work
-# FIXME: We need to restore this value!
 test "$ss" = "sh" && test "${BASH}" && \
     old_expand_aliases="`shopt -p expand_aliases`"
 test "$ss" = "sh" && test "${BASH}" && shopt -s expand_aliases

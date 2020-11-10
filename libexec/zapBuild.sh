@@ -26,8 +26,8 @@ done
 if pwd | egrep -q '/build[^/]*$';
   then
      pwda=`pwd`
-     reldir=`${MRB_DIR}/bin/findDir.sh ${pwda}`
-     bdir=`${MRB_DIR}/bin/findDir.sh ${MRB_BUILDDIR}`
+     reldir=`$MRB_DIR/libexec/findDir.sh ${pwda}`
+     bdir=`$MRB_DIR/libexec/findDir.sh ${MRB_BUILDDIR}`
      if [ "${reldir}" != "${bdir}" ];
        then
          echo "ERROR: You are sitting in \"${reldir}\", but \$MRB_BUILDDIR=\"${MRB_BUILDDIR}\" !!"

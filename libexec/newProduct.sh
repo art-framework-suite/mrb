@@ -107,7 +107,7 @@ function createFiles() {
   then
     templateDir=$(eval echo \$${pkgdirnm}/templates )
   else
-    templateDir=${MRB_DIR}/templates/product
+    templateDir=$mrb_templates/product
   fi
 
   # Let's start filling in templates
@@ -203,7 +203,7 @@ function createFiles() {
       echo "-- NOTICE: project is already in CMakeLists.txt file"
     else
       # No - add it
-      ${MRB_DIR}/bin/add_to_cmake.sh ${MRB_SOURCE} ${PRODNAME} || exit 1;
+      $MRB_DIR/libexec/add_to_cmake.sh ${MRB_SOURCE} ${PRODNAME} || exit 1;
   fi
 
   echo "Complete - Product $PRODNAME was created"
@@ -254,8 +254,6 @@ if echo $PWD | egrep -q "/srcs$";
     echo 'ERROR: You must be in your srcs directory'
   exit 7
 fi
-
-mrb_bin=${MRB_DIR}/bin
 
 # If we want to create the files
 if [ $create ]; then createFiles $PRODNAME $noflav; fi

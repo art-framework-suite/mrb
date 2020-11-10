@@ -84,7 +84,7 @@ function make_srcs_directory()
   ##echo "NOTICE: Created srcs directory"
 
   # Make the main CMakeLists.txt file
-  ${mrb_bin}/copy_files_to_srcs.sh ${MRB_SOURCE} || exit 1
+  $MRB_DIR/libexec/copy_files_to_srcs.sh ${MRB_SOURCE} || exit 1
   if [ ${printDebug} ]; then echo "DEBUG: ran copy_files_to_srcs"; fi
 
   # Record the mrb version
@@ -180,19 +180,19 @@ function make_localProducts_directory()
     fi
     if [ ! -z ${prjdir} ] && [ -d ${prjdir} ]
     then
-        $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}_DIR
+        $MRB_DIR/libexec/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}_DIR
     elif [ ! -z ${prjcodedir} ] && [ -d ${prjcodedir} ] 
     then
-       $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}CODE_DIR
+       $MRB_DIR/libexec/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}CODE_DIR
     else      
         ##echo "look for ${MRB_PROJECT} ${MRB_PROJECT_VERSION}"
 	if ups exist ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS} >/dev/null 2>&1; then
             source `${UPS_DIR}/bin/ups setup -j ${MRB_PROJECT} ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}`
-            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}_DIR
+            $MRB_DIR/libexec/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}_DIR
 	    unsetup -j ${MRB_PROJECT}
 	elif ups exist ${MRB_PROJECT}code ${MRB_PROJECT_VERSION} -q ${MRB_QUALS} >/dev/null 2>&1; then
             source `${UPS_DIR}/bin/ups setup -j ${MRB_PROJECT}code ${MRB_PROJECT_VERSION} -q ${MRB_QUALS}`
-            $MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}CODE_DIR
+            $MRB_DIR/libexec/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} ${MRB_PROJECTUC}CODE_DIR
 	    unsetup -j ${MRB_PROJECT}
 	else
             echo "INFO: cannot find ${MRB_PROJECT}/${MRB_PROJECT_VERSION}/releaseDB/base_dependency_database"
@@ -208,7 +208,7 @@ function create_local_setup()
     # MRB_SOURCE might be in a completely different directory tree
 
     # copy the setup script
-    cp ${MRB_DIR}/templates/local_setup  $dirName/setup
+    cp $mrb_templates/local_setup  $dirName/setup
     
     # Write mrb_definitions
 
@@ -228,7 +228,7 @@ setenv PRODUCTS "\${MRB_INSTALL}:\${PRODUCTS}"
 EOF
 # --- End of HERE document for localProducts.../setup ---
 
-   cat ${MRB_DIR}/templates/local_mid  >> $dirName/setup
+   cat $mrb_templates/local_mid  >> $dirName/setup
 
     # --- Start of HERE document for localProducts.../setup ---
 
@@ -247,7 +247,7 @@ echo
 echo PRODUCTS=\$PRODUCTS
 echo
 
-source "\${MRB_DIR}/bin/unset_shell_independence"
+source "\$MRB_DIR/libexec/unset_shell_independence"
 unset db buildDirName
 
 EOF
@@ -403,13 +403,6 @@ then
     echo "DEBUG: makeBuild   is ${makeBuild}"
     echo "DEBUG: makeSrcs    is ${makeSrcs}"
 fi
-
-mrb_bin=${MRB_DIR}/bin
-if [ ${printDebug} ]
-then
-    echo "DEBUG: mrb_bin: ${mrb_bin}"
-fi
-
 
 # Make sure the @MRB_PROJECT@ product is setup
 if [ -z ${MRB_PROJECT} ]

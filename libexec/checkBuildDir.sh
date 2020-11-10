@@ -4,7 +4,7 @@
 if pwd | egrep -q '/build[^/]*$';
 then
   pwda=`pwd`
-  reldir=`${MRB_DIR}/bin/findDir.sh ${pwda}`
+  reldir=`$MRB_DIR/libexec/findDir.sh ${pwda}`
   if [ ${reldir} != ${MRB_BUILDDIR} ];
   then
      ##echo "NOTICE: Changing \$MRB_BUILDDIR to ${reldir}"

@@ -95,11 +95,11 @@ fi
 echo ""
 
 # Construct a new CMakeLists.txt file in srcs
-${MRB_DIR}/bin/copy_files_to_srcs.sh ${MRB_SOURCE} || exit $?
+$MRB_DIR/libexec/copy_files_to_srcs.sh -c ${MRB_SOURCE} || exit
 
 # Add back the packages
 if (( ${#pkglist[*]} )); then
-  ${MRB_DIR}/bin/add_to_cmake.sh ${MRB_SOURCE} "${pkglist[*]}"
+  $MRB_DIR/libexec/add_to_cmake.sh ${MRB_SOURCE} "${pkglist[*]}"
 fi
 
 exit $?

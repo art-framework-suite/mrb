@@ -34,7 +34,7 @@ function modify_product_deps()
 
   echo " "
   echo "Updating ${pdfile}"
-  ${MRB_DIR}/bin/edit_product_deps_qual ${pdfile} ${old_qual} ${new_qual} ${dryRun}  || exit 1
+  $MRB_DIR/libexec/edit_product_deps_qual ${pdfile} ${old_qual} ${new_qual} ${dryRun}  || exit 1
 }
 
 function modify_cmake()
@@ -42,7 +42,7 @@ function modify_cmake()
   local cfile=$1
   echo "editing $cfile"
   grep ${old_qual} ${cfile}
-  ${MRB_DIR}/bin/edit_cmake ${cfile} ${old_qual} ${new_qual} ${dryRun}  || exit 1
+  $MRB_DIR/libexec/edit_cmake ${cfile} ${old_qual} ${new_qual} ${dryRun}  || exit 1
 }
 function get_package_list()
 {

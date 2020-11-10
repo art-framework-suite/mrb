@@ -158,7 +158,7 @@ if grep -q \($repbase\) ${MRB_SOURCE}/CMakeLists.txt
   then
     echo "NOTICE: project is already in CMakeLists.txt file"
   else
-    ${MRB_DIR}/bin/add_to_cmake.sh ${MRB_SOURCE} ${repbase} || exit 1;
+    $MRB_DIR/libexec/add_to_cmake.sh ${MRB_SOURCE} ${repbase} || exit 1;
 fi
 
 echo " "

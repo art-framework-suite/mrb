@@ -71,7 +71,7 @@ rm -rf ${temp_install_dir}
 make DESTDIR=${temp_install_dir} install ${jcores} $*
 
 # full path to products
-mrb_install_path=`${MRB_DIR}/bin/findDir.sh ${MRB_INSTALL}`
+mrb_install_path=`$MRB_DIR/libexec/findDir.sh ${MRB_INSTALL}`
 temp_install_path=${temp_install_dir}/${mrb_install_path}
 
 product_list=`ls ${temp_install_path}`

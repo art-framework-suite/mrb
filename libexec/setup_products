@@ -1,0 +1,462 @@
+#!/usr/bin/env perl
+#
+# setup products for the build environment
+# use product_deps and MRB_QUALS
+use strict;
+use warnings FATAL =>
+  qw(io regexp severe syntax uninitialized void);;
+
+use Cwd qw(:DEFAULT chdir);
+use File::Basename;
+use File::Path 'make_path';
+use File::Spec; # For catfile;
+use FileHandle;
+use POSIX qw(uname);
+
+use lib dirname($0);
+
+use parse_deps qw(:DEFAULT $btype_table);
+
+my $max_resolution_loops = 200;
+
+sub reconcilecmake_args {
+  my ($all_packages, @products) = @_;
+  my $results = { map { map { ($_ => 1); } @{$all_packages->{$_}->{cmake_args}}; } @products };
+  my @results = sort keys %$results;
+  return \@results;
+}
+
+sub reconcile_compiler {
+  my $cop_info = shift;
+  my $compilers = { map { ($cop_info->{$_}->{compiler} => 1); }
+                    keys %{$cop_info} };
+  error_exit("inconsistent compilers reported across packages:\n",
+             join(", ", keys %{$compilers}))
+    if (scalar keys %{$compilers} > 1);
+  return (keys %{$compilers})[0];
+}
+
+sub reconcile_dep_quals {
+  # Enforce matching qualifiers while reconciling dupes.
+  my ($phash, $dfh) = @_;
+  my $result = { };
+  foreach my $prod (keys %{$phash}) {
+    foreach my $dep (keys %{$phash->{$prod}}) {
+      my $incoming = $phash->{$prod}->{$dep};
+      if (exists $result->{$dep}->{$phash->{$prod}->{$dep}->{version}}) {
+        # Merge entries.
+        my $existing = $result->{$dep}->{$phash->{$prod}->{$dep}->{version}};
+        # Only allow missing qualifier for only_for_build deps.
+        $existing->{qualspec} = $incoming->{qualspec} if $incoming->{qualspec};
+        if ($existing->{qualspec} ne $incoming->{qualspec}) {
+          error_exit("Qualifiers for dependency $dep are inconsistent between product_deps for packages\n",
+                     "$existing->{origin} ($existing->{qualspec}) and $prod ($incoming->{qualspec}).");
+        }
+        # Only only_for_build if everyone agrees.
+        delete $existing->{only_for_build} unless $incoming->{only_for_build};
+        # Only optional if everyone agrees.
+        delete $existing->{optional} unless $incoming->{optional};
+      } else {
+        # New entry.
+        $result->{$dep}->{$phash->{$prod}->{$dep}->{version}} = $incoming;
+        # Record origin product for which this is a dependency.
+        $result->{$dep}->{$phash->{$prod}->{$dep}->{version}}->{origin} = $prod;
+      }
+    }
+  }
+  return $result;
+}
+
+sub reconcile_deps {
+  my ($setup_products_hash, $dfh) = @_;
+  my $product_phashes = { map { ($_ => $setup_products_hash->{$_}->{phash}); }
+                          keys %{$setup_products_hash} };
+  return reconcile_dep_quals($product_phashes, $dfh);
+}
+
+sub get_package_list {
+  my ($cml, $dfile) = @_;
+  my @plist = ();
+  open(my $in, "<", "$cml") or error_exit("couldn't open $cml");
+  while (<$in>) {
+    chomp;
+    m&^\s*(?i:add_subdirectory)\s*\(\s*([^\s)]+)& and push @plist, ${1};
+  }
+  close($in);
+  return (@plist);
+}
+
+sub latest_version {
+  my @result = sort by_version @_;
+  return pop @result;
+}
+
+sub order_products {
+  my ($setup_products_hash, $checked_out_products) = @_;
+  # Construct compact dependency information, required for ordering.
+  foreach my $pkg (keys %{$checked_out_products}) {
+    $checked_out_products->{$pkg}->{uses} =
+      [ grep { my $dep = $_; grep { $_ eq $dep; } keys %{$checked_out_products}; }
+        keys %{$setup_products_hash->{$pkg}->{phash}} ];
+  }
+
+  # Order the checked-out products by iteration:
+  #
+  # 1. Pull out those products which are not used by those remaining in
+  #    the list.
+  #
+  # 2. Top level products are pulled out first and have the highest order
+  #    number (0).
+  #
+  # 3. The order number is decremented with each successive iteration.
+  #
+  # 4. Products pulled out in the same iteration have the same order
+  #    number, as they do not depend on each other. Their relative order
+  #    when the keys are sorted according to order number is therefore
+  #    arbitrary.
+  my $ordered_products = {};
+  for (my $iloop = 0;
+       scalar keys %{$checked_out_products} and
+       $iloop < $max_resolution_loops;
+       ++$iloop) {
+    my @all_uses = map { @{$checked_out_products->{$_}->{uses}}; } keys %{$checked_out_products};
+    for my $unused (grep { my $pkg = $_; not grep  { $_ eq $pkg; } @all_uses; }
+                    keys%{$checked_out_products}) {
+      $ordered_products->{$unused} = delete $checked_out_products->{$unused};
+      $ordered_products->{$unused}->{order} = -$iloop;
+    }
+  }
+
+  scalar keys %{$checked_out_products} and
+    error_exit("Circular dependency issue within package set:\n",
+               join(", ", sort keys %{$checked_out_products}));
+
+  return $ordered_products;
+}
+
+if ($#ARGV < 1) {
+  error_exit("directories not specified\n",
+             "USAGE: setup_products <input-directory> <build-directory>");
+}
+
+my $compiler_table =
+  {
+   cc => { CC => "cc", CXX => "c++", FC =>  },
+   gcc => { CC => "gcc", CXX => "g++", FC => "gfortran" },
+   icc => { CC => "icc", CXX => "icpc", FC => "ifort" },
+   clang => { CC => "clang", CXX => "clang++", FC => "gfortran" }
+  };
+
+my $sourcedir = shift;
+my $builddir = shift;
+my $mrb_project = $ENV{MRB_PROJECT};
+my $mrb_project_version = $ENV{MRB_PROJECT_VERSION};
+my @mrb_quals_sorted;
+my $mrb_quals = sort_qual (\@mrb_quals_sorted, $ENV{MRB_QUALS});
+
+# Diagnostics
+my $diagfl = File::Spec->catfile($builddir, "diag_report");
+open(my $dfh, "+>", "$diagfl") or
+  error_exit("couldn't open $diagfl for write");
+
+my $tmpfl = File::Spec->catfile($builddir, "$mrb_project-$mrb_project_version");
+open(my $tfh, "+>", $tmpfl) or
+  error_exit("couldn't open $tmpfl for write");
+
+my $cmakefile=File::Spec->catfile($sourcedir, "CMakeLists.txt");
+
+my @package_list = get_package_list($cmakefile, $dfh);
+unless (scalar @package_list) {
+  print $dfh "DIAGNOSTICS: there are no packages in $sourcedir\n";
+  print $dfh "DIAGNOSTICS: nothing to build\n";
+  print "$tmpfl\n";
+  exit 0;
+}
+
+my $simple = (not $mrb_quals or
+              $mrb_quals eq '-nq-' or
+              grep { $_ eq "simple"; } @ARGV);
+
+my $build_type;
+($build_type) =
+  map { $mrb_quals_sorted[$#mrb_quals_sorted] eq $_ ? $btype_table->{$_} : (); }
+  qw(debug opt prof) if (scalar @mrb_quals_sorted and not $simple);
+
+
+# Initialize omnibus data structure.
+my $all_packages = {};
+
+my $compiler = compiler_for_quals({}, $mrb_quals);
+
+foreach my $pkg (@package_list) {
+  # Obtain all the information for this package.
+  my $pfile = File::Spec->catfile($sourcedir, $pkg, "ups", "product_deps");
+  my $phash = get_product_list($pfile);
+  my ($qlen, $qhash, $qqhash) = get_qualifier_matrix($pfile);
+  # Load it all into the master hash.
+  $all_packages->{$pkg} =
+    { %{get_parent_info($pfile)},
+      map { eval "$_ => \$$_"; } qw(pfile phash qlen qhash qqhash) };
+}
+
+# We have all the dependency information. Next, resolve the dependency
+# matrix to ascertain the correct qualifiers for each product.
+my $setup_products_hash = {};
+
+# We will assume that $mrb_quals applies to $mrb_project, if that is a
+# package, and any package not mentioned in the dependency tree of any
+# other package. Note that we do *not* use UPS to fill in gaps.
+my $npkgs = scalar @package_list;
+foreach my $pkg (keys %{$all_packages}) {
+  my $qqhash = $all_packages->{$pkg}->{qqhash} || undef;
+  if (($pkg eq $mrb_project and $qqhash)
+      or not grep { grep { $_ eq $pkg } keys %{$all_packages->{$_}->{qhash}} }
+      keys %{$all_packages}) {
+    if (exists $qqhash->{$mrb_quals}) {
+      $setup_products_hash->{$pkg} =
+        { qualspec => $mrb_quals,
+          phash => deps_for_quals($all_packages->{$pkg}->{phash},
+                                  $all_packages->{$pkg}->{qhash},
+                                  $mrb_quals),
+          qhash => $qqhash->{$mrb_quals}
+        };
+    } elsif (not $all_packages->{$pkg}->{have_fq}) {
+      $setup_products_hash->{$pkg} =
+        { qualspec => '-nq-',
+          phash => deps_for_quals($all_packages->{$pkg}->{phash},
+                                  $all_packages->{$pkg}->{qhash},
+                                  '-nq-'),
+          qhash => $qqhash->{'-nq-'} || {}
+        };
+    } else {
+      error_exit("product $pkg must have an entry in qualifier_list corresponding to\n",
+                 "specified MRB_QUALS ${mrb_quals}, or a dependent package that does."
+                 );
+    }
+  }
+}
+
+# Look for each unresolved package in the correct qualifier row for
+# packages we've already resolved, or in the qualifier-filtered
+# product_list of same if we find it listed as an only_for_build
+# product.
+for (my $iloop = 0;
+     $npkgs > scalar keys %{$setup_products_hash} and
+     $iloop < $max_resolution_loops;
+     ++$iloop) {
+  for my $pkg (grep {not exists $setup_products_hash->{$_}; } @package_list) {
+    # For each remaining unresolved package, attempt to find it in the
+    # dependencies of packages we've already dealt with for the current
+    # qualifiers.
+    my $found_in_deps =
+      { map { my $result = $setup_products_hash->{$_}->{qhash}->{$pkg} ||
+              (exists $setup_products_hash->{$_}->{phash}->{$pkg} and
+               $setup_products_hash->{$_}->{phash}->{$pkg}->{only_for_build} and
+               "-nq-");
+            if (not $result or $result eq '-') {
+              ();
+            } else {
+              ( $_ => { qualspec => ($result eq "-b") ? "-nq-" : $result } );
+            }
+          } keys %{$setup_products_hash} };
+    if (scalar keys %{$found_in_deps}) {
+      # Check for an unambiguous qualifier.
+      my $quals = { map { ($found_in_deps->{$_}->{qualspec} => 1); } keys %{$found_in_deps} };
+      scalar keys %{$quals} > 1 and
+        error_exit(sprintf("could not ascertain unambiguous qualifier (\%s) for package $pkg from",
+                           join(", ", sort keys %{$quals})),
+                   sprintf("\ndependency information found in packages \%s",
+                           join(", ", keys %{$found_in_deps})),
+                   "\nwith MRB_QUALS=$mrb_quals."
+                   );
+      # Find the lowest level in the dependency tree.
+      my $found_dep_info = (keys %{$found_in_deps})[0];
+      my ($qual) = ($found_in_deps->{$found_dep_info}->{qualspec});
+      if (exists $all_packages->{$pkg}->{qqhash}->{$qual}) {
+        $setup_products_hash->{$pkg} =
+          { qualspec => $qual,
+            phash => deps_for_quals($all_packages->{$pkg}->{phash},
+                                    $all_packages->{$pkg}->{qhash},
+                                    $qual),
+            qhash => $all_packages->{$pkg}->{qqhash}->{$qual}
+          };
+      } elsif ($qual eq '-nq-') { # Backward compatibility.
+        $setup_products_hash->{$pkg} =
+          { qualspec => $qual,
+            phash => deps_for_quals($all_packages->{$pkg}->{phash},
+                                    $all_packages->{$pkg}->{qhash},
+                                    ''),
+            qhash => $all_packages->{$pkg}->{qqhash}->{''} || {}
+          };
+      } else {
+        error_exit("could not find information for qualifier $qual of package $pkg");
+      }
+    } else {
+      next;
+    }
+  }
+}
+
+# Check we resolved everything.
+$npkgs > scalar keys %{$setup_products_hash} and
+  error_exit("exceeded loop limit ($max_resolution_loops) attempting to resolve qualifiers for packages.",
+             sprintf("\nUnresolved packages: %s",
+                     join(", ", (grep { not exists $setup_products_hash->{$_}; } @package_list))));
+
+my $srcbase = basename($sourcedir);
+my $inputdir;
+if ( $srcbase eq "ups" ) {
+  $inputdir = $sourcedir;
+  ##print $dfh "setup_products debug info: have the old setup_for_development\n";
+  error_exit("you have an old copy of setup_for_development\n",
+             "please issue the following command\n",
+             "  cp \$CETBUILDTOOLS_DIR/templates/setup_for_development.template $inputdir/setup_for_development");
+} else {
+  $inputdir = File::Spec->catfile($sourcedir, "ups");
+}
+
+my $regular_products = reconcile_deps($setup_products_hash, $dfh);
+
+foreach my $prod (keys %{$regular_products}) {
+  # Check for inconsistent dependency versions (we already checked for
+  # inconsistent qualifiers) and collapse the hierarchy.
+  if (scalar keys %{$regular_products->{$prod}} > 1 and
+      not exists $setup_products_hash->{$prod}) {
+    if ($prod eq "cetmodules") {
+      # This one is OK: choose the latest.
+      my $latest = latest_version(keys %{$regular_products->{$prod}});
+      delete @{$regular_products->{$prod}}
+                 {grep { $_ ne $latest; } keys %{$regular_products->{$prod}}};
+    } else {
+      error_exit("Inconsistent versions for dependency $prod:",
+                 map { sprintf("\n  %s requires $prod %s",
+                               $regular_products->{$prod}->{$_}->{origin}, $_); }
+                 keys %{$regular_products->{$prod}});
+    }
+  }
+  # Collapse the hierarchy.
+  $regular_products->{$prod} =
+    $regular_products->{$prod}->{(keys %{$regular_products->{$prod}})[0]};
+}
+
+# Handle checked-out products differently.
+my $checked_out_products =
+  { map { ($_ => (delete $regular_products->{$_}) ||
+           { qualspec => $setup_products_hash->{$_}->{qualspec} }) }
+    keys %{$setup_products_hash} };
+
+# Add auxiliary information to checked-out products:
+map { my $pinfo = $all_packages->{$_};
+      my $cop_info = $checked_out_products->{$_};
+      get_derived_parent_data($pinfo,
+                              File::Spec->catfile($sourcedir, $_),
+                              $cop_info->{qualspec});
+      $cop_info->{compiler} =
+        $pinfo->{noarch} ? undef :
+          compiler_for_quals($pinfo->{qhash}->{compiler},
+                             $checked_out_products->{$_}->{qualspec});
+    } sort keys %$checked_out_products;
+
+my $compiler = reconcile_compiler($checked_out_products);
+
+print_dep_setup($regular_products, $tfh);
+print $tfh <<EOF;
+
+##################
+EOF
+print_dep_setup_one("cetmodules", $regular_products->{cetmodules}, $tfh);
+
+if (my $old_build_dir = $ENV{OLD_MRB_BUILDDIR}) {
+  print $tfh <<EOF;
+
+setenv PATH `dropit -p \"\${PATH}\" '${old_build_dir}'`
+tdefined LD_LIBRARY_PATH && setenv LD_LIBRARY_PATH `dropit -p \"\${LD_LIBRARY_PATH}\" '${old_build_dir}'`
+tdefined DYLD_LIBRARY_PATH setenv DYLD_LIBRARY_PATH `dropit -p \"\${DYLD_LIBRARY_PATH}\" '${old_build_dir}'`
+tdefined CET_PLUGIN_PATH setenv CET_PLUGIN_PATH `dropit -p \"\${CET_PLUGIN_PATH}\" '${old_build_dir}'`
+tdefined ROOT_INCLUDE_PATH setenv CET_PLUGIN_PATH `dropit -p \"\${CET_PLUGIN_PATH}\" '${old_build_dir}'`
+EOF
+}
+
+# Take a side-trip to re-order.
+my $ordered_products =
+  order_products($setup_products_hash, $checked_out_products);
+
+# Now, take a moment to write the individual setup files for each
+# checked-out package as required by the build.
+my $oldcwd = getcwd();
+foreach my $product (sort { $ordered_products->{$a}->{order} <=>
+                              $ordered_products->{$b}->{order} }
+                     keys %{$ordered_products}) {
+  my $pkg_builddir = File::Spec->catfile($builddir, $product);
+  make_path($pkg_builddir);
+  chdir($pkg_builddir) or
+    error_exit("unable to make and change directory to $pkg_builddir");
+  my $product_info = $all_packages->{$product};
+  my $dep_info =
+    deps_for_quals($product_info->{phash},
+                   $product_info->{qhash},
+                   $ordered_products->{$product}->{qualspec});
+  classify_deps($product_info, $dep_info);
+  # Needed by CMake to generate the table file.
+  write_table_deps($product_info->{name}, $dep_info);
+  write_table_frag($product_info->{name}, $product_info->{pfile});
+  # Needed by buildtool to specify CMake arguments.
+  $product_info->{cmake_args} = ups_to_cmake($product_info->{pfile}, $product_info);
+  # Needed by us to set up the development environment.
+  my $product_uc = uc $product;
+  print $tfh <<EOF;
+
+##################
+# >> $product <<
+##################
+
+tdefined SETUP_${product_uc} && unsetup -j ${product}
+setenv ${product_uc}_VERSION "$product_info->{version}"
+setenv ${product_uc}_DIR "${builddir}/${product}"
+setenv CETPKG_BUILD "\$${product_uc}_DIR"
+setenv CETPKG_SOURCE "\${MRB_SOURCE}/${product}"
+EOF
+  print_dev_setup($product_info->{pfile}, $product_info, $tfh);
+}
+
+chdir($oldcwd);
+
+# Ensure . is at the front of FHICL_FILE_PATH.
+print $tfh <<EOF;
+
+########################################################################
+# Postamble
+setenv CETPKG_SOURCE "${sourcedir}"
+setenv CETPKG_BUILD  "${builddir}"
+tdefined FHICL_FILE_PATH || set_ FHICL_FILE_PATH=''
+setenv FHICL_FILE_PATH \`dropit -esf -p "\${FHICL_FILE_PATH}" '.'\`
+EOF
+
+# Close files.
+close($tfh);
+close($dfh);
+
+my $mrb_pi = { name => "${mrb_project}_MRB",
+               source => $sourcedir,
+               build => $builddir,
+               ($build_type) ? (build_type => $build_type) : (),
+               version => $ENV{MRB_VERSION},
+               cmake_project => "${mrb_project}_MRB",
+               cmake_project_version =>
+               to_dot_version($mrb_project_version),
+               qualspec => $mrb_quals,
+               cmake_args =>
+               reconcilecmake_args($all_packages,
+                                    sort { $ordered_products->{$a}->{order} <=>
+                                             $ordered_products->{$b}->{order} }
+                                    keys %{$ordered_products} ) };
+
+get_derived_parent_data($mrb_pi, $sourcedir, $mrb_quals);
+
+# Write the top-level info file for buildtool.
+cetpkg_info_file(%$mrb_pi);
+
+# Finish.
+print "$tmpfl\n";
+
+exit 0;

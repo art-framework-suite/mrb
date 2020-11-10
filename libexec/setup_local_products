@@ -23,7 +23,7 @@ test $?shell$_ != 1$_ >& /dev/null && \
 test $?shell = 1 && set dollar_underscore=`echo $_`
 
 # Setup the shell independence functions and aliases.
-source "${MRB_DIR}/bin/shell_independence"
+source "$mrb_libexec/shell_independence"
 
 test -z "${UPS_DIR}" && \
     echo "" && \
@@ -147,7 +147,7 @@ unset db me cmdfile setup_fail
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence" && \
+    source "$mrb_libexec/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \

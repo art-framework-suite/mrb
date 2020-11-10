@@ -20,7 +20,7 @@ test $?shell$_ != 1$_ >& /dev/null && \
 test $?shell = 1 && set dollar_underscore=`echo $_`
 
 # Setup the shell independence functions and aliases.
-source "${MRB_DIR}/bin/shell_independence"
+source "$MRB_DIR/libexec/shell_independence"
 
 # Capture the value of $0
 set_ dollar_zed=`echo "${0}" | sed -e 's/^-//'`
@@ -71,7 +71,7 @@ test -z "${UPS_DIR}" && \
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence" && \
+    source "$MRB_DIR/libexec/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \
@@ -83,7 +83,7 @@ test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell != 1 && \
 setenv CETPKG_SOURCE $MRB_SOURCE
 
 # make sure we know the build directory
-setenv MRB_BUILDDIR `${MRB_DIR}/bin/checkBuildDir.sh`
+setenv MRB_BUILDDIR `$MRB_DIR/libexec/checkBuildDir.sh`
 tnotnull MRB_BUILDDIR  && setenv CETPKG_BUILD $MRB_BUILDDIR
 test -z "$CETPKG_BUILD" && setenv CETPKG_BUILD `pwd`
 
@@ -113,7 +113,7 @@ endifcsh_
 setenv UPS_OPTIONS -B
 # now get the rest of the products and set up checked out packages.
 set_ setup_fail="false"
-source `$MRB_DIR/bin/setup_products $CETPKG_SOURCE $CETPKG_BUILD $*`
+source `$MRB_DIR/libexec/setup_products $CETPKG_SOURCE $CETPKG_BUILD $*`
 test "$setup_fail" = "true" && echo "$msg5"
 unset msg5
 test "$setup_fail" = "true" && unset setup_fail && return 1
@@ -121,13 +121,13 @@ test "$setup_fail" = "true" && unset setup_fail && return 1
 test -e "$CETPKG_BUILD/diag_report" && cat $CETPKG_BUILD/diag_report
 
 echo ----------------------------------------------------------------
-$MRB_DIR/bin/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} dummy
+$MRB_DIR/libexec/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} dummy
 
 set_ mrb_exit=true
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" && \
-    source "${MRB_DIR}/bin/unset_shell_independence" && \
+    source "$MRB_DIR/libexec/unset_shell_independence" && \
     unset dollar_underscore dollar_zed base mrb_status usageMsg subcom 
 test "${mrb_exit}" = "true" -a "${is_sourced}" = "true" -a $?shell = 1 &&\
     unset is_sourced mrb_exit && \

@@ -3,226 +3,167 @@
 # mrb is a convenient "umbrella" script used to dispatch other scripts to do development 
 # releated tasks.
 
-function run_buildtool()
-{
-   local args
-   echo $MRB_BUILDDIR
-   if [ -z $MRB_BUILDDIR ]; then
-      echo "ERROR: MRB_BUILDDIR is undefined"
-      [ $isSourced ] && return || exit 1
-   fi 
-   if [ ! -e $MRB_BUILDDIR/cetpkg_variable_report ]; then
-      echo "ERROR: you must \"mrbsetenv\" in $MRB_BUILDDIR"
-      [ $isSourced ] && return || exit 2
-   fi
-   cd $MRB_BUILDDIR
-   echo "calling buildtool ${@}"
-   buildtool "${@}"
+( return >/dev/null 2>&1 ) && (( is_sourced = 1 ))
+
+mrb_bin=$(cd "${BASH_SOURCE%/*}" && pwd -P)
+nl=$'\n'"       "
+prog=mrb
+export mrb_command="${mrb_bin}/${prog}"
+export mrb_libexec=$(cd "${mrb_bin}/../libexec" && pwd -P)
+export mrb_templates=$(cd "${mrb_bin}/../templates" && pwd -P)
+
+shopt -s execfail
+
+error_exit() {
+  local exitval=1
+  [[ "$1" =~ ^[0-9]+$ ]] && { (( exitval = $1 )); shift; }
+  (( $# )) && printf "ERROR: ${@//$'\n'/$'\n'       }"$'\n' 1>&2
+  (( is_sourced )) && return $exitval || exit $exitval
 }
 
-# setEnv must be sourced in order to affect your environment
-# setup_local_products must also be sourced
-# This is not necessary for the other mrb commands.
-# We use the mrbsetenv and mrbslp aliases
-isSourced=""
-[[ ${BASH_SOURCE[0]} != "${0}" ]] && isSourced="yes"
+prep_buildtool() {
+  [ -n "$MRB_BUILDDIR" ] && [ -d "$MRB_BUILDDIR" ] || \
+    error_exit "MRB_BUILDDIR is undefined or invalid${MRB_BUILDDIR:+: ($MRB_BUILDDIR)}" || return
+  [ -e "$MRB_BUILDDIR/cetpkg_info.sh" ] || \
+    error_exit 2 "you must \"mrbsetenv\" in $MRB_BUILDDIR" || return
+  cmd=buildtool
+  cmd_args=("$@")
+}
 
-# Get the directory where this script resides
-if [ -z ${MRB_DIR} ]; then
-   echo "ERROR: MRB_DIR is undefined"
-   echo "       Please setup mrb"
-  [ $isSourced ] && return || exit 1
-fi 
-mrb_bin=${MRB_DIR}/bin
+usage() {
+  local available_commands="${cmds[*]}"
+  available_commands="${available_commands// / | }"
+  cat 1>&2 <<EOF
+USAGE: $prog ${available_commands}
+       $prog -h
+EOF
+  [ -n "$1" ] || error_exit 1 || return
+  cat 1>&2 <<EOF
 
-# Export this umbrella command name to subshells (should be mrb)
-export mrb_command=${mrb_bin}/mrb
+  Tools (for help on a tool, do "${mrb_command} <tool> -h")
 
-# Define the short list of commands
-shortComList="(newDev | gitCheckout | svnCheckout | mrbsetenv | build | install | test | makePackage | mrbslp | 
-           zapBuild | zapInstall | zapDist | newProduct | changelog | changeQual | updateDepsCM | updateDepsPV | checkDeps | pullDeps | makeDeps )"
-#  Adams's list:  | bumpVersion | updateDeps)"
-
-# Simple help if no argumets
-if [ $# -lt 1 ]
-then
-  echo "Usage ${mrb_command} $shortComList [-h for help]"
-  echo "           ${mrb_command} -h   gives more information"
-
-  [ $isSourced ] && return || exit 1
-fi
-
-# Get the desired sub-command
-subcom=$1
-shift
-
-# Some sanity checks -
-
-# Make sure we have ups
-if [ -z ${UPS_DIR} ]
-then
-   echo "ERROR: please setup ups"
-  [ $isSourced ] && return || exit 1
-fi
-
-# Make sure the @MRB_PROJECT@ product is setup
-if [ -z ${MRB_PROJECT} ]
-then
-    echo "ERROR: MRB_PROJECT is not defined."
-    echo "       Please set \${MRB_PROJECT} to the main product (e.g., larsoft, uboone, etc.)"
-  [ $isSourced ] && return || exit 2
-fi
-
-# Determine how to dispatch
-case "${subcom}" in
-
-  # Give help if necessary (note the "here document":http://en.wikipedia.org/wiki/Here_document )
-  "-h" | "--help" | "help" | "h" )
-   cat 1>&2 << EOF
-Usage ${mrb_command} $shortComList [-h for help]"
-  
-  Tools ( for help on tool, do "${mrb_command} <tool> -h" )
-
-   newDev (n)                  Start a new development area
-   gitCheckout (g)             Clone a git repository
-   svnCheckout (svn)           Checkout from a svn repository
    build (b)                   Run buildtool
-   install (i)                 Run buildtool with install
-   test (t)                    Run buildtool with tests
-   makePackage (mp)            Make distribution tarballs
-   zapBuild (z)                Delete everything in your build area
-   zapInstall (zi)             Delete everything in your localProducts area
-   zapDist (zd)                Delete everything in both your build and localProducts areas
-   newProduct (p)              Create a new product from scratch
+   changeQual (cq)             Change a single qualifer in product_deps (e.g. s52 to s55)
    changelog (c)               Display a changelog for a package
+   checkDeps (cd)              Check for missing build packages
+   gitCheckout (g)             Clone a git repository
+   install (i)                 Run buildtool with install
+   makeDeps (md)               Build or update a header level dependency list
+   makePackage (mp)            Make distribution tarballs
+   newDev (n)                  Start a new development area
+   newProduct (p)              Create a new product from scratch
+   pullDeps (pd)               Pull missing build packages into MRB_SOURCE
+   svnCheckout (svn)           Checkout from a svn repository
+   test (t)                    Run buildtool with tests
    updateDepsCM (uc)           Update the main CMakeLists.txt file
    updateDepsPV (uv)           Update a product version in product_deps
-   changeQual (cq)             Change a single qualifer in product_deps (e.g. s52 to s55)
    updateSource                Update all svn or git code in MRB_SOURCE
-   makeDeps (md)               Build or update a header level dependency list
-   checkDeps (cd)              Check for missing build packages
-   pullDeps (pd)               Pull missing build packages into MRB_SOURCE
+   zapBuild (z)                Delete everything in your build area
+   zapDist (zd)                Delete everything in both your build and localProducts areas
+   zapInstall (zi)             Delete everything in your localProducts area
 
-  Aliases ( we use aliases for these commands because they must be sourced )
+  Aliases (for commands that must be sourced to alter the invoker's environment)
 
-   mrbsetenv                   Setup a development enviornment 
+   mrbsetenv                   Set up a development environment 
                                (source \$MRB_DIR/bin/mrbSetEnv)
-   mrbslp                      Setup all products installed in the working localProducts_XXX directory
+   mrbslp                      Set up all products installed in the working localProducts_XXX directory
                                (source \$MRB_DIR/bin/setup_local_products)
 
 EOF
-   ;;
+  error_exit || return
+}
+  
+# Define the short list of commands.
+cmds=(build
+  changeQual
+  changelog
+  checkDeps
+  gitCheckout
+  install
+  makeDeps
+  makePackage
+  mrbsetenv
+  mrbslp
+  newDev
+  newProduct
+  pullDeps
+  svnCheckout
+  test
+  updateDepsCM
+  updateDepsPV
+  zapBuild
+  zapDist
+  zapInstall
+)
 
-  # h3. The available commands 
+# Get the desired sub-command.
+(( $# )) && { subcmd="$1"; shift; } || usage || return
 
-   # Set up a new development area (calls &l=bin/newDev.sh&)
-    "newDev" | "n"     ) ${mrb_bin}/newDev.sh "${@}"
-        ;;
+##################
+# Some sanity checks.
 
-   # Clone a Redmine git repository (calls &l=bin/gitCheckout&)
-    "gitCheckout" | "g" ) ${mrb_bin}/gitCheckout "${@}"
-        ;;
+# Make sure we have ups
+[ -n "$UPS_DIR" ] || error_exit "please set up ups" || return
 
-   # Checkout from a Redmine svn repository (calls &l=bin/svnCheckout.sh&)
-    "svnCheckout" | "svn" ) ${mrb_bin}/svnCheckout.sh "${@}"
-        ;;
+# Make sure MRB_PROJECT is defined.
+[ -n "$MRB_PROJECT" ] || error_exit 2 "MRB_PROJECT is not defined
+Please set \${MRB_PROJECT} to the main product (e.g., larsoft, uboone, etc.)
+in the environment" || return
 
-   # Create a new product (calls &l=bin/newProduct.sh&)
-    "newProduct" | "p" ) ${mrb_bin}/newProduct.sh "${@}"
-        ;; 
+# Forward remaining args by default.
+cmd_args=("$@")
 
-  # Set up a development environment (calls &l=bin/mrbSetEnv&)
-    "setEnv" | "s" )
+# Determine how to dispatch
+case $subcmd in
+  # h3. Help
+  -h|--help|help|h|"") usage ${subcmd} || return;;
 
-        echo 'Please use the mrbsetenv alias'
-        echo ' '
-        echo 'Usage: mrbsetenv'
-       [ $isSourced ] && return || exit 5
-    ;;
-
-  # Set up all products installed in the working localProducts_XXX
-    "setup_local_products" | "slp" )
-
-        echo 'Please use the mrbslp alias'
-        echo ' '
-        echo 'Usage: mrbslp'
-        [ $isSourced ] && return || exit 5
-    ;;
-
-   # Run buildtool 
-    "build" | "b" ) run_buildtool -I $MRB_INSTALL -b "${@}"
-        ;;
-
-   # install into local product area
-    "install" | "i" ) run_buildtool -I $MRB_INSTALL -i "${@}"
-        ;;
-
-   # Run tests
-    "test" | "t" ) run_buildtool -I $MRB_INSTALL -b -t "${@}"
-        ;;
-
-   # install into local product area
-    "makePackage" | "mp" ) ${mrb_bin}/makePackage.sh "${@}"
-        ;;
-
-   # Delete everything in this build area (safely) (calls &l=bin/zapBuild.sh&)
-    "zapBuild" | "z" ) ${mrb_bin}/zapBuild.sh "${@}"
-        ;;
-
-   # Delete everything in this build area (safely) (calls &l=bin/zapInstall.sh&)
-    "zapInstall" | "zi" ) ${mrb_bin}/zapInstall.sh "${@}"
-        ;;
-
-   # Delete everything in this build area (safely) (calls &l=bin/zapDist.sh&)
-    "zapDist" | "zd" ) ${mrb_bin}/zapDist.sh "${@}"
-        ;;
-
-   # Display a git log
-    "changelog" | "c" ) 
-      if [ -d .git ]
-      then
-        git log --decorate --pretty=format:"%ad %ae %h%d %s" --date=short
-      else
-        echo "changelog: this is not a git repository"
-      fi
-       ;;  
-
-   # Update CMakeLists.txt for latest dependencies (calls &l=bin/updateDepsCM.sh&)
-    "updateDepsCM" | "uc" ) ${mrb_bin}/updateDepsCM.sh "${@}"
-        ;;
-
-   # Update product_deps and CMakeLists.txt to latest dependencies (calls &l=bin/updateDeps.sh&)
-    "updateDepsPV" | "uv" ) ${mrb_bin}/updateDepsPV.sh "${@}"
-        ;;
-
-   # Update product_deps to latest dependencies (calls &l=bin/changeQual.sh&)
-    "changeQual" | "cq" ) ${mrb_bin}/changeQual.sh "${@}"
-        ;;
-
-   # Update svn and git code
-    "updateSource" ) ${mrb_bin}/updateSource.sh
-        ;;
-
-   # build the dependency database (.product_dependency)
-    "makeDeps" | "md" ) ${mrb_bin}/makeDep.py "${@}"
-        ;;
-
-   # check for missing build packages
-    "checkDeps" | "cd" ) ${mrb_bin}/pullDep.py -n "${@}"
-        ;;
-
-   # pull missing build packages
-    "pullDeps" | "pd" ) ${mrb_bin}/pullDep.py "${@}"
-        ;;
-
-   # Dump some debug information
-   "debug" )
-      echo "mrb_bin=${mrb_bin}"
-      echo "umbCom=${mrb_command}"
-      ;;
-
-    *) echo "Unknown command ${subcom}"
-       echo "Usage ${mrb_command} $shortComList [-h for help]"
-        ;;
-
+  # h3. Subcommands
+  # Set up a new development area (calls &l=bin/newDev.sh&)
+  newDev|n) cmd="$mrb_libexec/newDev.sh";;
+  gitCheckout|g) cmd="$mrb_libexec/gitCheckout";;
+  svnCheckout|svn) cmd="$mrb_libexec/svnCheckout";;
+  newProduct|p) cmd="$mrb_libexec/newProduct.sh";;
+  setEnv|s) error_exit 5 \
+    "please invoke the mrbsetenv alias to ensure correct environment setup" || \
+    return;;
+  setup_local_products|slp) error_exit 5 \
+    "please invoke the mrbslp alias to ensure correct environment setup" || \
+    return;;
+  build|install|test|b|i|t)
+    prep_buildtool ${MRB_INSTALL:+-I "${MRB_INSTALL}"} -${subcmd:0:1} \
+      "${cmd_args[@]}" || return;;
+  makePackage|mp) cmd="$mrb_libexec/makePackage.sh";;
+  zapBuild|z) cmd="$mrb_libexec/zapBuild.sh";;
+  zapInstall|zi) cmd="$mrb_libexec/zapBuild.sh";;
+  zapDist|zd) cmd="$mrb_libexec/zapBuild.sh";;
+  changelog|changeLog|c) cmd=git
+    cmd_args=(
+      log
+      --graph
+      --pretty=tformat:'%Cgreen%ad%Creset%C(bold blue)% aN(%G?)%Creset%Cred% h%Creset% s%C(yellow)% d%Creset'
+      --date=short --abbrev-commit
+      "${cmd_args[@]}");;
+  updateDepsCM|uc) cmd="$mrb_libexec/updateDepsCM.sh";;
+  updateDepsPV|uv) cmd="$mrb_libexec/updateDepsPV.sh";;
+  updateSource) cmd="$mrb_libexec/updateSource.sh";;
+  changeQual|cq) cmd="$mrb_libexec/changeQual.sh";;
+  makeDeps|md) cmd="$mrb_libexec/makeDep.py";;
+  checkDeps|cd) cmd="$mrb_libexec/pullDep.py"; cmd_args=(-n "$@");;
+  pullDeps|pd) cmd="$mrb_libexec/pullDep.py";;
+  debug) echo "mrb_bin=$mrb_bin
+mrb_command=$mrb_command
+MRB_BUILDDIR=$MRB_BUILDDIR
+MRB_INSTALL=$MRB_INSTALL
+MRB_PROJECT=$MRB_PROJECT
+MRB_PROJECT_VERSION=$MRB_PROJECT_VERSION
+MRB_QUALS=$MRB_QUALS
+MRB_SOURCE=$MRB_SOURCE
+MRB_TOP=$MRB_TOP
+"; error_exit || return;;
+  *) echo "unknown ${prog} command ${subcmd}" 1>&2; usage || return
 esac
+
+# Dispatch.
+exec -a "${cmd##*/}" "${cmd}" "${cmd_args[@]}" || \
+  error_exit "unable to execute command ${cmd##*/} ${cmd_args[*]}" || return

@@ -1,8 +1,0 @@
-
-set( @product@_VERSION @VERSION_MAJOR@.@VERSION_MINOR@.@VERSION_PATCH@ )
-set( @product@_UPS_VERSION @version@ )
-
-@PACKAGE_INIT@
-
-check_required_components(@product@)
-

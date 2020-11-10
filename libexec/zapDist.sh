@@ -22,5 +22,5 @@ do
     esac
 done
 
-${MRB_DIR}/bin/zapInstall.sh
-${MRB_DIR}/bin/zapBuild.sh
+$MRB_DIR/libexec/zapInstall.sh
+$MRB_DIR/libexec/zapBuild.sh

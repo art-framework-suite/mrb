@@ -7,8 +7,6 @@ test "$ss" =  sh && test -n "${MRB_BUILDDIR}" && setenv OLD_MRB_BUILDDIR "${MRB_
 test "$ss" = csh && tnotnull MRB_BUILDDIR && setenv OLD_MRB_BUILDDIR "${MRB_BUILDDIR}"
 setenv MRB_BUILDDIR ${MRB_TOP_BUILD}/${buildDirName}
 
-# Note: This is done by the small bit added on the end by the newDev.sh script.
-#source "${MRB_DIR}/bin/unset_shell_independence"
 unset me dollar_underscore dollar_zed is_sourced base msg1 flav
 
 #--- end middle boilerplate

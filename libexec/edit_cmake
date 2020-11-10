@@ -4,11 +4,6 @@
 # parse and update a product in CMakeLists.txt
 
 
-# parse and update product_deps
-
-#  ${mrb_bin}/edit_cmake ${pdfile} ${product} ${version}  || exit 1
-
-
 use File::Basename;
 use lib dirname($0);
 

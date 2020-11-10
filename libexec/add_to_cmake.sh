@@ -54,7 +54,7 @@ else
 fi
 
 cd ${MRB_SOURCE}
-cp ${MRB_DIR}/templates/CMakeLists.txt.main CMakeLists.txt || exit 1;
+$MRB_DIR/libexec/copy_files_to_srcs.sh ${MRB_SOURCE} || exit
 
 # have to accumulate the include_directories command in one fragment
 # and the add_subdirectory commands in another fragment
@@ -68,7 +68,7 @@ do
    echo "set(${pkgname}_not_in_ups true)" >> ${cmake_include_fragment}
    echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${REP} )" >> ${cmake_include_fragment}
    echo "include_directories ( \$ENV{MRB_BUILDDIR}/${REP} )" >> ${cmake_include_fragment}
-   echo "ADD_SUBDIRECTORY(${REP})" >> ${cmake_subdir_fragment}
+   echo "add_subdirectory(${REP})" >> ${cmake_subdir_fragment}
    echo "NOTICE: Adding ${REP} to CMakeLists.txt file"
 done
 
