@@ -1,0 +1,10 @@
+# Dummy file to catch the case where we are too new for the current MRB
+# area.
+
+echo "ERROR:"
+echo "ERROR: this mrb area expects mrb < v5_00_00 (found $MRB_VERSION)!"
+echo "ERROR:"
+
+test "$ss" = "csh" && alias set_ 'unset ss; exit 1; echo'
+test "$ss" = "sh" && alias set_=': ; unset ss; return 1; echo'
+return 1
