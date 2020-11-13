@@ -21,7 +21,15 @@ include(MrbChecks)
 
 mrb_check_subdir_order()
 
+find_package(cetmodules REQUIRED)
+include(Compatibility)
+
+cet_checkpoint_cmp()
+
 project(@mrb_project@ VERSION @mrb_dot_version@ LANGUAGES NONE)
+
+set(CETMODULES_CMAKE_INSTALL_PREFIX_ORIG "${CMAKE_INSTALL_PREFIX}"
+  CACHE INTERNAL "Original value of CMAKE_INSTALL_PREFIX (via mrb)")
 
 include(CTest)
 
