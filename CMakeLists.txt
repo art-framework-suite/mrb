@@ -3,10 +3,16 @@ cmake_minimum_required(VERSION 3.18.2 FATAL_ERROR)
 find_package(cetmodules 2.03.00)
 project(mrb VERSION 5.00.00 LANGUAGES NONE)
 
-set(${PROJECT_NAME}_NOARCH TRUE)
-set(${PROJECT_NAME}_LIBRARY_DIR "")
-set(${PROJECT_NAME}_INCLUDE_DIR "")
+# No tests of cetmodules.
+set(BUILD_TESTING OFF)
 
+# Other configuration.
+set(${PROJECT_NAME}_NOARCH TRUE)
+set(${PROJECT_NAME}_FHICL_DIR "")
+set(${PROJECT_NAME}_INCLUDE_DIR "")
+set(${PROJECT_NAME}_LIBRARY_DIR "")
+
+# Basic build environment
 include(CetCMakeEnv)
 cet_cmake_env()
 
