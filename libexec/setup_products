@@ -15,7 +15,7 @@ use POSIX qw(uname);
 
 use lib dirname($0);
 
-use parse_deps qw(:DEFAULT $btype_table);
+use parse_deps qw(:DEFAULT $btype_table $pathspec_info);
 
 my $max_resolution_loops = 200;
 my $min_cetm_version = "v2_03_00";
@@ -317,6 +317,7 @@ if ( $srcbase eq "ups" ) {
 }
 
 my $regular_products = reconcile_deps($setup_products_hash, $dfh);
+my $cetbuildtools_compat = (delete $regular_products->{cetbuildtools}) ? 1 : 0;
 
 # Verify we have access to the cetmodules version we need.
 unless (exists $regular_products->{cetmodules} and
@@ -398,6 +399,15 @@ tdefined ROOT_INCLUDE_PATH setenv CET_PLUGIN_PATH `dropit -p \"\${CET_PLUGIN_PAT
 EOF
 }
 
+my $cetb_cmake_args;
+if ($cetbuildtools_compat) {
+  $cetb_cmake_args =
+    [ map { my $var_stem = var_stem_for_dirkey($_);
+            my $dirkey_ish = $_; $dirkey_ish =~ s&([^_])dir$&${1}_dir&;
+            "-DCETB_COMPAT_${dirkey_ish}:STRING=${var_stem}";
+          } sort keys %$pathspec_info ];
+}
+
 # Take a side-trip to re-order.
 my $ordered_products =
   order_products($setup_products_hash, $checked_out_products);
@@ -459,20 +469,23 @@ EOF
 close($tfh);
 close($dfh);
 
-my $mrb_pi = { name => "${mrb_project}_MRB",
-               source => $sourcedir,
-               build => $builddir,
-               ($build_type) ? (build_type => $build_type) : (),
-               version => $ENV{MRB_VERSION},
-               cmake_project => "${mrb_project}_MRB",
-               cmake_project_version =>
-               to_dot_version($mrb_project_version),
-               qualspec => $mrb_quals,
-               cmake_args =>
-               reconcile_cmake_args($all_packages,
-                                    sort { $ordered_products->{$a}->{order} <=>
-                                             $ordered_products->{$b}->{order} }
-                                    keys %{$ordered_products} ) };
+my $mrb_pi =
+  { name => "${mrb_project}_MRB",
+    source => $sourcedir,
+    build => $builddir,
+    ($build_type) ? (build_type => $build_type) : (),
+    version => $ENV{MRB_VERSION},
+    cmake_project => "${mrb_project}_MRB",
+    cmake_project_version =>
+    to_dot_version($mrb_project_version),
+    qualspec => $mrb_quals,
+    cmake_args =>
+    [ @{$cetb_cmake_args || []},
+      @{reconcile_cmake_args($all_packages,
+                             sort { $ordered_products->{$a}->{order} <=>
+                                      $ordered_products->{$b}->{order} }
+                             keys %{$ordered_products} )}  ]
+  };
 
 get_derived_parent_data($mrb_pi, $sourcedir, $mrb_quals);
 
