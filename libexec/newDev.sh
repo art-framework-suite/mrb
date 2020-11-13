@@ -162,7 +162,7 @@ function make_localProducts_directory()
     ##echo "NOTICE: Created local products directory $dirName"
 
     # Record the mrb version
-    ups active | grep ^mrb >  ${dirName}/.mrbversion
+    echo "$MRB_VERSION" > ${dirName}/.mrbversion
 
     # Make a @.upsfiles@ directory for local products
     mkdir -p $dirName/.upsfiles || { echo "ERROR: failed to create $dirName/.upsfiles"; exit 1; }
@@ -224,6 +224,7 @@ setenv MRB_TOP_BUILD "${fullBuildDir}"
 setenv MRB_SOURCE "${MRB_SOURCE}"
 setenv MRB_INSTALL "${MRB_INSTALL}"
 setenv PRODUCTS "\${MRB_INSTALL}:\${PRODUCTS}"
+setenv CETPKG_INSTALL "${MRB_INSTALL}"
 
 EOF
 # --- End of HERE document for localProducts.../setup ---
@@ -245,6 +246,7 @@ echo MRB_BUILDDIR=\$MRB_BUILDDIR
 echo MRB_INSTALL=\$MRB_INSTALL
 echo
 echo PRODUCTS=\$PRODUCTS
+echo CETPKG_INSTALL=\$CETPKG_INSTALL
 echo
 
 source "\$MRB_DIR/libexec/unset_shell_independence"
