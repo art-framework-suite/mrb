@@ -19,7 +19,7 @@ use parse_deps qw(:DEFAULT $btype_table);
 
 my $max_resolution_loops = 200;
 
-sub reconcilecmake_args {
+sub reconcile_cmake_args {
   my ($all_packages, @products) = @_;
   my $results = { map { map { ($_ => 1); } @{$all_packages->{$_}->{cmake_args}}; } @products };
   my @results = sort keys %$results;
@@ -446,7 +446,7 @@ my $mrb_pi = { name => "${mrb_project}_MRB",
                to_dot_version($mrb_project_version),
                qualspec => $mrb_quals,
                cmake_args =>
-               reconcilecmake_args($all_packages,
+               reconcile_cmake_args($all_packages,
                                     sort { $ordered_products->{$a}->{order} <=>
                                              $ordered_products->{$b}->{order} }
                                     keys %{$ordered_products} ) };
