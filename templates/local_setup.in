@@ -29,15 +29,19 @@ test "$ss" = "sh" && \
     eval 'tnotnull() { eval "test -n \"\${$1-}\"" ;}'
 
 # check for mrb
-tnotnull UPS_DIR || ( echo "" ; echo "ERROR: You MUST setup the ups product!" ; echo "" )
+tnotnull UPS_DIR || ( echo "ERROR:" ; echo "ERROR: you MUST set up UPS!" ; echo "ERROR:" )
 tnotnull UPS_DIR || unset ss 
 tnotnull UPS_DIR || return 1
-tnotnull MRB_DIR || ( echo ""; echo "ERROR: You must first setup mrb!"; echo "" )
+tnotnull MRB_DIR || ( echo "ERROR:"; echo "ERROR: you MUST first setup mrb!"; echo "ERROR:" )
 tnotnull MRB_DIR || unset ss 
 tnotnull MRB_DIR || return 1
+test -f "$MRB_DIR/libexec/shell_independence" || \
+    ( echo "ERROR:" ; echo "ERROR: this mrb area expects mrb >= v5_00_00 (found $MRB_VERSION)!" ; echo "ERROR:" )
+test -f "$MRB_DIR/libexec/shell_independence" || unset ss
+test -f "$MRB_DIR/libexec/shell_independence" || return 1
 
 # Get the shell independence aliases and functions.
-source "$mrb_libexec/shell_independence"
+source "$MRB_DIR/libexec/shell_independence"
 
 # Capture the value of $0
 set_ dollar_zed=`echo "${0}" | sed -e 's/^-//'`
@@ -71,16 +75,13 @@ endifcsh_
 #  End of boilerplate.  Begin of real work.
 #
 
-set_ msg1='ERROR: You MUST setup the ups product!'
-
-tnotnull UPS_DIR || ( echo "" ; echo "${msg1}" ; echo "" )
-tnotnull UPS_DIR || source "$mrb_libexec/unset_shell_independence"
+tnotnull UPS_DIR || ( echo "ERROR:" ; echo "ERROR: you MUST set up UPS" ; echo "ERROR:" )
+tnotnull UPS_DIR || source "$MRB_DIR/libexec/unset_shell_independence"
 tnotnull UPS_DIR || unset me db dollar_underscore dollar_zed is_sourced base msg1 flav
-tnotnull UPS_DIR || return
+tnotnull UPS_DIR || return 1
 
 
-tnotnull MRB_DIR || ( echo ""; echo "ERROR: You must first setup mrb!" )
-tnotnull MRB_DIR || source "$mrb_libexec/unset_shell_independence"
+tnotnull MRB_DIR || ( echo "ERROR:"; echo "ERROR: you MUST first set up mrb!"; echo "ERROR:" )
 tnotnull MRB_DIR || unset me db dollar_underscore dollar_zed is_sourced base msg1 flav
 tnotnull MRB_DIR || return 1
 
