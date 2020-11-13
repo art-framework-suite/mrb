@@ -64,11 +64,15 @@ do
    if [ ! -r $REP/CMakeLists.txt ]; then echo "Cannot find CMakeLists.txt in $REP"; break; fi
    if [ ! -r $REP/ups/product_deps ]; then echo "Cannot find ups/product_deps in $REP"; break; fi
    pkgname=`grep parent ${MRB_SOURCE}/${REP}/ups/product_deps  | grep -v \# | awk '{ printf $2; }'`
-   echo "# ${REP} package block" >> ${cmake_include_fragment}
-   echo "set(${pkgname}_not_in_ups true)" >> ${cmake_include_fragment}
-   echo "include_directories ( \${CMAKE_CURRENT_SOURCE_DIR}/${REP} )" >> ${cmake_include_fragment}
-   echo "include_directories ( \$ENV{MRB_BUILDDIR}/${REP} )" >> ${cmake_include_fragment}
-   echo "add_subdirectory(${REP})" >> ${cmake_subdir_fragment}
+   cat >> "${cmake_include_fragment}" <<EOF
+# ${REP} package block
+include_directories(\${CMAKE_CURRENT_SOURCE_DIR}/${REP})
+include_directories(\$ENV{MRB_BUILDDIR}/${REP})
+EOF
+   cat >> "${cmake_subdir_fragment}" <<EOF
+add_subdirectory(${REP})
+cet_process_cmp()
+EOF
    echo "NOTICE: Adding ${REP} to CMakeLists.txt file"
 done
 
