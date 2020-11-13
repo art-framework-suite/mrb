@@ -16,6 +16,11 @@ macro(find_package)
   endif()
 endmacro()
 
+find_package(mrb 5.00.00 REQUIRED)
+include(MrbChecks)
+
+mrb_check_subdir_order()
+
 project(@mrb_project@ VERSION @mrb_dot_version@ LANGUAGES NONE)
 
 include(CTest)
