@@ -88,7 +88,7 @@ sub get_package_list {
 }
 
 sub latest_version {
-  my @result = sort by_version @_;
+  my @result = sort version_cmp @_;
   return pop @result;
 }
 
@@ -321,7 +321,7 @@ my $cetbuildtools_compat = (delete $regular_products->{cetbuildtools}) ? 1 : 0;
 
 # Verify we have access to the cetmodules version we need.
 unless (exists $regular_products->{cetmodules} and
-        by_version($min_cetm_version, latest_version(keys %{$regular_products->{cetmodules}})) >= 0) {
+        version_cmp($min_cetm_version, latest_version(keys %{$regular_products->{cetmodules}})) >= 0) {
   warning("mrb $ENV{MRB_VERSION} requires cetmodules >= $min_cetm_version to run: attempting to configure...");
   open(my $fh, "-|", "ups list -aK+ cetmodules") or
     error_exit("unable to get list of available cetmodules products from UPS");
@@ -331,7 +331,7 @@ unless (exists $regular_products->{cetmodules} and
   error_exit("unable to find available UPS packages for cetmodules in $ENV{PRODUCTS}")
     unless $cetmodules_version;
   error_exit("mrb $ENV{MRB_VERSION} needs at least cetmodules version $min_cetm_version")
-    if by_version("$min_cetm_version", $cetmodules_version) < 0;
+    if version_cmp("$min_cetm_version", $cetmodules_version) > 0;
   $regular_products->{cetmodules}->{$cetmodules_version} =
     { version => $cetmodules_version,
       origin => "mrb",
