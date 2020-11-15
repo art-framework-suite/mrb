@@ -1,5 +1,6 @@
 project_variable(LIBEXEC_DIR CONFIG ${CMAKE_INSTALL_LIBEXECDIR})
 
+configure_file(setup_products.in setup_products @ONLY)
 cet_script(add_to_cmake.sh
   checkBuildDir.sh
 	changeQual.sh
@@ -17,7 +18,7 @@ cet_script(add_to_cmake.sh
 	newProduct.sh
 	mrbSetEnv
 	pullDep.py
-	setup_products
+	${CMAKE_CURRENT_BINARY_DIR}/setup_products
 	svnCheckout.sh
 	updateDepsCM.sh
 	updateDepsPV.sh
