@@ -19,6 +19,7 @@ use Pod::Usage;
 Getopt::Long::Configure(qw(no_ignore_case bundling require_order));
 
 my $prog = basename($0);
+my $libexec = dirname($0);
 my $options = {};
 my $default_repo_type = "fnal";
 my $known_suites =
@@ -720,7 +721,7 @@ sub update_cmake {
       sprintf("grep -q -e '(%s)' '$cmakeliststxt' >%s 2>&1",
               $destination,
               File::Spec->devnull());
-    my @update_cmake_cmd = ("add_to_cmake.sh", "$ENV{MRB_SOURCE}", "${destination}");
+    my @update_cmake_cmd = ("$libexec/add_to_cmake.sh", "$ENV{MRB_SOURCE}", "${destination}");
     (system($check_cmake_entry_cmd) == 0 and
      (report("CMakeLists.txt entry for product $destination already exists."), 1)) or
        (system(@update_cmake_cmd) == 0 and
