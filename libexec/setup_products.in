@@ -29,10 +29,14 @@ sub reconcile_cmake_args {
 
 sub reconcile_compiler {
   my $cop_info = shift;
-  my $compilers = { map { ($cop_info->{$_}->{compiler} => 1); }
-                    keys %{$cop_info} };
+  my $compilers = {};
+  foreach my $key (keys %$cop_info) {
+    exists $cop_info->{$key}->{compiler} and
+      $cop_info->{$key}->{compiler}
+        and push @{$compilers->{$cop_info->{$key}->{compiler}}}, $key;
+  }
   error_exit("inconsistent compilers reported across packages:\n",
-             join(", ", keys %{$compilers}))
+             to_string($compilers))
     if (scalar keys %{$compilers} > 1);
   return (keys %{$compilers})[0];
 }
