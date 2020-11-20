@@ -124,9 +124,9 @@ sub order_products {
        scalar keys %{$checked_out_products} and
        $iloop < $max_resolution_loops;
        ++$iloop) {
-    my @all_uses = map { @{$checked_out_products->{$_}->{uses}}; } keys %{$checked_out_products};
+    my @all_uses = map { @{$checked_out_products->{$_}->{uses}}; } sort keys %{$checked_out_products};
     for my $unused (grep { my $pkg = $_; not grep  { $_ eq $pkg; } @all_uses; }
-                    keys%{$checked_out_products}) {
+                    sort keys%{$checked_out_products}) {
       $ordered_products->{$unused} = delete $checked_out_products->{$unused};
       $ordered_products->{$unused}->{order} = -$iloop;
     }
