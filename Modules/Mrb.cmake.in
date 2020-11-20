@@ -1,3 +1,27 @@
+# Once only!
+include_guard(GLOBAL)
+
+cmake_policy(PUSH)
+cmake_minimum_required(VERSION 3.18.2 FATAL_ERROR)
+
+find_package(cetmodules @MRB_MIN_CETMODULES_VERSION@ REQUIRED)
+include(Compatibility)
+
+# Do not attempt to call the official find_package() on in-tree
+#  packages.
+macro(find_package)
+  if (${ARGV0}_IN_TREE)
+    if (CETMODULES_CMAKE_MODULES_DIRECTORIES_PROJECT_${ARGV0})
+      list(TRANSFORM CETMODULES_CMAKE_MODULES_DIRECTORIES_PROJECT_${ARGV0}
+        PREPEND "${${ARGV0}_SOURCE_DIR}/" REGEX "^[^/]+" OUTPUT_VARIABLE _fp_tmp)
+      list(PREPEND CMAKE_MODULE_PATH "${_fp_tmp}")
+      unset(_fp_tmp)
+    endif()
+  else()
+    _find_package(${ARGV})
+  endif()
+endmacro()
+
 function(mrb_check_subdir_order)
   # Read the order determined by mrbsetenv
   set(prod_setup_file "${CMAKE_BINARY_DIR}/$ENV{MRB_PROJECT}-$ENV{MRB_PROJECT_VERSION}")
@@ -23,3 +47,19 @@ subdirectories listed for inclusion in the correct order.\
 ")
   endif()
 endfunction()
+
+function(mrb_checkpoint)
+  cet_checkpoint_cmp()
+  cet_checkpoint_did()
+endfunction()
+
+function(mrb_process_checkpoints)
+  cet_process_cmp()
+  cet_process_did()
+endfunction()
+
+mrb_check_subdir_order()
+
+mrb_checkpoint()
+
+cmake_policy(POP)
