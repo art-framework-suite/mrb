@@ -479,7 +479,7 @@ my $mrb_pi =
     source => $sourcedir,
     build => $builddir,
     ($build_type) ? (build_type => $build_type) : (),
-    version => $ENV{MRB_VERSION},
+    version => $mrb_project_version,
     cmake_project => "${mrb_project}_MRB",
     cmake_project_version =>
     to_dot_version($mrb_project_version),
