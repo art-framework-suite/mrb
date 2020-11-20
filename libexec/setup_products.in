@@ -144,14 +144,6 @@ if ($#ARGV < 1) {
              "USAGE: setup_products <input-directory> <build-directory>");
 }
 
-my $compiler_table =
-  {
-   cc => { CC => "cc", CXX => "c++", FC =>  },
-   gcc => { CC => "gcc", CXX => "g++", FC => "gfortran" },
-   icc => { CC => "icc", CXX => "icpc", FC => "ifort" },
-   clang => { CC => "clang", CXX => "clang++", FC => "gfortran" }
-  };
-
 my $sourcedir = shift;
 my $builddir = shift;
 my $mrb_project = $ENV{MRB_PROJECT};
