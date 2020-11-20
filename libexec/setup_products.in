@@ -201,7 +201,7 @@ foreach my $pkg (@package_list) {
   # Load it all into the master hash.
   $all_packages->{$pkg} =
     { %{get_parent_info($pfile)},
-      map { eval "$_ => \$$_"; } qw(pfile phash qlen qhash qqhash) };
+      map { eval "$_ => \$$_"; } qw(phash qlen qhash qqhash) };
 }
 
 # We have all the dependency information. Next, resolve the dependency
@@ -213,23 +213,26 @@ my $setup_products_hash = {};
 # other package. Note that we do *not* use UPS to fill in gaps.
 my $npkgs = scalar @package_list;
 foreach my $pkg (keys %{$all_packages}) {
-  my $qqhash = $all_packages->{$pkg}->{qqhash} || undef;
+  my $product_info = $all_packages->{$pkg};
+  my $qqhash = $product_info->{qqhash} || undef;
   if (($pkg eq $mrb_project and $qqhash)
       or not grep { grep { $_ eq $pkg } keys %{$all_packages->{$_}->{qhash}} }
       keys %{$all_packages}) {
     if (exists $qqhash->{$mrb_quals}) {
       $setup_products_hash->{$pkg} =
         { qualspec => $mrb_quals,
-          phash => deps_for_quals($all_packages->{$pkg}->{phash},
-                                  $all_packages->{$pkg}->{qhash},
+          phash => deps_for_quals($product_info->{pfile},
+                                  $product_info->{phash},
+                                  $product_info->{qhash},
                                   $mrb_quals),
           qhash => $qqhash->{$mrb_quals}
         };
-    } elsif (not $all_packages->{$pkg}->{have_fq}) {
+    } elsif (not $product_info->{have_fq}) {
       $setup_products_hash->{$pkg} =
         { qualspec => '-nq-',
-          phash => deps_for_quals($all_packages->{$pkg}->{phash},
-                                  $all_packages->{$pkg}->{qhash},
+          phash => deps_for_quals($product_info->{pfile},
+                                  $product_info->{phash},
+                                  $product_info->{qhash},
                                   '-nq-'),
           qhash => $qqhash->{'-nq-'} || {}
         };
@@ -277,21 +280,24 @@ for (my $iloop = 0;
       # Find the lowest level in the dependency tree.
       my $found_dep_info = (keys %{$found_in_deps})[0];
       my ($qual) = ($found_in_deps->{$found_dep_info}->{qualspec});
-      if (exists $all_packages->{$pkg}->{qqhash}->{$qual}) {
+      my $product_info = $all_packages->{$pkg};
+      if (exists $product_info->{qqhash}->{$qual}) {
         $setup_products_hash->{$pkg} =
           { qualspec => $qual,
-            phash => deps_for_quals($all_packages->{$pkg}->{phash},
-                                    $all_packages->{$pkg}->{qhash},
+            phash => deps_for_quals($product_info->{pfile},
+                                    $product_info->{phash},
+                                    $product_info->{qhash},
                                     $qual),
-            qhash => $all_packages->{$pkg}->{qqhash}->{$qual}
+            qhash => $product_info->{qqhash}->{$qual}
           };
       } elsif ($qual eq '-nq-') { # Backward compatibility.
         $setup_products_hash->{$pkg} =
           { qualspec => $qual,
-            phash => deps_for_quals($all_packages->{$pkg}->{phash},
-                                    $all_packages->{$pkg}->{qhash},
+            phash => deps_for_quals($product_info->{pfile},
+                                    $product_info->{phash},
+                                    $product_info->{qhash},
                                     ''),
-            qhash => $all_packages->{$pkg}->{qqhash}->{''} || {}
+            qhash => $product_info->{qqhash}->{''} || {}
           };
       } else {
         error_exit("could not find information for qualifier $qual of package $pkg");
@@ -428,7 +434,8 @@ foreach my $product (sort { $ordered_products->{$a}->{order} <=>
     error_exit("unable to make and change directory to $pkg_builddir");
   my $product_info = $all_packages->{$product};
   my $dep_info =
-    deps_for_quals($product_info->{phash},
+    deps_for_quals($product_info->{pfile},
+                   $product_info->{phash},
                    $product_info->{qhash},
                    $ordered_products->{$product}->{qualspec});
   classify_deps($product_info, $dep_info);
@@ -436,7 +443,7 @@ foreach my $product (sort { $ordered_products->{$a}->{order} <=>
   write_table_deps($product_info->{name}, $dep_info);
   write_table_frag($product_info->{name}, $product_info->{pfile});
   # Needed by buildtool to specify CMake arguments.
-  $product_info->{cmake_args} = ups_to_cmake($product_info->{pfile}, $product_info);
+  $product_info->{cmake_args} = ups_to_cmake($product_info);
   push @{$product_info->{cmake_args}},
     "-D$product_info->{cmake_project}_IN_TREE:BOOL=YES";
   # Needed by us to set up the development environment.
@@ -453,7 +460,7 @@ setenv ${product_uc}_DIR "${builddir}/${product}"
 setenv CETPKG_BUILD "\$${product_uc}_DIR"
 setenv CETPKG_SOURCE "\${MRB_SOURCE}/${product}"
 EOF
-  print_dev_setup($product_info->{pfile}, $product_info, $tfh);
+  print_dev_setup($product_info, $tfh);
 }
 
 chdir($oldcwd);
