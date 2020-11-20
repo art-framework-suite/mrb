@@ -192,7 +192,9 @@ foreach my $pkg (@package_list) {
   my ($qlen, $qhash, $qqhash) = get_qualifier_matrix($pfile);
   # Load it all into the master hash.
   $all_packages->{$pkg} =
-    { %{get_parent_info($pfile)},
+    { %{get_parent_info($pfile,
+                        (grep { $_ eq 'cetbuildtools' } keys %$phash) ?
+                        (quiet_warnings => 1) : ())},
       map { eval "$_ => \$$_"; } qw(phash qlen qhash qqhash) };
 }
 
