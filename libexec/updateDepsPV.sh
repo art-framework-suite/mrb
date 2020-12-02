@@ -38,22 +38,25 @@ function modify_product_deps()
 
 function modify_cmake()
 {
-  local cfile=$1
+  local cfile="$1"
   echo "editing $cfile"
-  grep ${product} ${cfile}
-  $MRB_DIR/libexec/edit_cmake ${cfile} ${product} ${new_version} ${dryRun}  || exit 1
-  grep ${product} ${cfile}
+  grep -Ee '\b'"${product}"'\b' "${cfile}"
+  $MRB_DIR/libexec/edit_cmake "${cfile}" ${product} ${new_version} ${dryRun}  || exit 1
+  grep -Ee '\b'"${product}"'\b' "${cfile}"
 }
+
 function get_package_list()
 {
-# Loop over directories in $MRB_SOURCE
-  pkglist=$(ls -d $MRB_SOURCE/*/)
-  for file in $pkglist
-  do
-    if [ -r $file/ups/product_deps ]
-    then
-      packages="$file $packages"
-    fi
+  local file OIFS IFS
+  OIFS="$IFS"
+  IFS=$'\n'
+  local pkglist=($(ls -1d $MRB_SOURCE/*/))
+  IFS="$OIFS"
+  for dir in "${pkglist[@]}"; do
+    while [[ "$dir" == */ ]] ; do
+      dir="${dir%/}"
+    done
+    [ -r "$dir/ups/product_deps" ] && packages+=("$dir")
   done
 }
 
@@ -73,15 +76,16 @@ done
 
 if [ $restore == "yes" ]; then
   get_package_list
-  for d in $packages
-  do
+  for d in "${packages[@]}"; do
     # Sanity checks
-    if [ ! -r $d/ups/product_deps ]; then echo "Cannot find ups/product_deps in $d"; break; fi
-     echo "Restoring $d"
-     pushd $d > /dev/null
-     rm -f ups/product_deps
-     git checkout ups/product_deps
-     popd > /dev/null
+    if [ ! -r "$d/ups/product_deps" ]; then
+      echo "Cannot find ups/product_deps in $d"
+      break
+    fi
+    echo "Restoring $d"
+    pushd "$d" > /dev/null
+    git checkout -qf -- ups/product_deps
+    popd > /dev/null
   done
   exit 0
 fi
@@ -107,14 +111,13 @@ new_version=$2
 
 get_package_list
 
-for d in $packages
-do
+for d in "${packages[@]}"; do
   # Sanity checks
-  if [ ! -r ${d}/CMakeLists.txt ]; then echo "Cannot find CMakeLists.txt in ${d}"; break; fi
-  if [ ! -r ${d}/ups/product_deps ]; then echo "Cannot find ups/product_deps in ${d}"; break; fi
-  modify_product_deps ${d}
-  if [ -r ${d}releaseDB/CMakeLists.txt ]; then modify_cmake ${d}releaseDB/CMakeLists.txt; fi
-  if [ -r ${d}bundle/CMakeLists.txt ]; then modify_cmake ${d}bundle/CMakeLists.txt; fi
+  if [ ! -r "${d}"/CMakeLists.txt ]; then echo "Cannot find CMakeLists.txt in ${d}"; break; fi
+  if [ ! -r "${d}"/ups/product_deps ]; then echo "Cannot find ups/product_deps in ${d}"; break; fi
+  modify_product_deps "${d}"
+  if [ -r "${d}"/releaseDB/CMakeLists.txt ]; then modify_cmake "${d}/releaseDB/CMakeLists.txt"; fi
+  if [ -r "${d}"/bundle/CMakeLists.txt ]; then modify_cmake "${d}/bundle/CMakeLists.txt"; fi
 done
 
 echo
