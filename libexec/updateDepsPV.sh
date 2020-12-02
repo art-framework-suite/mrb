@@ -29,18 +29,10 @@ function modify_product_deps()
 {
   local pkg=$1
   
-  pdfile=${pkg}ups/product_deps
-  pkg_name="`grep ^parent ${pdfile} | grep -v \# | awk '{print $2}'`" || exit 1
-  pkg_version="`grep ^parent ${pdfile} | grep -v \# | awk '{print $3}'`" || exit 1
-  if [ -z "${pkg_version}" ]
-  then
-    echo "ERROR: failed to find existing version for ${pkg}" >&2
-    exit 1
-  fi
-  ##echo "editing package: $pkg_name $pkg_version"
+  pdfile=${pkg}/ups/product_deps
+  pkg_name="$(sed -Ene 's&^[[:space:]]*parent[[:space:]]+([^[:space:]\#]+).*&\1&p; T; q' "${pdfile}")"
 
-  echo " "
-  echo "Updating ${pdfile}"
+  echo "updating dependencies for ${pkg_name} in ${pdfile}"
   $MRB_DIR/libexec/edit_product_deps ${pdfile} ${product} ${new_version} ${dryRun}  || exit 1
 }
 
