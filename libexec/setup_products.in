@@ -43,7 +43,7 @@ sub reconcile_compiler {
 
 sub reconcile_dep_quals {
   # Enforce matching qualifiers while reconciling dupes.
-  my ($phash, $dfh) = @_;
+  my ($phash) = @_;
   my $result = { };
   foreach my $prod (keys %{$phash}) {
     foreach my $dep (keys %{$phash->{$prod}}) {
@@ -73,14 +73,14 @@ sub reconcile_dep_quals {
 }
 
 sub reconcile_deps {
-  my ($setup_products_hash, $dfh) = @_;
+  my ($setup_products_hash) = @_;
   my $product_phashes = { map { ($_ => $setup_products_hash->{$_}->{phash}); }
                           keys %{$setup_products_hash} };
-  return reconcile_dep_quals($product_phashes, $dfh);
+  return reconcile_dep_quals($product_phashes);
 }
 
 sub get_package_list {
-  my ($cml, $dfile) = @_;
+  my ($cml) = @_;
   my @plist = ();
   open(my $in, "<", "$cml") or error_exit("couldn't open $cml");
   while (<$in>) {
@@ -151,21 +151,16 @@ my $mrb_project_version = $ENV{MRB_PROJECT_VERSION};
 my @mrb_quals_sorted;
 my $mrb_quals = sort_qual (\@mrb_quals_sorted, $ENV{MRB_QUALS});
 
-# Diagnostics
-my $diagfl = File::Spec->catfile($builddir, "diag_report");
-open(my $dfh, "+>", "$diagfl") or
-  error_exit("couldn't open $diagfl for write");
-
 my $tmpfl = File::Spec->catfile($builddir, "$mrb_project-$mrb_project_version");
 open(my $tfh, "+>", $tmpfl) or
   error_exit("couldn't open $tmpfl for write");
 
 my $cmakefile=File::Spec->catfile($sourcedir, "CMakeLists.txt");
 
-my @package_list = get_package_list($cmakefile, $dfh);
+my @package_list = get_package_list($cmakefile);
 unless (scalar @package_list) {
-  print $dfh "DIAGNOSTICS: there are no packages in $sourcedir\n";
-  print $dfh "DIAGNOSTICS: nothing to build\n";
+  print STDERR "DIAGNOSTICS: there are no packages in $sourcedir\n";
+  print STDERR "DIAGNOSTICS: nothing to build\n";
   print "$tmpfl\n";
   exit 0;
 }
@@ -312,7 +307,6 @@ my $srcbase = basename($sourcedir);
 my $inputdir;
 if ( $srcbase eq "ups" ) {
   $inputdir = $sourcedir;
-  ##print $dfh "setup_products debug info: have the old setup_for_development\n";
   error_exit("you have an old copy of setup_for_development\n",
              "please issue the following command\n",
              "  cp \$CETBUILDTOOLS_DIR/templates/setup_for_development.template $inputdir/setup_for_development");
@@ -320,7 +314,7 @@ if ( $srcbase eq "ups" ) {
   $inputdir = File::Spec->catfile($sourcedir, "ups");
 }
 
-my $regular_products = reconcile_deps($setup_products_hash, $dfh);
+my $regular_products = reconcile_deps($setup_products_hash);
 my $cetbuildtools_compat = (delete $regular_products->{cetbuildtools}) ? 1 : 0;
 
 # Verify we have access to the cetmodules version we need.
@@ -472,7 +466,6 @@ EOF
 
 # Close files.
 close($tfh);
-close($dfh);
 
 my $mrb_pi =
   { name => "${mrb_project}_MRB",
