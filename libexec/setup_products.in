@@ -359,7 +359,7 @@ foreach my $prod (keys %{$regular_products}) {
       delete @{$regular_products->{$prod}}
                  {grep { $_ ne $latest; } keys %{$regular_products->{$prod}}};
     } else {
-      error_exit("Inconsistent versions for dependency $prod:",
+      error_exit("inconsistent versions for dependency $prod:",
                  map { sprintf("\n  %s requires $prod %s",
                                $regular_products->{$prod}->{$_}->{origin}, $_); }
                  keys %{$regular_products->{$prod}});
