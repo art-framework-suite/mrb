@@ -120,7 +120,8 @@ sub order_products {
   #    when the keys are sorted according to order number is therefore
   #    arbitrary.
   my $ordered_products = {};
-  for (my $iloop = 0;
+  my $iloop = 0;
+  for (;
        scalar keys %{$checked_out_products} and
        $iloop < $max_resolution_loops;
        ++$iloop) {
@@ -132,6 +133,9 @@ sub order_products {
     }
   }
 
+  # cetmodules should always be first.
+  exists $ordered_products->{cetmodules} and
+    $ordered_products->{cetmodules}->{order} = -$iloop;
   scalar keys %{$checked_out_products} and
     error_exit("Circular dependency issue within package set:\n",
                join(", ", sort keys %{$checked_out_products}));
@@ -204,10 +208,19 @@ my $npkgs = scalar @package_list;
 foreach my $pkg (keys %{$all_packages}) {
   my $product_info = $all_packages->{$pkg};
   my $qqhash = $product_info->{qqhash} || undef;
-  if (($pkg eq $mrb_project and $qqhash)
+  if (($pkg eq $mrb_project and $qqhash) # Eponymous with the MRB project.
       or not grep { grep { $_ eq $pkg } keys %{$all_packages->{$_}->{qhash}} }
-      keys %{$all_packages}) {
-    if (exists $qqhash->{$mrb_quals}) {
+      keys %{$all_packages}) { # Not a dependency of any other package.
+    if ($product_info->{no_fq_dir}) {
+      $setup_products_hash->{$pkg} =
+        { qualspec => '',
+          phash => deps_for_quals($product_info->{pfile},
+                                  $product_info->{phash},
+                                  $product_info->{qhash},
+                                  ''),
+          qhash => $qqhash->{''} || {}
+        };
+    } elsif (exists $qqhash->{$mrb_quals}) { # We have an entry.
       $setup_products_hash->{$pkg} =
         { qualspec => $mrb_quals,
           phash => deps_for_quals($product_info->{pfile},
@@ -215,15 +228,6 @@ foreach my $pkg (keys %{$all_packages}) {
                                   $product_info->{qhash},
                                   $mrb_quals),
           qhash => $qqhash->{$mrb_quals}
-        };
-    } elsif (not $product_info->{have_fq}) {
-      $setup_products_hash->{$pkg} =
-        { qualspec => '-nq-',
-          phash => deps_for_quals($product_info->{pfile},
-                                  $product_info->{phash},
-                                  $product_info->{qhash},
-                                  '-nq-'),
-          qhash => $qqhash->{'-nq-'} || {}
         };
     } else {
       error_exit("product $pkg must have an entry in qualifier_list corresponding to\n",
@@ -246,16 +250,16 @@ for (my $iloop = 0;
     # dependencies of packages we've already dealt with for the current
     # qualifiers.
     my $found_in_deps =
-      { map { my $result = $setup_products_hash->{$_}->{qhash}->{$pkg} ||
-              (exists $setup_products_hash->{$_}->{phash}->{$pkg} and
-               $setup_products_hash->{$_}->{phash}->{$pkg}->{only_for_build} and
-               "-nq-");
-            if (not $result or $result eq '-') {
-              ();
-            } else {
-              ( $_ => { qualspec => ($result eq "-b") ? "-nq-" : $result } );
-            }
-          } keys %{$setup_products_hash} };
+      { map { my $result = $setup_products_hash->{$_}->{qhash}->{$pkg} //
+                ((exists $setup_products_hash->{$_}->{phash}->{$pkg} and
+                 $setup_products_hash->{$_}->{phash}->{$pkg}->{only_for_build}) ?
+                   '' : undef);
+              if (not defined $result or $result eq '-') {
+                ();
+              } else {
+                ( $_ => { qualspec => ($result =~ m&^-(b|nq)-$&) ? '' : $result } );
+              }
+            } keys %{$setup_products_hash} };
     if (scalar keys %{$found_in_deps}) {
       # Check for an unambiguous qualifier.
       my $quals = { map { ($found_in_deps->{$_}->{qualspec} => 1); } keys %{$found_in_deps} };
@@ -278,15 +282,6 @@ for (my $iloop = 0;
                                     $product_info->{qhash},
                                     $qual),
             qhash => $product_info->{qqhash}->{$qual}
-          };
-      } elsif ($qual eq '-nq-') { # Backward compatibility.
-        $setup_products_hash->{$pkg} =
-          { qualspec => $qual,
-            phash => deps_for_quals($product_info->{pfile},
-                                    $product_info->{phash},
-                                    $product_info->{qhash},
-                                    ''),
-            qhash => $product_info->{qqhash}->{''} || {}
           };
       } else {
         error_exit("could not find information for qualifier $qual of package $pkg");
@@ -318,23 +313,39 @@ my $regular_products = reconcile_deps($setup_products_hash);
 my $cetbuildtools_compat = (delete $regular_products->{cetbuildtools}) ? 1 : 0;
 
 # Verify we have access to the cetmodules version we need.
-unless (exists $regular_products->{cetmodules} and
-        version_cmp($min_cetm_version, latest_version(keys %{$regular_products->{cetmodules}})) <= 0) {
-  warning("mrb $ENV{MRB_VERSION} requires cetmodules >= $min_cetm_version to run: attempting to configure...");
+if (exists $all_packages->{cetmodules}) {
+  if (version_cmp($all_packages->{cetmodules}->{version}, "$min_cetm_version") > 0) {
+    error_exit("cetmodules $all_packages->{cetmodules}->{version} checked out, but mrb ",
+               "$ENV{MRB_VERSION} requires cetmodules >= $min_cetm_version.\n",
+               "Update cetmodules in \$MRB_SOURCE or remove and use an ",
+               "externally-installed cetmodules >= $min_cetm_version");
+  } else {
+    delete $regular_products->{cetmodules};
+  }
+} elsif (not exists $regular_products->{cetmodules} or
+         version_cmp("$min_cetm_version",
+                     latest_version(keys %{$regular_products->{cetmodules}}))
+         > 0) {
+  print STDERR "INFO: mrb $ENV{MRB_VERSION} requires cetmodules >= $min_cetm_version to run: attempting to configure...";
   open(my $fh, "-|", "ups list -aK+ cetmodules") or
     error_exit("unable to get list of available cetmodules products from UPS");
   my @available_versions = map { chomp; my @bits = split; eval $bits[1] or (); } <$fh>;
   close($fh);
   my $cetmodules_version = latest_version(@available_versions);
-  error_exit("unable to find available UPS packages for cetmodules in $ENV{PRODUCTS}")
-    unless $cetmodules_version;
-  error_exit("mrb $ENV{MRB_VERSION} needs at least cetmodules version $min_cetm_version")
-    if version_cmp("$min_cetm_version", $cetmodules_version) > 0;
-  $regular_products->{cetmodules}->{$cetmodules_version} =
-    { version => $cetmodules_version,
-      origin => "mrb",
-      only_for_build => 1,
-      qualspec => '' };
+  if (not $cetmodules_version) {
+    print STDERR "FAILED\n";
+    error_exit("unable to find available UPS packages for cetmodules in $ENV{PRODUCTS}");
+  } elsif (version_cmp("$min_cetm_version", $cetmodules_version) > 0) {
+    print STDERR "FAILED\n";
+    error_exit("mrb $ENV{MRB_VERSION} needs at least cetmodules version $min_cetm_version");
+  } else {
+    print STDERR "OK\n";
+    $regular_products->{cetmodules}->{$cetmodules_version} =
+      { version => $cetmodules_version,
+        origin => "mrb",
+        only_for_build => 1,
+        qualspec => '' };
+  }
 }
 
 foreach my $prod (keys %{$regular_products}) {
@@ -384,7 +395,9 @@ print $tfh <<EOF;
 
 ##################
 EOF
-print_dep_setup_one("cetmodules", $regular_products->{cetmodules}, $tfh);
+if (exists $regular_products->{cetmodules}) {
+  print_dep_setup_one("cetmodules", $regular_products->{cetmodules}, $tfh);
+}
 
 if (my $old_build_dir = $ENV{OLD_MRB_BUILDDIR}) {
   print $tfh <<EOF;

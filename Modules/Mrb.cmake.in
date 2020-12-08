@@ -4,7 +4,12 @@ include_guard(GLOBAL)
 cmake_policy(PUSH)
 cmake_minimum_required(VERSION 3.18.2 FATAL_ERROR)
 
-find_package(cetmodules @MRB_MIN_CETMODULES_VERSION@ REQUIRED)
+if (EXISTS ${CMAKE_SOURCE_DIR}/cetmodules)
+  list(PREPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cetmodules/Modules
+    ${CMAKE_SOURCE_DIR}/cetmodules/Modules/compat)
+else()
+  find_package(cetmodules @MRB_MIN_CETMODULES_VERSION@ REQUIRED)
+endif()
 include(Compatibility)
 
 # Do not attempt to call the official find_package() on in-tree
@@ -17,6 +22,9 @@ macro(find_package)
       list(TRANSFORM CETMODULES_CMAKE_MODULES_DIRECTORIES_PROJECT_${ARGV0}
         PREPEND "${${ARGV0}_SOURCE_DIR}/" REGEX "^[^/]+" OUTPUT_VARIABLE _fp_tmp)
       list(PREPEND CMAKE_MODULE_PATH "${_fp_tmp}")
+      string(TOUPPER "${ARGV0}" _fp_tmp)
+      set(${_fp_tmp} TRUE)
+      set(${ARGV0}_FOUND TRUE)
       unset(_fp_tmp)
     endif()
   else()
