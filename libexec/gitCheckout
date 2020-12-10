@@ -36,6 +36,10 @@ my $known_suites =
     nu => [qw(nusimdata nuevdb nug4 nugen nurandom nutools)],
     uboone=> [qw(uboonecode ubutil uboonedata ublite ubana ubreco ubsim
                  ubevt ubraw ubcrt ubcore ubcv ubobj)],
+    sbn => [qw(icaruscode icarusutil icarusalg sbndcode sbndutil icarus_signal_processing
+               sbncode sbnobj sbndqm)],
+    sbndaq => [qw(sbndaq sbndaq_artdaq sbndaq_artdaq_core sbndaq_xporter
+                  sbndaq_minargon sbndaq_online sbndaq_decode)],
     artdaq => [qw(artdaq_core artdaq_core_demo artdaq_utilities
                   artdaq_ganglia_plugin artdaq_epics_plugin
                   artdaq_database artdaq_daqinterface
@@ -43,7 +47,7 @@ my $known_suites =
   };
 my $global_tree_ish;
 
-my $version = "2.3.0";
+my $version = "2.4.0";
 
 # Declare prototypes for repository handlers here, implement wherever
 # you like. Specify the appropriate handler in $repo_handlers, below.
