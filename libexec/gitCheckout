@@ -86,6 +86,7 @@ sub verified_github_url;
 my @known_specs_art =
   ( prod_info("fhiclcpp", fnal_repo("fhicl-cpp")),
     prod_info("fhiclpy", fnal_repo("fhicl-py")),
+    prod_info("cetmodules", github_repo("cetmodules", "FNALssi"))
   ) ;
 
 push @known_specs_art, map { prod_info($_, fnal_repo($_)); }
