@@ -17,120 +17,74 @@ if( $#ARGV < 3 ) {
 $pdfile = $ARGV[0];
 $product = $ARGV[1];
 $version = $ARGV[2];
+($dotversion) = ($version =~ m&^v?(.*)$&); $dotversion =~ s&_&.&g;
 $dryrun = $ARGV[3];
 
 if ( $dryrun eq "yes" ) {
   $pdfilebak = $pdfile;
-  print "Dry Run: these changes will be made:\n";
+  print "DRY RUN: these changes will be made:\n";
   print "\n";
 } else {
   $pdfilebak = $pdfile.".bak";
-  print "renaming $pdfile to $pdfilebak\n";
+  print "INFO: renaming $pdfile to $pdfilebak\n";
   print "\n";
   rename ($pdfile, $pdfilebak) || die ( "Failed to rename $pdfile" );
   open(POUT, "> $pdfile")  || die ( "Failed to open new $pdfile" );
 }
 
-
-
 $get_phash="";
 $get_quals="";
 $get_fragment="";
 my $this_prod;
-my $oldver;
+my ($line, $newline);
 open(PIN, "< $pdfilebak") or die "Couldn't open $pdfilebak";
-while ( $line=<PIN> ) {
-  chop $line;
-  if ( index($line,"#") == 0 ) {
-    print_line ( POUT, $line, $dryrun );
-  } elsif ( $line !~ /\w+/ ) {
-    print_line ( POUT, $line, $dryrun );
-  } else {
-    #print "checking $line\n";
-    # use the parens to split instead of whitespace which might not exist
-    @words = split(/\(/,$line);
-    #print "found $words[0]\n";
-    if( $words[0] =~ m/create_product_variables/ || $words[0] =~ m/create_version_variables/  ) {
-      #print "parsing $line\n";
-      # all this jiggery pokery is to deal with lines like: 
-      #   create_product_variables(art v3_04_00${suite_rc_level})
-      #   create_product_variables( systematicstools v00_05_00 )
-      #   create_product_variables( lardata     v08_13_00 )
-      #   create_product_variables( larsoft ${version} )
-      $tmpcmd = "create_product_variables"; 
-      if( $words[0] =~ m/create_version_variables/ )
-          { $tmpcmd = "create_version_variables"; }
-      $tmpline = $line;
-      $tmpline =~ s/$tmpcmd\( /$tmpcmd\(/;
-      @word1 = split(/\(/,$tmpline);
-      #print "found word1: $word1[0] -- $word1[1]\n";
-      @word2  = split(/\s+/,$word1[1]);
-      #print "found word2: $word2[0] -- $word2[1]\n";
-      $this_prod = $word2[0];
-      if ( $this_prod  eq $product ) {
-	 my $oldver = "skip";
-	 if ( $word2[1] =~ /^(\w+)\$\{\w+\}/ ) {
-            #print "match 3 $word2[1] contains $1\n";
-	    $oldver = $1;
-	 } elsif ( $word2[1] =~ /^\$\{\w+\}/ ) {
-            #print "match 3 $word2[1] is just a variable\n";
-	    $oldver = "skip";
-	 } elsif ( $word2[1] =~ /^(\w+)\s*\)/ ) {
-            #print "match 3 $word2[1] contains $1\n";
-	    $oldver = $1;
-	 } else {
-            #print "match 3 just have $word2[1]\n";
-	    $oldver = $word2[1];
-	 }
-	 if ( $oldver eq skip ) {
-            print_line ( POUT, $newline, $dryrun );
-	 } else {
-	    #print "found $this_prod $oldver in $line\n";
-	    @word3 = split(/\)/,$word2[1]);
-	    #print "found word3: $word3[0]\n";
-	    @word4 = split(/\$/,$word3[0]);
-	    #print "found word4: $word4[0]\n";
-	    $oldver = $word4[0];
-	    #print "found $tmpcmd $this_prod $oldver in $line\n";
-            $newline = $line;
-	    $newline =~ s/$oldver/$version/;
-            if ( $dryrun eq "yes" ) {
-	      print "old line: $line\n";
-	      print "new line: $newline\n";
-	    }
-            print_line ( POUT, $newline, $dryrun );
-	 }
-      } else {
-         print_line ( POUT, $line, $dryrun );
+while ($line = <PIN>) {
+  if ($line =~ m&^\s*(set|create_(?:product|version)_variables|(?i:project))\b&) {
+    $tmpcmd = "\l$1";
+    while ($line !~ m&\)& and $line = sprintf("$line%s", <PIN>)) { };
+    chomp $line;
+    next unless $line =~ m&^(\s*\Q$tmpcmd\E\s*\(\s*)(.*)(\s*\).*)$&s;
+    my ($pre, $post) = ($1, $3);
+    my ($this_prod, @args) = split(/(\s+)/, $2);
+    next unless lc $this_prod eq lc $product;
+    if ($tmpcmd eq "project") {
+      my $sub_version;
+      foreach (@args) {
+        next if m&^\s+$&;
+        if ($sub_version) {
+          $oldver = $_;
+          s&^([-\w\.]+)(\${\w+\})?&$dotversion${2}&;
+          $newver = $_;
+          last;
+        } elsif ($_ eq VERSION) {
+          $sub_version = 1;
+          next;
+        }
       }
-    } elsif( $words[0] =~ m/set/  ) {
-      #print "parsing $line\n";
-      if ( $line =~ /set\s*[(]\s*(\w+)\s+(\w+)\s*[)]/ ) {
-	 $this_prod = $1;
-	 $oldver = $2;
-	 if ( $this_prod eq $product ) {
-            print "edit $line - $product to $version\n";
-            $newline = $line;
-	    $newline =~ s/$oldver/$version/;
-            if ( $dryrun eq "yes" ) {
-	      print "old line: $line\n";
-	      print "new line: $newline\n";
-	    }
-            print_line ( POUT, $newline, $dryrun );
-	 } else {
-            print_line ( POUT, $line, $dryrun );
-	 }
-      } else {
-	 print_line ( POUT, $line, $dryrun );
-      }
+    } elsif ($tmpcmd eq "set") {
+      $args[1] = $version;
+    } elsif ($args[1] eq "LIST") {
+      # create_version_variables(<prod> LIST ...).
+      push @args, $args[-2], $version;
     } else {
-      #print "ignoring $line\n";
-      print_line ( POUT, $line, $dryrun );
+      # create_(product|version)_variables(<prod> <version>).
+      $args[1] = $version;
     }
-  }
+    $newline = sprintf("$pre$this_prod%s$post", join("", @args));
+    if ($newline ne $line) {
+      if ($dryrun eq "yes") {
+        print "  old line: $line\n";
+        print "  new line: $newline\n";
+      } else {
+        $line = $newline;
+      }
+    }
+  } else { chomp $line; }
+}
+continue {
+  print_line(POUT, $line, $dryrun);
 }
 close(PIN);
-
 
 exit 0;
 
@@ -139,7 +93,7 @@ sub print_line {
   my $output = $params[0];
   my $oline = $params[1];
   my $dr = $params[2];
-  if ( $dryrun eq "no" ) {
+  if ($dryrun eq "no") {
     print $output "$oline\n";
   }
 }

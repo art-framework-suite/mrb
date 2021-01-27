@@ -20,132 +20,43 @@ $dryrun = $ARGV[3];
 
 if ( $dryrun eq "yes" ) {
   $pdfilebak = $pdfile;
-  print "Dry Run: these changes will be made:\n";
-  print "\n";
+  print "DRY RUN: these changes will be made:\n";
 } else {
   $pdfilebak = $pdfile.".bak";
-  print "renaming $pdfile to $pdfilebak\n";
-  print "\n";
+  print "INFO: renaming $pdfile to $pdfilebak\n";
   rename ($pdfile, $pdfilebak) || die ( "Failed to rename $pdfile" );
   open(POUT, "> $pdfile")  || die ( "Failed to open new $pdfile" );
 }
-
-
 
 $get_phash="";
 $get_quals="";
 $get_fragment="";
 open(PIN, "< $pdfilebak") or die "Couldn't open $pdfilebak";
-while ( $line=<PIN> ) {
-  chop $line;
-  if ( index($line,"#") == 0 ) {
-    print_line ( POUT, $line, $dryrun );
-  } elsif ( $line !~ /\w+/ ) {
-    print_line ( POUT, $line, $dryrun );
-  } else {
-    @words = split(/\s+/,$line);
-    if( $words[0] eq "parent" ) {
-       ##print $dfile "found parent in $line\n";
-       if ( $words[1]  eq $product ) {
-          $newline = $line;
-	  $newline =~ s/$words[2]/$version/;
-          if ( $dryrun eq "yes" ) {
-	    print "old line: $line\n";
-	    print "new line: $newline\n";
-	  }
-          print_line ( POUT, $newline, $dryrun );
-       } else {
-          print_line ( POUT, $line, $dryrun );
-       }
-       $get_phash="";
-       $get_quals="";
-    } elsif( $words[0] eq "no_fq_dir" ) {
-       $get_phash="";
-       $get_quals="";
-       print_line ( POUT, $line, $dryrun );
-    } elsif( $words[0] eq "incdir" ) {
-       $get_phash="";
-       $get_quals="";
-       print_line ( POUT, $line, $dryrun );
-    } elsif( $words[0] eq "fcldir" ) {
-       $get_phash="";
-       $get_quals="";
-       print_line ( POUT, $line, $dryrun );
-    } elsif( $words[0] eq "gdmldir" ) {
-       $get_phash="";
-       $get_quals="";
-       print_line ( POUT, $line, $dryrun );
-    } elsif( $words[0] eq "perllib" ) {
-       $get_phash="";
-       $get_quals="";
-       print_line ( POUT, $line, $dryrun );
-    } elsif( $words[0] eq "fwdir" ) {
-       $get_phash="";
-       $get_quals="";
-       print_line ( POUT, $line, $dryrun );
-    } elsif( $words[0] eq "set_fwdir" ) {
-       $get_phash="";
-       $get_quals="";
-       print_line ( POUT, $line, $dryrun );
-    } elsif( $words[0] eq "libdir" ) {
-       $get_phash="";
-       $get_quals="";
-       print_line ( POUT, $line, $dryrun );
-    } elsif( $words[0] eq "bindir" ) {
-       $get_phash="";
-       $get_quals="";
-       print_line ( POUT, $line, $dryrun );
-    } elsif( $words[0] eq "defaultqual" ) {
-       $get_phash="";
-       $get_quals="";
-       $dq=$words[1];
-       print_line ( POUT, $line, $dryrun );
-    } elsif( $words[0] eq "only_for_build" ) {
-       $get_phash="";
-       $get_quals="";
-       print_line ( POUT, $line, $dryrun );
-    } elsif( $words[0] eq "product" ) {
-       $get_phash="true";
-       $get_quals="";
-       print_line ( POUT, $line, $dryrun );
-    } elsif( $words[0] eq "qualifier" ) {
-       $get_phash="";
-       $get_quals="true";
-       print_line ( POUT, $line, $dryrun );
-    } elsif( $get_phash ) {
-      if ( $words[0]  eq $product ) {
-          $newline = $line;
-	  $newline =~ s/$words[1]/$version/;
-          if ( $dryrun eq "yes" ) {
-	    print "old line: $line\n";
-	    print "new line: $newline\n";
-	  }
-          print_line ( POUT, $newline, $dryrun );
-      } else {
-         print_line ( POUT, $line, $dryrun );
-      }
-    } elsif( $words[0] eq "table_fragment_begin" ) {
-       $get_fragment="true";
-       $get_phash="";
-       $get_quals="";
-       print_line ( POUT, $line, $dryrun );
-    } elsif( $words[0] eq "table_fragment_end" ) {
-       $get_fragment="";
-       $get_phash="";
-       $get_quals="";
-       print_line ( POUT, $line, $dryrun );
-    } elsif( $get_quals ) {
-       print_line ( POUT, $line, $dryrun );
-    } elsif( $get_fragment ) {
-       print_line ( POUT, $line, $dryrun );
+while ($line=<PIN>) {
+  chomp $line;
+  my $newline = $line;
+  if ($newline =~ s&^(\s*parent\s+\Q$product\E\s+)[^#\s]+&${1}${version}& or
+      ($get_phash eq "true" and
+       $newline =~ s&^(\s*\Q$product\E\s+)[^-\s]\S+&${1}${version}&)) {
+  } elsif ($line =~ m&^\s*parent\s+\Q$product\E&) {
+    printf "INFO: version information for $product is set by project() in %s/CMakeLists.txt\n",
+      dirname(dirname($pdfile));
+  } elsif ($line =~ m&^\s*product\b&) {
+    $get_phash="true";
+  } elsif ($line =~ m&^\s*end_product_list\b&) {
+    $get_phash="";
+  }
+  if ($newline ne $line) {
+    if ($dryrun eq "yes") {
+      print "  old line: $line\n";
+      print "  new line: $newline\n";
     } else {
-       print "WARING: unrecognized line in $pdfilebak: $line\n";
-       print_line ( POUT, $line, $dryrun );
+      $line = $newline;
     }
   }
+  print_line(POUT, $line, $dryrun);
 }
 close(PIN);
-
 
 exit 0;
 
