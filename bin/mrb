@@ -135,8 +135,8 @@ case $subcmd in
       "${cmd_args[@]}" || return;;
   makePackage|mp) cmd="$mrb_libexec/makePackage.sh";;
   zapBuild|z) cmd="$mrb_libexec/zapBuild.sh";;
-  zapInstall|zi) cmd="$mrb_libexec/zapBuild.sh";;
-  zapDist|zd) cmd="$mrb_libexec/zapBuild.sh";;
+  zapInstall|zi) cmd="$mrb_libexec/zapInstall.sh";;
+  zapDist|zd) cmd="$mrb_libexec/zapDist.sh";;
   changelog|changeLog|c) cmd=git
     cmd_args=(
       log
