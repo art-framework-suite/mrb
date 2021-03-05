@@ -19,6 +19,7 @@ use parse_deps qw(:DEFAULT $btype_table $pathspec_info);
 
 my $max_resolution_loops = 200;
 my $min_cetm_version = '@MRB_MIN_CETMODULES_VERSION@';
+my $min_cetb_version = '@cetmodules_MIN_CETBUILDTOOLS_VERSION@';
 
 sub reconcile_cmake_args {
   my ($all_packages, @products) = @_;
@@ -141,6 +142,23 @@ sub order_products {
                join(", ", sort keys %{$checked_out_products}));
 
   return $ordered_products;
+}
+
+sub find_at_least {
+  my ($pkg, $vmin) = @_;
+  open(my $fh, "-|", "ups list -aK+ $pkg") or
+    error_exit("unable to get list of available $pkg products from UPS");
+  my @available_versions = map { chomp; my @bits = split; eval $bits[1] or (); } <$fh>;
+  close($fh);
+  my $found_version = latest_version(@available_versions);
+  if (not $found_version) {
+    print STDERR "FAILED\n";
+    error_exit("unable to find available UPS packages for $pkg in $ENV{PRODUCTS}");
+  } elsif (version_cmp("$vmin", $found_version) > 0) {
+    print STDERR "FAILED\n";
+    error_exit("mrb $ENV{MRB_VERSION} needs at least $pkg version $vmin");
+  }
+  return $found_version;
 }
 
 if ($#ARGV < 1) {
@@ -310,7 +328,7 @@ if ( $srcbase eq "ups" ) {
 }
 
 my $regular_products = reconcile_deps($setup_products_hash);
-my $cetbuildtools_compat = (delete $regular_products->{cetbuildtools}) ? 1 : 0;
+my $cetbuildtools_compat = (exists $regular_products->{cetbuildtools}) ? 1 : 0;
 
 # Verify we have access to the cetmodules version we need.
 if (exists $all_packages->{cetmodules}) {
@@ -327,24 +345,35 @@ if (exists $all_packages->{cetmodules}) {
                      latest_version(keys %{$regular_products->{cetmodules}}))
          > 0) {
   print STDERR "INFO: mrb $ENV{MRB_VERSION} requires cetmodules >= $min_cetm_version to run: attempting to configure...";
-  open(my $fh, "-|", "ups list -aK+ cetmodules") or
-    error_exit("unable to get list of available cetmodules products from UPS");
-  my @available_versions = map { chomp; my @bits = split; eval $bits[1] or (); } <$fh>;
-  close($fh);
-  my $cetmodules_version = latest_version(@available_versions);
-  if (not $cetmodules_version) {
-    print STDERR "FAILED\n";
-    error_exit("unable to find available UPS packages for cetmodules in $ENV{PRODUCTS}");
-  } elsif (version_cmp("$min_cetm_version", $cetmodules_version) > 0) {
-    print STDERR "FAILED\n";
-    error_exit("mrb $ENV{MRB_VERSION} needs at least cetmodules version $min_cetm_version");
-  } else {
-    print STDERR "OK\n";
-    $regular_products->{cetmodules}->{$cetmodules_version} =
-      { version => $cetmodules_version,
+  my $cetmodules_version = find_at_least('cetmodules', $min_cetm_version);
+  print STDERR "$cetmodules_version OK\n";
+  $regular_products->{cetmodules}->{$cetmodules_version} =
+    { version => $cetmodules_version,
+      origin => "mrb",
+      only_for_build => 1,
+      qualspec => '' };
+}
+
+if (exists $all_packages->{cetbuildtools}) {
+  error_exit("building with cetbuildtools checked out is not supported at this time");
+} elsif ($cetbuildtools_compat) {
+  # At least one package has requested cetbuildtools. Check whether the
+  # latest of those requested versions matches our requirements.
+  my $cetb_version =
+    latest_version(keys %{$regular_products->{cetbuildtools}});
+  if (version_cmp("$min_cetb_version", "$cetb_version") > 0) {
+    print STDERR "INFO: mrb $ENV{MRB_VERSION} requires cetbuildtools >= $min_cetb_version if specified: attempting to configure...";
+    $cetb_version = find_at_least('cetbuildtools', $min_cetb_version);
+    print STDERR "$cetb_version OK\n";
+    $regular_products->{cetbuildtools}->{$cetb_version} =
+      { version => $cetb_version,
         origin => "mrb",
         only_for_build => 1,
-        qualspec => '' };
+        qualspec => '',
+        setup_options => [qw(-j)] };
+  } else {
+    push $regular_products->{cetbuildtools}->{$cetb_version}->{setup_options},
+      '-j';
   }
 }
 
@@ -353,7 +382,7 @@ foreach my $prod (keys %{$regular_products}) {
   # inconsistent qualifiers) and collapse the hierarchy.
   if (scalar keys %{$regular_products->{$prod}} > 1 and
       not exists $setup_products_hash->{$prod}) {
-    if ($prod eq "cetmodules") {
+    if ($prod =~ m&^cet(buildtools|modules)$&) {
       # This one is OK: choose the latest.
       my $latest = latest_version(keys %{$regular_products->{$prod}});
       delete @{$regular_products->{$prod}}
@@ -395,8 +424,15 @@ print $tfh <<EOF;
 
 ##################
 EOF
-if (exists $regular_products->{cetmodules}) {
-  print_dep_setup_one("cetmodules", $regular_products->{cetmodules}, $tfh);
+
+print $tfh <<'EOF';
+[ -n "$SETUP_CETMODULES" ] && unsetup cetmodules
+EOF
+
+foreach my $pkg qw(cetmodules cetbuildtools) {
+  if (exists $regular_products->{$pkg}) {
+    print_dep_setup_one("$pkg", $regular_products->{$pkg}, $tfh);
+  }
 }
 
 if (my $old_build_dir = $ENV{OLD_MRB_BUILDDIR}) {
@@ -410,14 +446,7 @@ tdefined ROOT_INCLUDE_PATH setenv CET_PLUGIN_PATH `dropit -p \"\${CET_PLUGIN_PAT
 EOF
 }
 
-my $cetb_cmake_args;
-if ($cetbuildtools_compat) {
-  $cetb_cmake_args =
-    [ map { my $var_stem = var_stem_for_dirkey($_);
-            my $dirkey_ish = $_; $dirkey_ish =~ s&([^_])dir$&${1}_dir&;
-            "-DCETB_COMPAT_${dirkey_ish}:STRING=${var_stem}";
-          } sort keys %$pathspec_info ];
-}
+my $cetb_cmake_args = ($cetbuildtools_compat) ? cmake_cetb_compat_defs() : ();
 
 # Take a side-trip to re-order.
 my $ordered_products =
