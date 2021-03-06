@@ -83,14 +83,21 @@ sub verified_github_url;
 # 4. $default_repo_type.
 #
 ########################################################################
+my $art_repo = fnal_repo("art");
+$art_repo->{fnal}->{git_args} = [ qw(--recurse-submodules) ];
+
 my @known_specs_art =
   ( prod_info("fhiclcpp", fnal_repo("fhicl-cpp")),
     prod_info("fhiclpy", fnal_repo("fhicl-py")),
-    prod_info("cetmodules", github_repo("cetmodules", "FNALssi"))
+    prod_info("cetmodules", github_repo("cetmodules", "FNALssi")),
+    prod_info("art", $art_repo)
   ) ;
 
-push @known_specs_art, map { prod_info($_, fnal_repo($_)); }
-  grep { $_ ne "fhiclcpp"; } @{$known_suites->{art}};
+my $art_special = { map { $_->{product} => 1; } @known_specs_art };
+
+push @known_specs_art,
+  map { ($art_special->{$_}) ? () : prod_info($_, fnal_repo($_)); }
+  @{$known_suites->{art}};
 
 my @known_specs_artdaq =
   ( prod_info("artdaq_core", fnal_repo("artdaq-core", "artdaq")),
@@ -593,8 +600,8 @@ sub verified_github_url {
 #
 # Usage: clone_repo($url, $destination)
 sub clone_repo {
-  my ($url, $destination) = @_;
-  my @clone_cmd = (qw(git clone), $url, $destination);
+  my ($url, $destination, @git_args) = @_;
+  my @clone_cmd = (qw(git clone), @git_args, $url, $destination);
   if ($options->{"dry-run"}) {
     report(sprintf("Would execute command %s.", join(" ", @clone_cmd)),
            -level => "INFO");
@@ -775,7 +782,10 @@ sub get_repo(\%) {
            -level => "WARNING");
   } else {
     my $url = verified_url($type, $prod_info->{$type});
-    clone_repo($url, $destination);
+    clone_repo($url, $destination,
+               @{$prod_info->{$type}->{git_args} || []},
+               ($options->{shallow}) ? qw(--depth 1 --shallow-submodules) : ()
+              );
   }
   # Post-processing for checked-out repository.
   if (exists $prod_info->{$type}->{post}) {
@@ -942,6 +952,7 @@ GetOptions($options,
            "quiet|q",
            "read-only|r",
            "repo-type=s",
+           "shallow",
            "tag|t=s",
            "verbose|v",
            "version|V",
