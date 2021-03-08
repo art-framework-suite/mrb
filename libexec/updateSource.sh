@@ -57,21 +57,26 @@ echo "$thisCom: update these packages:"
 echo "        $pkglist"
 echo ""
 
-for REP in $pkglist
-do
-   cd ${MRB_SOURCE}/${REP}
-   if [ -d .svn ]
-   then 
-     echo "updating ${REP}"
+for REP in $pkglist; do
+  cd ${MRB_SOURCE}/${REP}
+  if [ -d .svn ]; then
+    echo "-- updating ${REP}"
      svn update || exit 1
-   elif [ -d .git ]
-   then
-     echo "updating ${REP}"
-     git fetch || exit 1
-     git merge || exit 1
-   else
-      echo "ignoring ${REP} - neither git nor svn"
-   fi 
+  elif [ -d .git ]; then
+    echo "-- updating ${REP}"
+    git pull --autostash || exit 1
+  elif [ -f .git ]; then
+    gitdir="$(cat ".git" | sed -nE -e 's&^gitdir:[[:space:]]+&&p')"
+    if [ -d "$gitdir" ]; then
+      gitdir="${gitdir}/$(cat "${gitdir}/commondir")"
+      if [ -d "$gitdir" ]; then
+        echo "-- updating ${REP} (workspace for $( (cd "$gitdir" && pwd) ))" && \
+          git pull --autostash || exit 1
+      fi
+    fi
+  else
+    echo "ignoring ${REP} - neither git nor svn"
+  fi
 done
 
 exit 0
