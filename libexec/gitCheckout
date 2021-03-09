@@ -47,7 +47,7 @@ my $known_suites =
   };
 my $global_tree_ish;
 
-my $version = "2.4.1";
+my $version = "2.5.0";
 
 # Declare prototypes for repository handlers here, implement wherever
 # you like. Specify the appropriate handler in $repo_handlers, below.
@@ -782,9 +782,16 @@ sub get_repo(\%) {
            -level => "WARNING");
   } else {
     my $url = verified_url($type, $prod_info->{$type});
+    my $want_shallow =
+      (not ($type eq "fnal" and $url =~ m&^https?://&)) ?
+        $options->{shallow} || 0: 0;
+    if ($options->{shallow} and not $want_shallow) {
+      report("Shallow clones not supported for $type repositories via HTTP(S): executing full clone",
+            -level=> "WARNING");
+    }
     clone_repo($url, $destination,
                @{$prod_info->{$type}->{git_args} || []},
-               ($options->{shallow}) ? qw(--depth 1 --shallow-submodules) : ()
+               ($want_shallow) ? qw(--depth 1 --shallow-submodules) : ()
               );
   }
   # Post-processing for checked-out repository.
