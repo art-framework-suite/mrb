@@ -372,8 +372,11 @@ if (exists $all_packages->{cetbuildtools}) {
         qualspec => '',
         setup_options => [qw(-j)] };
   } else {
-    push $regular_products->{cetbuildtools}->{$cetb_version}->{setup_options},
-      '-j';
+    if (exists $regular_products->{cetbuildtools}->{$cetb_version}->{setup_options}) {
+      push $regular_products->{cetbuildtools}->{$cetb_version}->{setup_options}, '-j';
+    } else {
+      $regular_products->{cetbuildtools}->{$cetb_version}->{setup_options} = ['-j'];
+    }
   }
 }
 
