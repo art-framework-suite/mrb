@@ -496,6 +496,8 @@ foreach my $product (sort { $ordered_products->{$a}->{order} <=>
     "-D$product_info->{cmake_project}_IN_TREE:BOOL=YES";
   # Needed by us to set up the development environment.
   my $product_uc = uc $product;
+  error_exit("unable to ascertain version for product $product_uc from ups/product_deps or CMakeLists.txt")
+    if (not $product_info->{version});
   print $tfh <<EOF;
 
 ##################
@@ -552,5 +554,4 @@ cetpkg_info_file(%$mrb_pi);
 
 # Finish.
 print "$tmpfl\n";
-
 exit 0;
