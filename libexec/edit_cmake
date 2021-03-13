@@ -65,7 +65,11 @@ while ($line = <PIN>) {
       $args[1] = $version;
     } elsif ($args[1] eq "LIST") {
       # create_version_variables(<prod> LIST ...).
-      push @args, $args[-2], $version;
+      if ($args[-1] =~ m&\s+&s) {
+        push @args, $version, $args[-1]; # No space before ")"
+      } else {
+        push @args, $args[-2], $version; # Space before ")"
+      }
     } else {
       # create_(product|version)_variables(<prod> <version>).
       $args[1] = $version;
