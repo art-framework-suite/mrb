@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl -w
 #
 
 # parse and update a product in CMakeLists.txt
@@ -14,30 +14,25 @@ if( $#ARGV < 3 ) {
     exit 1;
 }
 
-$pdfile = $ARGV[0];
+$cmfile = $ARGV[0];
 $product = $ARGV[1];
 $version = $ARGV[2];
 ($dotversion) = ($version =~ m&^v?(.*)$&); $dotversion =~ s&_&.&g;
 $dryrun = $ARGV[3];
 
+$cmfilenew = "$cmfile.new";
 if ( $dryrun eq "yes" ) {
-  $pdfilebak = $pdfile;
   print "DRY RUN: these changes will be made:\n";
   print "\n";
 } else {
-  $pdfilebak = $pdfile.".bak";
-  print "INFO: renaming $pdfile to $pdfilebak\n";
+  print "INFO: writing $cmfile to $cmfilenew\n";
   print "\n";
-  rename ($pdfile, $pdfilebak) || die ( "Failed to rename $pdfile" );
-  open(POUT, "> $pdfile")  || die ( "Failed to open new $pdfile" );
+  open(POUT, "> $cmfilenew")  || die ( "Failed to open $cmfilenew for write" );
 }
 
-$get_phash="";
-$get_quals="";
-$get_fragment="";
 my $this_prod;
 my ($line, $newline);
-open(PIN, "< $pdfilebak") or die "Couldn't open $pdfilebak";
+open(PIN, "< $cmfile") or die "Couldn't open $cmfile for read";
 while ($line = <PIN>) {
   if ($line =~ m&^\s*(set|create_(?:product|version)_variables|(?i:project))\b&) {
     $tmpcmd = "\l$1";
@@ -52,9 +47,7 @@ while ($line = <PIN>) {
       foreach (@args) {
         next if m&^\s+$&;
         if ($sub_version) {
-          $oldver = $_;
           s&^([-\w\.]+)(\${\w+\})?&$dotversion${2}&;
-          $newver = $_;
           last;
         } elsif ($_ eq VERSION) {
           $sub_version = 1;
@@ -90,7 +83,12 @@ continue {
 }
 close(PIN);
 
-exit 0;
+if ($dryrun ne "yes") {
+  rename($cmfile, "$cmfile.bak") || die ( "Failed save backup $cmfile.bak" );
+  rename($cmfilenew, $cmfile) || die ( "Failed to install $cmfilenew as $cmfile");
+}
+
+1;
 
 sub print_line {
   my @params = @_;
