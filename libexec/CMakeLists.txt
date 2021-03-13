@@ -30,8 +30,10 @@ cet_script(add_to_cmake.sh
 
 cet_localize_pv(cetmodules LIBEXEC_DIR)
 install(FILES
-  ${cetmodules_LIBEXEC_DIR}/parse_deps.pm
-  setup_local_products
 	shell_independence
 	unset_shell_independence
+  ${cetmodules_LIBEXEC_DIR}/fail
+  ${cetmodules_LIBEXEC_DIR}/parse_deps.pm
+  ${cetmodules_LIBEXEC_DIR}/pass
+  setup_local_products
   DESTINATION ${${PROJECT_NAME}_LIBEXEC_DIR})

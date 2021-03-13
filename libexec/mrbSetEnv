@@ -114,6 +114,7 @@ setenv UPS_OPTIONS -B
 # now get the rest of the products and set up checked out packages.
 set_ setup_fail="false"
 source `$MRB_DIR/libexec/setup_products $CETPKG_SOURCE $CETPKG_BUILD $*`
+test "$?" = 0 || set_ setup_fail="true"
 test "$setup_fail" = "true" && echo "$msg5"
 unset msg5
 test "$setup_fail" = "true" && unset setup_fail && return 1
