@@ -41,7 +41,7 @@ open(PIN, "< $pdfilebak") or die "Couldn't open $pdfilebak";
 while ($line = <PIN>) {
   if ($line =~ m&^\s*(set|create_(?:product|version)_variables|(?i:project))\b&) {
     $tmpcmd = "\l$1";
-    while ($line !~ m&\)& and $line = sprintf("$line%s", <PIN>)) { };
+    while ($line !~ m&\)&s and $line = sprintf("%s%s", $line, scalar <PIN>)) { };
     chomp $line;
     next unless $line =~ m&^(\s*\Q$tmpcmd\E\s*\(\s*)(.*)(\s*\).*)$&s;
     my ($pre, $post) = ($1, $3);
