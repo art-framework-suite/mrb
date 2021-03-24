@@ -430,9 +430,9 @@ map { my $pinfo = $all_packages->{$_};
                               File::Spec->catfile($sourcedir, $_),
                               $cop_info->{qualspec});
       $cop_info->{compiler} =
-        $pinfo->{noarch} ? undef :
-          compiler_for_quals($pinfo->{qhash}->{compiler},
-                             $checked_out_products->{$_}->{qualspec});
+        compiler_for_quals($pinfo->{qhash}->{compiler},
+                           $checked_out_products->{$_}->{qualspec})
+          if $pinfo->{qhash}->{compiler} && ! $pinfo->{noarch};
     } sort keys %$checked_out_products;
 
 my $compiler = reconcile_compiler($checked_out_products);
