@@ -506,9 +506,9 @@ foreach my $product (sort { $ordered_products->{$a}->{order} <=>
 
 tdefined SETUP_${product_uc} && unsetup -j ${product}
 setenv ${product_uc}_VERSION "$product_info->{version}"
-setenv ${product_uc}_DIR "${builddir}/${product}"
-setenv CETPKG_BUILD "\$${product_uc}_DIR"
-setenv CETPKG_SOURCE "\${MRB_SOURCE}/${product}"
+setenv ${product_uc}_DIR "\${MRB_SOURCE}/${product}"
+setenv CETPKG_BUILD "${builddir}/${product}"
+setenv CETPKG_SOURCE "\$${product_uc}_DIR"
 EOF
   print_dev_setup($product_info, $tfh);
 }
