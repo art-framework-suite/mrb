@@ -36,6 +36,12 @@ my $max_resolution_loops = 200;
 my $min_cetm_version = '@MRB_MIN_CETMODULES_VERSION@';
 my $min_cetb_version = '@cetmodules_MIN_CETBUILDTOOLS_VERSION@';
 
+sub aggregate_bootstraps {
+  my ($bs, $all_packages, @products) = @_;
+  my $result = [ map { $all_packages->{$_}->{"bootstrap_$bs"} ? $all_packages->{$_}->{cmake_project} : (); } @products ];
+  return $result;
+}
+
 sub reconcile_cmake_args {
   my ($all_packages, @products) = @_;
   my $results = { map { map { ($_ => 1); } @{$all_packages->{$_}->{cmake_args}}; } @products };
@@ -529,6 +535,11 @@ EOF
 # Close files.
 close($tfh);
 
+my @ordered_prod_list =
+  sort { $ordered_products->{$a}->{order} <=>
+           $ordered_products->{$b}->{order} }
+  keys %{$ordered_products};
+
 my $mrb_pi =
   { name => "${mrb_project}_MRB",
     source => $sourcedir,
@@ -541,11 +552,13 @@ my $mrb_pi =
     qualspec => $mrb_quals,
     cmake_args =>
     [ @{$cetb_cmake_args || []},
-      @{reconcile_cmake_args($all_packages,
-                             sort { $ordered_products->{$a}->{order} <=>
-                                      $ordered_products->{$b}->{order} }
-                             keys %{$ordered_products} )}  ]
+      @{reconcile_cmake_args($all_packages, @ordered_prod_list)} ]
   };
+
+foreach my $bs (qw(cetbuildtools cetmodules)) {
+  my $bs_pkgs = aggregate_bootstraps($bs, $all_packages, @ordered_prod_list);
+  $mrb_pi->{"bootstrap_$bs"} = $bs_pkgs if scalar @$bs_pkgs;
+}
 
 get_derived_parent_data($mrb_pi, $sourcedir, $mrb_quals);
 
