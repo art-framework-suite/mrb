@@ -498,8 +498,6 @@ foreach my $product (sort { $ordered_products->{$a}->{order} <=>
   write_table_frag($product_info->{name}, $product_info->{pfile});
   # Needed by buildtool to specify CMake arguments.
   $product_info->{cmake_args} = ups_to_cmake($product_info);
-  push @{$product_info->{cmake_args}},
-    "-D$product_info->{cmake_project}_IN_TREE:BOOL=YES";
   # Needed by us to set up the development environment.
   my $product_uc = uc $product;
   error_exit("unable to ascertain version for product $product_uc from ups/product_deps or CMakeLists.txt")
