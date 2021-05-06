@@ -167,11 +167,17 @@ sub order_products {
 
 sub find_at_least {
   my ($pkg, $vmin) = @_;
-  open(my $fh, "-|", "ups list -aK+ $pkg") or
-    error_exit("unable to get list of available $pkg products from UPS");
-  my @available_versions = map { chomp; my @bits = split; eval $bits[1] or (); } <$fh>;
-  close($fh);
-  my $found_version = latest_version(@available_versions);
+  my $found_version =
+    $ENV{sprintf('%s_UPS_VERSION', toupper($pkg))} ||
+    $ENV{sprintf('%s_VERSION', toupper($pkg))} || undef;
+  if (not $found_version or version_cmp("$vmin", $found_version) > 0) {
+    open(my $fh, "-|", "ups list -aK+ $pkg") or
+      error_exit("unable to get list of available $pkg products from UPS");
+    $found_version =
+      latest_version(map { chomp; my @bits = split; eval $bits[1] or (); }
+                     <$fh>);
+    close($fh);
+  }
   if (not $found_version) {
     print STDERR "FAILED\n";
     error_exit("unable to find available UPS packages for $pkg in $ENV{PRODUCTS}");
@@ -444,13 +450,16 @@ map { my $pinfo = $all_packages->{$_};
 my $compiler = reconcile_compiler($checked_out_products);
 
 print_dep_setup($regular_products, $tfh);
-print $tfh <<EOF;
+print $tfh <<'EOF';
 
 ##################
-EOF
+tnotnull SETUP_CETMODULES && unsetup cetmodules
+tnotnull SETUP_CETBUILDTOOLS && unsetup -j cetbuildtools
 
-print $tfh <<'EOF';
-[ -n "$SETUP_CETMODULES" ] && unsetup cetmodules
+# Save and clear UPS_OVERRIDE to avoid trouble.
+tdefined UPS_OVERRIDE_SAFE && unsetenv_ UPS_OVERRIDE_SAFE
+tdefined UPS_OVERRIDE && setenv UPS_OVERRIDE_SAFE "$UPS_OVERRIDE"
+tdefined UPS_OVERRIDE && unsetenv_ UPS_OVERRIDE
 EOF
 
 foreach my $pkg qw(cetmodules cetbuildtools) {
@@ -458,6 +467,14 @@ foreach my $pkg qw(cetmodules cetbuildtools) {
     print_dep_setup_one("$pkg", $regular_products->{$pkg}, $tfh);
   }
 }
+
+print $tfh <<'EOF';
+
+# Restore any previous value for UPS_OVERRIDE.
+tdefined UPS_OVERRIDE_SAFE && setenv UPS_OVERRIDE "$UPS_OVERRIDE_SAFE"
+tdefined UPS_OVERRIDE_SAFE && unsetenv_ UPS_OVERRIDE_SAFE
+##################
+EOF
 
 if (my $old_build_dir = $ENV{OLD_MRB_BUILDDIR}) {
   print $tfh <<EOF;
