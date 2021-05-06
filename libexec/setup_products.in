@@ -168,8 +168,8 @@ sub order_products {
 sub find_at_least {
   my ($pkg, $vmin) = @_;
   my $found_version =
-    $ENV{sprintf('%s_UPS_VERSION', toupper($pkg))} ||
-    $ENV{sprintf('%s_VERSION', toupper($pkg))} || undef;
+    $ENV{sprintf('%s_UPS_VERSION', uc($pkg))} ||
+    $ENV{sprintf('%s_VERSION', uc($pkg))} || undef;
   if (not $found_version or version_cmp("$vmin", $found_version) > 0) {
     open(my $fh, "-|", "ups list -aK+ $pkg") or
       error_exit("unable to get list of available $pkg products from UPS");
