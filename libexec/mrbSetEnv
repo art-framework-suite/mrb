@@ -124,6 +124,8 @@ test -e "$CETPKG_BUILD/diag_report" && cat $CETPKG_BUILD/diag_report
 echo ----------------------------------------------------------------
 $MRB_DIR/libexec/copy_dependency_database.sh ${MRB_SOURCE} ${MRB_INSTALL} dummy
 
+"$CETMODULES_DIR/libexec/verify_build_environment" "$CETPKG_BUILD"
+
 set_ mrb_exit=true
 
 test "${mrb_exit}" = "true" -a "${is_sourced}" != "true" && exit ${mrb_status}
