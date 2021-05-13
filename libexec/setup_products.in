@@ -563,7 +563,7 @@ my $mrb_pi =
     version => $mrb_project_version,
     cmake_project => "${mrb_project}_MRB",
     cmake_project_version =>
-    to_dot_version($mrb_project_version),
+    to_cmake_version($mrb_project_version),
     qualspec => $mrb_quals,
     cmake_args =>
     [ @{$cetb_cmake_args || []},
