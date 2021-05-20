@@ -140,7 +140,13 @@ my @known_specs_larsoft =
   map { prod_info($_, github_repo($_, "LArSoft"), fnal_repo($_)); }
   @{$known_suites->{larsoftobj}},
   @{$known_suites->{larsoft}},
-  qw(larpandoracontent larbatch larutils webevd larsimdnn);
+  qw(larpandoracontent
+     larbatch
+     larutils
+     larsimdnn
+     webevd
+     nusystematics
+     systematicstools );
 
 my @known_specs = (@known_specs_art,
                    @known_specs_artdaq,
