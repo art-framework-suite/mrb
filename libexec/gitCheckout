@@ -134,7 +134,7 @@ my @known_specs_expt =
 my @known_specs_sbn =
   map { prod_info($_, github_repo($_, "SBNSoftware"), fnal_repo($_)); }
   qw(icaruscode icarusutil icarusalg sbndcode sbndutil icarus_signal_processing
-     sbnana sbnanaobj sbncode sbnobj sbndqm);
+     sbnana sbnanaobj sbncode sbnobj sbndqm sbnutil);
 
 my @known_specs_sbndaq =
   ( prod_info("sbndaq", github_repo("sbndaq", "SBNSoftware")),
