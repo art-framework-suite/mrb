@@ -128,6 +128,8 @@ my @known_specs_expt =
               fnal_repo("lariat-online-lariatfragments", "lariat-online")),
     prod_info("lariatutil", fnal_repo("lardbt-lariatutil", "lardbt")),
     prod_info("garsoft", github_repo("garsoft", "dune")),
+    prod_info("garana", github_repo("garana", "dune")),
+    prod_info("duneanaobj", github_repo("duneanaobj", "dune")),
     prod_info("lbne_raw_data", fnal_repo("lbne-raw-data"))
   );
 
