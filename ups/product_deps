@@ -250,7 +250,7 @@ noarch
 product		version		qual	flags		<table_format=2>
 cetpkgsupport	-c		-
 gitflow		-c		-
-cetmodules	v2_20_00	-	only_for_build
+cetmodules	v2_20_01	-	only_for_build
 git		-c		-	optional
 hub		-c		-	optional
 end_product_list
