@@ -70,7 +70,8 @@ include_directories(\${CMAKE_CURRENT_SOURCE_DIR}/${REP})
 include_directories(\$ENV{MRB_BUILDDIR}/${REP})
 EOF
    cat >> "${cmake_subdir_fragment}" <<EOF
-add_subdirectory(${REP})
+# ${REP}
+mrb_add_subdirectory(${REP})
 mrb_process_checkpoints()
 EOF
    echo "NOTICE: Adding ${REP} to CMakeLists.txt file"
