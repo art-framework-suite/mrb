@@ -108,7 +108,7 @@ sub get_package_list {
 }
 
 sub latest_version {
-  my @result = sort version_cmp @_;
+  my @result = sort version_sort @_;
   return pop @result;
 }
 
@@ -456,7 +456,9 @@ tdefined UPS_OVERRIDE && setenv UPS_OVERRIDE_SAFE "$UPS_OVERRIDE"
 tdefined UPS_OVERRIDE && unsetenv_ UPS_OVERRIDE
 EOF
 
-foreach my $pkg qw(cetmodules cetbuildtools) {
+# Set up cetbuildtools (with -j) first to avoid complaints about
+# cetmodules mismatches.
+foreach my $pkg qw(cetbuildtools cetmodules) {
   if (exists $regular_products->{$pkg}) {
     print_dep_setup_one("$pkg", $regular_products->{$pkg}, $tfh);
   }
