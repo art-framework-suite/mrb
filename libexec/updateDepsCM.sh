@@ -40,16 +40,11 @@ then
     exit 1
 fi
 
-if [ ! -r $MRB_SOURCE/CMakeLists.txt ]; then
-    echo "$MRB_SOURCE/CMakeLists.txt not found"
-    exit 1
-fi
-
 # Backup?
 if [ $doBak ]; then
-  cp $MRB_SOURCE/CMakeLists.txt $MRB_SOURCE/CMakeLists.txt.bak
-  cp $MRB_SOURCE/.cmake_add_subdir $MRB_SOURCE/.cmake_add_subdir.bak
-  cp $MRB_SOURCE/.cmake_include_dirs $MRB_SOURCE/.cmake_include_dirs.bak
+  for file in CMakeLists.txt .cmake_add_subdir .cmake_include_dirs; do
+    [ -f "$MRB_SOURCE/$file" ] && cp "$MRB_SOURCE/$file"{,.bak}
+  done
 fi
 
 # find the directories
