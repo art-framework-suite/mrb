@@ -3,8 +3,30 @@
 
 # parse and update product_deps
 
+use strict;
+
+use warnings FATAL =>
+  qw(io regexp severe syntax uninitialized void);;
+
+use Cwd qw(:DEFAULT chdir abs_path);
 use File::Basename;
-use lib dirname($0);
+use File::Spec; # For catfile;
+
+use vars qw($_mydir);
+
+BEGIN {
+  my $_me = readlink($0);
+  if (not $_me) {
+    $_me = $0;
+  } elsif ($_me !~ m &^/&) {
+    $_me = abs_path(File::Spec->catfile(dirname($0), $_me));
+  }
+  $_mydir = dirname($_me);
+}
+
+use lib $_mydir;
+use parse_deps ':VERSION';
+use warnings FATAL => 'parse_deps';
 
 if( $#ARGV < 3 ) {
     print "\n";
@@ -13,12 +35,17 @@ if( $#ARGV < 3 ) {
     exit 1;
 }
 
-$pdfile = $ARGV[0];
-$product = $ARGV[1];
-$version = $ARGV[2];
-$dryrun = $ARGV[3];
+my $pdfile = $ARGV[0];
+my $product = $ARGV[1];
 
-if ( $dryrun eq "yes" ) {
+error_exit("ill-formed new version: $ARGV[2]")
+  unless $ARGV[2] =~ m&^(?<quote>["']?)(?<ver>.*)\g{quote}$&;
+my $new_version = to_ups_version($+{ver});
+my $dryrun = ($ARGV[3] // '') =~ m&^(y(?:es)?|1|t(?:rue))&;
+
+use vars qw($pdfilebak);
+
+if ( $dryrun  ) {
   $pdfilebak = $pdfile;
   print "DRY RUN: these changes will be made:\n";
 } else {
@@ -28,16 +55,16 @@ if ( $dryrun eq "yes" ) {
   open(POUT, "> $pdfile")  || die ( "Failed to open new $pdfile" );
 }
 
-$get_phash="";
-$get_quals="";
-$get_fragment="";
+my $get_phash="";
+my $get_quals="";
+my $get_fragment="";
 open(PIN, "< $pdfilebak") or die "Couldn't open $pdfilebak";
-while ($line=<PIN>) {
+while (my $line = <PIN>) {
   chomp $line;
   my $newline = $line;
-  if ($newline =~ s&^(\s*parent\s+\Q$product\E\s+)[^#\s]+&${1}${version}& or
+  if ($newline =~ s&^(\s*parent\s+\Q$product\E\s+)[^#\s]+&$1$new_version& or
       ($get_phash eq "true" and
-       $newline =~ s&^(\s*\Q$product\E\s+)[^-\s]\S+&${1}${version}&)) {
+       $newline =~ s&^(\s*\Q$product\E\s+)[^-\s]\S+&$1$new_version&)) {
   } elsif ($line =~ m&^\s*parent\s+\Q$product\E&) {
     printf "INFO: version information for $product is set by project() in %s/CMakeLists.txt\n",
       dirname(dirname($pdfile));
@@ -47,25 +74,15 @@ while ($line=<PIN>) {
     $get_phash="";
   }
   if ($newline ne $line) {
-    if ($dryrun eq "yes") {
+    if ($dryrun) {
       print "  old line: $line\n";
       print "  new line: $newline\n";
     } else {
       $line = $newline;
     }
   }
-  print_line(POUT, $line, $dryrun);
+  print POUT "$line\n" unless $dryrun;
 }
 close(PIN);
 
-exit 0;
-
-sub print_line {
-  my @params = @_;
-  my $output = $params[0];
-  my $oline = $params[1];
-  my $dr = $params[2];
-  if ( $dryrun eq "no" ) {
-    print $output "$oline\n";
-  }
-}
+1;

@@ -1,11 +1,32 @@
-#!/usr/bin/perl -w
-#
+#!/usr/bin/env perl
 
-# parse and update a product in CMakeLists.txt
+use strict;
+use warnings FATAL =>
+  qw(io regexp severe syntax uninitialized void);;
 
-
+use Cwd qw(:DEFAULT chdir abs_path);
 use File::Basename;
-use lib dirname($0);
+use File::Path 'make_path';
+use File::Spec; # For catfile;
+use FileHandle;
+
+use vars qw($_mydir);
+
+BEGIN {
+  my $_me = readlink($0);
+  if (not $_me) {
+    $_me = $0;
+  } elsif ($_me !~ m &^/&) {
+    $_me = abs_path(File::Spec->catfile(dirname($0), $_me));
+  }
+  $_mydir = dirname($_me);
+}
+
+use lib $_mydir;
+use parse_deps ':CMAKE';
+use warnings FATAL => 'parse_deps';
+
+# Parse and update a product's version in CMakeLists.txt.
 
 if( $#ARGV < 3 ) {
     print "\n";
@@ -14,89 +35,263 @@ if( $#ARGV < 3 ) {
     exit 1;
 }
 
-$cmfile = $ARGV[0];
-$product = $ARGV[1];
-$version = $ARGV[2];
-($dotversion) = ($version =~ m&^v?(.*)$&); $dotversion =~ s&_&.&g;
-$dryrun = $ARGV[3];
+my $cmfile = $ARGV[0];
+my $product = $ARGV[1];
 
-$cmfilenew = "$cmfile.new";
-if ( $dryrun eq "yes" ) {
-  print "DRY RUN: these changes will be made:\n";
-  print "\n";
+error_exit("ill-formed new version: $ARGV[2]")
+  unless $ARGV[2] =~ m&^(?<quote>["']?)(.*)\g{quote}$&;
+my $new_version = parse_version_string($2);
+my $version_quote = $+{quote} ? '"' : '';
+my $ups_version = to_ups_version($new_version);
+my $cmake_version = to_cmake_version($new_version);
+my $version_string = to_version_string($new_version);
+my $dryrun = ($ARGV[3] // '') =~ m&^(y(?:es)?|1|t(?:rue))&i;
+my $cmfilenew = $dryrun ? '' : "$cmfile.new";
+my $cmdir = dirname($cmfile);
+my $project_function_keywords =
+  '^(?:DESCRIPTION|HOMEPAGE_URL|LANGUAGES|VERSION)$';
+my $pinfo_file = abs_path(File::Spec->catfile($cmdir, 'ups', 'product_deps'));
+
+# Info from this CMakeLists.txt file.
+my $cpi = get_cmake_project_info($cmdir, (quiet_warnings => 1));
+my ($process_cmfile, $pv_prefix);
+if (defined $pinfo_file and -e $pinfo_file) {
+  $pv_prefix = ($cpi->{cmake_project_name} =~ m&^[A-Za-z_][0-9A-Za-z_-]*$&) ?
+    $cpi->{cmake_project_name} : '${PROJECT_NAME}';
+  # Is this the UPS product we're interested in?
+  my $pinfo = get_parent_info($pinfo_file);
+  if ($product eq $pinfo->{name}) { # Yes.
+    my $old_version = $cpi->{CMAKE_PROJECT_VERSION_STRING} // $cpi->{version_info} // undef;
+    $old_version =~ s&^(?<quote>["']?)(?<ver>.*)\g{quote}$&\g{ver}&;
+    if (not defined $old_version or
+        $version_string ne to_version_string($old_version)) { # Need to update.
+      $process_cmfile = 1;
+    }
+  }
 } else {
-  print "INFO: writing $cmfile to $cmfilenew\n";
-  print "\n";
-  open(POUT, "> $cmfilenew")  || die ( "Failed to open $cmfilenew for write" );
+  $process_cmfile = 2;
 }
 
-my $this_prod;
-my ($line, $newline);
-open(PIN, "< $cmfile") or die "Couldn't open $cmfile for read";
-while ($line = <PIN>) {
-  if ($line =~ m&^\s*(set|create_(?:product|version)_variables|(?i:project))\b&) {
-    $tmpcmd = "\l$1";
-    while ($line !~ m&\)&s and $line = sprintf("%s%s", $line, scalar <PIN>)) { };
-    chomp $line;
-    next unless $line =~ m&^(\s*\Q$tmpcmd\E\s*\(\s*)(.*)(\s*\).*)$&s;
-    my ($pre, $post) = ($1, $3);
-    my ($this_prod, @args) = split(/(\s+)/, $2);
-    next unless lc $this_prod eq lc $product;
-    if ($tmpcmd eq "project") {
-      my $sub_version;
-      foreach (@args) {
-        next if m&^\s+$&;
-        if ($sub_version) {
-          s&^([-\w\.]+)(\${\w+\})?&$dotversion${2}&;
-          last;
-        } elsif ($_ eq VERSION) {
-          $sub_version = 1;
-          next;
-        }
-      }
-    } elsif ($tmpcmd eq "set") {
-      $args[1] = $version;
-    } elsif ($args[1] eq "LIST") {
-      # create_version_variables(<prod> LIST ...).
-      if ($args[-1] =~ m&\s+&s) {
-        push @args, $version, $args[-1]; # No space before ")"
-      } else {
-        push @args, $args[-2], $version; # Space before ")"
-      }
-    } else {
-      # create_(product|version)_variables(<prod> <version>).
-      $args[1] = $version;
-    }
-    $newline = sprintf("$pre$this_prod%s$post", join("", @args));
-    if ($newline ne $line) {
-      if ($dryrun eq "yes") {
-        print "  old line: $line\n";
-        print "  new line: $newline\n";
-      } else {
-        $line = $newline;
-      }
-    }
-  } else { chomp $line; }
-}
-continue {
-  print_line(POUT, $line, $dryrun);
-}
-close(PIN);
+my $changed;
+my $seen_functions = {};
 
-if ($dryrun ne "yes") {
-  rename($cmfile, "$cmfile.bak") || die ( "Failed save backup $cmfile.bak" );
-  rename($cmfilenew, $cmfile) || die ( "Failed to install $cmfilenew as $cmfile");
+if ($process_cmfile) {
+  if ($dryrun) {
+    notify("[DRY_RUN] these changes will be made:\n\n");
+  } else {
+    info("writing $cmfile to $cmfilenew\n\n");
+  }
+  my @pc_args = ($cmfile);
+  push @pc_args, (output => $cmfilenew) unless $dryrun;
+  my @callbacks = ($process_cmfile == 2) ?
+    qw(create_product_variables create_version_variables) :
+      qw(project set cet_cmake_env);
+  my $results =
+    process_cmakelists(@pc_args,
+                       map { ( "${_}_callback" => \&_update_project_version ); }
+                       @callbacks);
+  $changed = keys %$results;
+}
+
+if ($changed) {
+  if ($dryrun) {
+    notify("[DRY_RUN] would have made $changed edits to $cmfile\n");
+  } else {
+    rename($cmfile, "$cmfile.bak") or error_exit("failed to save backup $cmfile.bak ($!)");
+    rename($cmfilenew, $cmfile) or error_exit("failed to install $cmfilenew as $cmfile ($!)");
+    info("made $changed edits to $cmfile\n");
+    my $colordiff = (system("type -t colordiff >/dev/null 2>&1") == 0) ? ' | colordiff' : '';
+    verbose(`diff -u "$cmfile.bak" "$cmfile"$colordiff`);
+  }
+} else {
+  info(sprintf "%sno changes necessary to $cmfile\n",
+       ($dryrun) ? "[DRY_RUN] " : '');
 }
 
 1;
 
-sub print_line {
-  my @params = @_;
-  my $output = $params[0];
-  my $oline = $params[1];
-  my $dr = $params[2];
-  if ($dryrun eq "no") {
-    print $output "$oline\n";
+sub _update_project_version {
+  my $call_infos = shift;
+  my $result;
+  my $call_info = $call_infos->[0];
+  my $orig_call = reconstitute_cmake_calls($call_info);
+  my $new_call = $orig_call; # Baseline.
+  # If we have to add a line setting ${PROJECT}_CMAKE_PROJECT_VERSION_STRING.
+  my $need_version_string_var = $new_version->{extra} ? 1 : 0;
+  my $new_set_CPVS_call_info =
+    {
+     func => 'set',
+     pre => 'set(',
+     post => ")\n",
+     chunks => [ '${PROJECT}_CMAKE_PROJECT_VERSION_STRING',
+                 ' ',
+                 $version_quote || (),
+                 $version_string,
+                 $version_quote || () ],
+     arg_indexes => [0, 2 + ($version_quote) ? 1 : 0 ]
+    };
+  if ($call_info->{func} =~ m&^create_(?:product|version)_variables$&) {
+    # Distribution definitions.
+    if (scalar @{$call_info->{arg_indexes}} and
+        $call_info->{chunks}->[$call_info->{arg_indexes}->[0]] eq $product) {
+      my ($current_opt, $insert_after);
+      my $arg_idx = 0;
+      # Parse the function call arguments to be sure we're putting our
+      # new version in the right place.
+      my $seen_keywords = {};
+    args: for my $arg (map { $call_info->{chunks}->[$call_info->{arg_indexes}->[$_]]; }
+                       (1..$#{$call_info->{arg_indexes}})) {
+        ++$arg_idx;
+        if ($arg eq 'LIST') {
+          undef $current_opt;
+          ++$seen_keywords->{LIST};
+          $insert_after = $arg_idx;
+        } elsif ($arg eq 'QUALIFIERS') {
+          $insert_after = $arg_idx - 1 unless $current_opt;
+          $current_opt = $arg;
+        } elsif ($arg eq 'NAME') {
+          $insert_after = $arg_idx - 1 unless $current_opt;
+          $current_opt = $arg;
+        } elsif ($arg eq 'NOP') {
+          undef $current_opt;
+          $insert_after = $arg_idx;
+        } else {
+          if ($current_opt) {
+            if ($current_opt eq 'NAME') {
+              undef $current_opt;
+              $insert_after = $arg_idx;
+            }
+            if (grep { $_ eq $arg; } qw(LIST NAME NOP QUALIFIERS)) {
+              undef $current_opt;
+              --$arg_idx; # Backtrack.
+              redo args;
+            }
+          } else { # Non-option argument.
+            $insert_after = $arg_idx;
+          }
+        }
+      } # Finished parsing function call arguments.
+      if ($seen_keywords->{LIST} or not defined $insert_after) {
+        # Add our new version at the end of the list of non-option
+        # arguments, at the earliest opportunity otherwise.
+        add_cmake_args_after($call_info,
+                             $insert_after // $#{$call_info->{arg_indexes}},
+                             "$version_quote$ups_version$version_quote");
+      } else {
+        # Replace the version with our new one, preserving any variable suffix.
+        my ($var_in_version) =
+          $call_info->{chunks}->[$call_info->{arg_indexes}->[$insert_after]] =~
+            m&((?:\$\{[^}]+\})?)$&;
+        replace_cmake_arg($call_info,
+                          $insert_after,
+                          "$version_quote$ups_version$var_in_version$version_quote");
+      }
+      $new_call = reconstitute_cmake_calls($call_info);
+    }
+  } elsif (not $seen_functions->{cet_cmake_env}) {
+    # Remaining interesting calls must all occur before cet_cmake_env().
+    if ($call_info->{func} eq 'cet_cmake_env') {
+      ++$seen_functions->{cet_cmake_env};
+      # If we need to set ${PROJECT}_CMAKE_PROJECT_VERSION_STRING and we
+      # haven't seen one, add the set() call here.
+      if ($need_version_string_var and
+          $seen_functions->{project} and
+          not $seen_functions->{CMAKE_PROJECT_VERSION_STRING}) {
+        unshift @$call_infos, $new_set_CPVS_call_info;
+        $new_call = sprintf("%s$new_call",
+                            reconstitute_cmake_calls($new_set_CPVS_call_info));
+        ++$seen_functions->{CMAKE_PROJECT_VERSION_STRING};
+      }
+    } elsif (not $seen_functions->{project}) {
+      if ($call_info->{func} eq 'project') {
+        # We've already verified the product matches from
+        # ups/product_deps upstream, so we're only making the assumption
+        # (!) that the first project() call is the good one.
+        ++$seen_functions->{project};
+        my $remove_project_version = $new_version->{extra} ? 1 : undef;
+        my ($version_index_index) =
+          grep { $call_info->{chunks}->[$call_info->{arg_indexes}->[$_]] eq
+                   'VERSION'; }
+            (0..$#{$call_info->{arg_indexes}});
+        if (defined $version_index_index) { # Have a VERSION keyword.
+          my $no_current_version =
+            ($version_index_index == $#{$call_info->{arg_indexes}} or
+             $call_info->{chunks}->[$call_info->{arg_indexes}[$version_index_index + 1]] =~
+             m&$project_function_keywords&);
+          my @arg_indexes = ($no_current_version ? () :
+                             $version_index_index + 1,
+                             $version_index_index); # Reversed for safe removal.
+          if ($need_version_string_var) {
+            # Remove VERSION clause and any argument.
+            grep { replace_cmake_arg($call_info, $_); } @arg_indexes;
+          } elsif (@arg_indexes > 1) { # Replace version.
+            replace_cmake_arg($call_info,
+                              $arg_indexes[0],
+                              "$version_quote$cmake_version$version_quote");
+          } else { # Add missing version.
+            add_cmake_args_after($call_info,
+                                 $arg_indexes[1],
+                                 ('VERSION',
+                                  "$version_quote$cmake_version$version_quote"));
+          }
+        } elsif (not $need_version_string_var) { # Add new version clause.
+          my @to_add =
+            ('VERSION', "$version_quote$cmake_version$version_quote");
+          # May need to switch signatures for project() call.
+          push @to_add, 'LANGUAGES'
+            if (@{$call_info->{arg_indexes}} > 1 and
+                not grep { $call_info->{chunks}->[$_] =~
+                             m&$project_function_keywords&; }
+                @{$call_info->{arg_indexes}});
+          add_cmake_args_after($call_info, 0, @to_add);
+        } else { # Nothing to do.
+        }
+        $new_call = reconstitute_cmake_calls($call_info);
+      } # project() call processing.
+    } elsif ($call_info->{func} eq 'set' and
+             scalar @{$call_info->{arg_indexes}} and
+             $call_info->{chunks}->[$call_info->{arg_indexes}->[0]] =~
+             m&^.*_CMAKE_PROJECT_VERSION_STRING$&) { # Found one.
+      if ($seen_functions->{CMAKE_PROJECT_VERSION_STRING}) { # Already did this bit.
+        @$call_infos = ();
+      } else {
+        # Replace with a new call, preserving a suffix variable if
+        # appropriate:
+        my ($var_in_version) =
+          ($call_info->{chunks}->[$call_info->{arg_indexes}->[1]] =~
+           m&((?:\$\{[^}]+\})?)$&);
+        $need_version_string_var |= ($var_in_version ? 1 : 0);
+        if ($need_version_string_var) {
+          @$call_infos = ( { %{$new_set_CPVS_call_info} } ); # Copy
+          my $new_call_info = $call_infos->[0];
+          if ($var_in_version) { # Make sure we preserve any suffix variable.
+            @{$new_call_info->{chunks}} =
+              map { ($_ eq $version_string) ?
+                      "$version_string$var_in_version" :
+                        $_; }
+                @{$new_call_info->{chunks}};
+          }
+        } else {
+          @$call_infos = ();
+        }
+      }
+      ++$seen_functions->{CMAKE_PROJECT_VERSION_STRING};
+      $new_call = reconstitute_cmake_calls(@$call_infos);
+    } else { # Nothing to do.
+    }
+  } else { # Nothing to do.
   }
+  if ($orig_call ne ($new_call // '')) {
+    $result =
+      {
+       orig_call => $orig_call,
+       new_call => $new_call
+      };
+    print <<EOF if $dryrun;
+------------------------------------
+old call: $orig_call====================================
+new call: $new_call++++++++++++++++++++++++++++++++++++
+EOF
+  }
+  return $result;
 }
-
