@@ -95,17 +95,21 @@ if ($process_cmfile) {
 
 if ($changed) {
   if ($dryrun) {
-    notify("[DRY_RUN] would have made $changed edits to $cmfile\n");
+    notify(sprintf("[DRY_RUN] would have made $changed edit%s to $cmfile\n",
+                   ($changed != 1) ? 's' : ''));
   } else {
     rename($cmfile, "$cmfile.bak") or error_exit("failed to save backup $cmfile.bak ($!)");
     rename($cmfilenew, $cmfile) or error_exit("failed to install $cmfilenew as $cmfile ($!)");
-    info("made $changed edits to $cmfile\n");
+    info(sprintf("made $changed edit%s to $cmfile\n",
+                 ($changed != 1) ? 's' : ''));
     my $colordiff = (system("type -t colordiff >/dev/null 2>&1") == 0) ? ' | colordiff' : '';
     verbose(`diff -u "$cmfile.bak" "$cmfile"$colordiff`);
   }
 } else {
-  info(sprintf "%sno changes necessary to $cmfile\n",
-       ($dryrun) ? "[DRY_RUN] " : '');
+  info(sprintf("%sno changes necessary to $cmfile%s",
+               ($dryrun) ? "[DRY_RUN] " : '',
+               (-e $cmfilenew) ? '' : ": removing $cmfilenew"));
+  unlink $cmfilenew if -e $cmfilenew;
 }
 
 1;
@@ -288,9 +292,11 @@ sub _update_project_version {
        new_call => $new_call
       };
     print <<EOF if $dryrun;
-------------------------------------
-old call: $orig_call====================================
-new call: $new_call++++++++++++++++++++++++++++++++++++
+  ----------------------------------
+  old call: $orig_call\
+  ==================================
+  new call: $new_call\
+  ++++++++++++++++++++++++++++++++++
 EOF
   }
   return $result;
