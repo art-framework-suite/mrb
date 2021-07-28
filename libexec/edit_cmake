@@ -53,11 +53,11 @@ my $project_function_keywords =
 my $pinfo_file = abs_path(File::Spec->catfile($cmdir, 'ups', 'product_deps'));
 
 # Info from this CMakeLists.txt file.
-my $cpi = get_cmake_project_info($cmdir, (quiet_warnings => 1));
 my ($process_cmfile, $pv_prefix);
 if (defined $pinfo_file and -e $pinfo_file) {
-  $pv_prefix = ($cpi->{cmake_project_name} =~ m&^[A-Za-z_][0-9A-Za-z_-]*$&) ?
-    $cpi->{cmake_project_name} : '${PROJECT_NAME}';
+  my $cpi = get_cmake_project_info($cmdir, (quiet_warnings => 1)) || {};
+  $pv_prefix = (($cpi->{cmake_project_name} // '') =~ m&^[A-Za-z_][0-9A-Za-z_-]*$&) ?
+  $cpi->{cmake_project_name} : '${PROJECT_NAME}';
   # Is this the UPS product we're interested in?
   my $pinfo = get_parent_info($pinfo_file);
   if ($product eq $pinfo->{name}) { # Yes.
