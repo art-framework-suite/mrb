@@ -11,7 +11,7 @@ use warnings FATAL =>
 use Cwd qw(:DEFAULT chdir abs_path);
 use File::Basename;
 use File::Spec; # For catfile;
-
+use IO qw(File Handle);
 use vars qw($_mydir);
 
 BEGIN {
@@ -25,7 +25,7 @@ BEGIN {
 }
 
 use lib $_mydir;
-use parse_deps ':VERSION';
+use parse_deps qw(:VERSION :DIAG);
 use warnings FATAL => 'parse_deps';
 
 if( $#ARGV < 3 ) {
@@ -43,46 +43,74 @@ error_exit("ill-formed new version: $ARGV[2]")
 my $new_version = to_ups_version($+{ver});
 my $dryrun = ($ARGV[3] // '') =~ m&^(y(?:es)?|1|t(?:rue))&;
 
-use vars qw($pdfilebak);
+my ($pdfilenew, $fh_out);
 
-if ( $dryrun  ) {
-  $pdfilebak = $pdfile;
-  print "DRY RUN: these changes will be made:\n";
+if ($dryrun) {
+  notify("[DRY RUN]: these changes will be made:\n\n");
 } else {
-  $pdfilebak = $pdfile.".bak";
-  print "INFO: renaming $pdfile to $pdfilebak\n";
-  rename ($pdfile, $pdfilebak) || die ( "Failed to rename $pdfile" );
-  open(POUT, "> $pdfile")  || die ( "Failed to open new $pdfile" );
+  $pdfilenew = "$pdfile.new";
+  info("writing $pdfile as $pdfilenew\n\n");
+  $fh_out = IO::File->new("$pdfilenew", ">") or
+    error_exit("failed to open $pdfilenew for write");
 }
 
+my $changed;
 my $get_phash="";
 my $get_quals="";
 my $get_fragment="";
-open(PIN, "< $pdfilebak") or die "Couldn't open $pdfilebak";
-while (my $line = <PIN>) {
+my $fh_in = IO::File->new("$pdfile", "<") or
+  error_exit("failed to open $pdfile for read");
+
+while (my $line = <$fh_in>) {
   chomp $line;
   my $newline = $line;
   if ($newline =~ s&^(\s*parent\s+\Q$product\E\s+)[^#\s]+&$1$new_version& or
       ($get_phash eq "true" and
        $newline =~ s&^(\s*\Q$product\E\s+)[^-\s]\S+&$1$new_version&)) {
   } elsif ($line =~ m&^\s*parent\s+\Q$product\E&) {
-    printf "INFO: version information for $product is set by project() in %s/CMakeLists.txt\n",
-      dirname(dirname($pdfile));
+    info("version information for $product is set by project() in %s/CMakeLists.txt\n",
+         dirname(dirname($pdfile)));
   } elsif ($line =~ m&^\s*product\b&) {
     $get_phash="true";
   } elsif ($line =~ m&^\s*end_product_list\b&) {
     $get_phash="";
   }
   if ($newline ne $line) {
+    ++$changed;
     if ($dryrun) {
-      print "  old line: $line\n";
-      print "  new line: $newline\n";
+      print <<EOF;
+  ----------------------------------
+  old line: $line
+  ==================================
+  new line: $newline
+  ++++++++++++++++++++++++++++++++++
+EOF
     } else {
       $line = $newline;
     }
   }
-  print POUT "$line\n" unless $dryrun;
+  $fh_out->print("$line\n") if $fh_out;
 }
-close(PIN);
+$fh_out->close();
+$fh_in->close();
+
+if ($changed) {
+  if ($dryrun) {
+    notify(sprintf("[DRY_RUN] would have made $changed edit%s to $pdfile\n",
+                   ($changed != 1) ? 's' : ''));
+  } else {
+    rename($pdfile, "$pdfile.bak") or error_exit("failed to save backup $pdfile.bak ($!)");
+    rename($pdfilenew, $pdfile) or error_exit("failed to install $pdfilenew as $pdfile ($!)");
+    info(sprintf("made $changed edit%s to $pdfile\n",
+                 ($changed != 1) ? 's' : ''));
+    my $colordiff = (system("type -t colordiff >/dev/null 2>&1") == 0) ? ' | colordiff' : '';
+    verbose(`diff -u "$pdfile.bak" "$pdfile"$colordiff`);
+  }
+} else {
+  info(($dryrun) ? "[DRY_RUN] " : '',
+       "no changes necessary to $pdfile",
+       (-e $pdfilenew) ? '' : ": removing $pdfilenew");
+  unlink $pdfilenew if -e $pdfilenew;
+}
 
 1;
