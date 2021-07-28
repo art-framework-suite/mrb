@@ -59,7 +59,7 @@ if (defined $pinfo_file and -e $pinfo_file) {
   $pv_prefix = (($cpi->{cmake_project_name} // '') =~ m&^[A-Za-z_][0-9A-Za-z_-]*$&) ?
   $cpi->{cmake_project_name} : '${PROJECT_NAME}';
   # Is this the UPS product we're interested in?
-  my $pinfo = get_parent_info($pinfo_file);
+  my $pinfo = get_parent_info($pinfo_file, (quiet_warnings => 1));
   if ($product eq $pinfo->{name}) { # Yes.
     my $old_version = $cpi->{CMAKE_PROJECT_VERSION_STRING} // $cpi->{version_info} // undef;
     $old_version =~ s&^(?<quote>["']?)(?<ver>.*)\g{quote}$&\g{ver}& if $old_version;
