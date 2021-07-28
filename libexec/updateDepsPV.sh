@@ -7,7 +7,7 @@
 # Determine the name of this command
 thisComFull=$(basename $0)
 thisCom=${thisComFull%.*}
-fullCom="${mrb_command} $thisCom"
+fullCom="$mrb_command $thisCom"
 
 # Function to show command usage
 function usage() 
@@ -27,27 +27,29 @@ EOF
 
 function modify_product_deps()
 {
-  local pkg=$1
-  
-  pdfile=${pkg}/ups/product_deps
-  pkg_name="$(sed -Ene 's&^[[:space:]]*parent[[:space:]]+([^[:space:]\#]+).*&\1&p; T; q' "${pdfile}")"
-
-  echo "INFO: updating dependencies for ${pkg_name} in ${pdfile}"
-  $MRB_DIR/libexec/edit_product_deps ${pdfile} ${product} ${new_version} ${dryRun}
+  have_dep="$(sed -Ene '/^product[[:space:]]+version\b/,/^end_product_list/ { /^'"$product"'\b/ { p ; q; }; }' "$pdfile" || :)"
+  if [ -n "$have_dep" ]; then
+    echo "INFO: updating $product version for dependent $pkg_name in $pdfile"
+  elif [ "$pkg_name" = "$product" ]; then
+    echo "INFO: updating $product version in $pdfile"
+  else
+    return 0
+  fi
+  (( ++updated_files ))
+  "$MRB_DIR/libexec/edit_product_deps" "$pdfile" $product $new_version $dryRun
 }
 
 function modify_cmake()
 {
-  local cfile="$1"
-  if grep -Ee '\b'"${product}"'\b' "${cfile}" >/dev/null 2>&1; then
-    echo "INFO: editing $cfile"
-    $MRB_DIR/libexec/edit_cmake "${cfile}" ${product} ${new_version} ${dryRun}
-  fi
+  local cfile=$1
+  echo "INFO: updating $product version in $cfile"
+  (( ++updated_files ))
+  "$MRB_DIR/libexec/edit_cmake" "$cfile" $product $new_version $dryRun
 }
 
 function get_package_list()
 {
-  local file OIFS IFS
+  local dir OIFS IFS
   OIFS="$IFS"
   IFS=$'\n'
   local pkglist=($(ls -1d $MRB_SOURCE/*/))
@@ -56,7 +58,7 @@ function get_package_list()
     while [[ "$dir" == */ ]] ; do
       dir="${dir%/}"
     done
-    [ -r "$dir/ups/product_deps" ] && packages+=("$dir")
+    [ -r "$dir/ups/product_deps" ] && pkg_dirs+=("$dir")
   done
 }
 
@@ -74,32 +76,36 @@ do
     esac
 done
 
+(( updated_files = 0 ))
 failed=()
 if [ $restore == "yes" ]; then
   operation="restore"
   get_package_list
-  for d in "${packages[@]}"; do
+  for pkg_dir in "${pkg_dirs[@]}"; do
+    pkg_name="$(sed -Ene 's&^[[:space:]]*parent[[:space:]]+([^[:space:]\#]+).*&\1&p; T; q' "${pdfile}")"
+    pdfile="$pkg_dir/ups/product_deps"
     # Sanity checks
-    if [ -d "$d/.git" ]; then
-      echo "INFO: restoring $d"
-      if pushd "$d" > /dev/null; then
+    if [ -e "$pkg_dir/.git" ]; then
+      echo "INFO: restoring $pkg_dir"
+      if pushd "$pkg_dir" > /dev/null; then
         git checkout -qf -- ups/product_deps || \
           {
-          echo "WARNING: unable to restore ups/product_deps for $d" 1>&2
-          failed+=($d)
+          echo "WARNING: unable to restore ups/product_deps for $pkg_name in $pkg_dir" 1>&2
+          failed+=($pkg_name)
         }
         popd > /dev/null
       else
-        echo "WARNING: unable to change directory to $d to restore ups/product_deps" 1>&2
-        failed+=($d)
+        echo "WARNING: unable to change directory to $pkg_dir to restore ups/product_deps" 1>&2
+        failed+=($pkg_name)
       fi
     else
-      echo "WARNING: unable to restore ups/product_deps from non-git repository $d" 1>&2
-      failed+=($d)
+      echo "WARNING: unable to restore ups/product_deps from non-git repository $pkg_dir" 1>&2
+      failed+=($pkg_name)
     fi
   done
 else
   operation="update"
+
   # Did the user provide a product name?
   shift $((OPTIND - 1))
   if [ $# -lt 1 ]; then
@@ -121,37 +127,46 @@ else
 
   get_package_list
 
-  for d in "${packages[@]}"; do
+  for pkg_dir in "${pkg_dirs[@]}"; do
+    pdfile="$pkg_dir/ups/product_deps"
+    pkg_name="$(sed -Ene 's&^[[:space:]]*parent[[:space:]]+([^[:space:]\#]+).*&\1&p; T; q' "${pdfile}")"
     # Sanity checks
-    if [ ! -r "${d}"/CMakeLists.txt ]; then
-      echo "WARNING: cannot find CMakeLists.txt in ${d}" 1>&2
+    if [ ! -r "$pkg_dir"/CMakeLists.txt ]; then
+      echo "WARNING: cannot find CMakeLists.txt in $pkg_dir" 1>&2
       false
-    elif [ ! -r "${d}"/ups/product_deps ]; then
-      echo "WARNING: cannot find ups/product_deps in ${d}" 1>&2
+    elif [ ! -r "$pdfile" ]; then
+      echo "WARNING: cannot find ups/product_deps in $pkg_dir" 1>&2
       false
     else
-      modify_product_deps "${d}" && \
-        modify_cmake "${d}/CMakeLists.txt" && \
-        { if [ -r "${d}"/releaseDB/CMakeLists.txt ]; then modify_cmake "${d}/releaseDB/CMakeLists.txt"; fi; } && \
-        { if [ -r "${d}"/bundle/CMakeLists.txt ]; then modify_cmake "${d}/bundle/CMakeLists.txt"; fi; }
+      modify_product_deps "$pfdile" && \
+        { if [ "$pkg_name" = "$product" ]; then \
+        modify_cmake "$pkg_dir/CMakeLists.txt"; fi; } && \
+        { cmf="$pkg_dir"/releaseDB/CMakeLists.txt; \
+        if [ -r "$cmf" ] && grep -Ee '\b'"$product"'\b' "$cmf" >/dev/null 2>&1; then \
+        modify_cmake "$cmf"; fi; } && \
+        { cmf="$pkg_dir"/bundle/CMakeLists.txt; \
+        if [ -r "$cmf" ] && grep -Ee '\b'"$product"'\b' "$cmf" >/dev/null 2>&1; then \
+        modify_cmake "$cmf"; fi; }
     fi
-    (( $? == 0 )) || failed+=($d)
+    (( $? == 0 )) || failed+=($pkg_name)
   done
 fi
 
 echo
 if [ -n "${failed[*]}" ]; then
-  echo "ERROR: $operation failed for packages:\n         ${failed[*]}" 1>&2
+  printf "ERROR: $operation failed for packages:\n         ${failed[*]}\n" 1>&2
   status=1
 else
   status=0
 fi
 
-if [ "${dryRun}" = "yes" ]; then
-  echo "If the dry run was successful, run: "
-  echo " mrb uv ${product} ${new_version}"
+if [ "$dryRun" = "yes" ]; then
+  echo "INFO: if the dry run was successful, run: "
+  echo " mrb uv $product $new_version"
 else
-  echo 'Be sure to re-run mrbsetenv'
+  (( updated_files == 1 )) && plural='' || plural='s'
+  (( updated_files )) && action=': be sure to re-run mrbsetenv'
+  printf "INFO: updated %d file%s%s\n" "$updated_files" "$plural" "$action"
 fi
 
 exit $status
