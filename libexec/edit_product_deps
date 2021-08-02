@@ -68,8 +68,8 @@ while (my $line = <$fh_in>) {
       ($get_phash eq "true" and
        $newline =~ s&^(\s*\Q$product\E\s+)[^-\s]\S+&$1$new_version&)) {
   } elsif ($line =~ m&^\s*parent\s+\Q$product\E&) {
-    info("version information for $product is set by project() in %s/CMakeLists.txt\n",
-         dirname(dirname($pdfile)));
+    info(sprintf("version information for $product is set by project() in %s/CMakeLists.txt\n",
+                 dirname(dirname($pdfile))));
   } elsif ($line =~ m&^\s*product\b&) {
     $get_phash="true";
   } elsif ($line =~ m&^\s*end_product_list\b&) {
@@ -107,9 +107,9 @@ if ($changed) {
     verbose(`diff -u "$pdfile.bak" "$pdfile"$colordiff`);
   }
 } else {
-  info(($dryrun) ? "[DRY_RUN] " : '',
-       "no changes necessary to $pdfile",
-       ($pdfilenew and -e $pdfilenew) ? ": removing $pdfilenew" : '');
+  info(sprintf("%sno changes necessary to $pdfile%s",
+               ($dryrun) ? "[DRY_RUN] " : '',
+               ($pdfilenew and -e $pdfilenew) ? ": removing $pdfilenew" : ''));
   unlink $pdfilenew if ($pdfilenew and -e $pdfilenew);
 }
 
