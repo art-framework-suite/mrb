@@ -91,7 +91,7 @@ EOF
   }
   $fh_out->print("$line\n") if $fh_out;
 }
-$fh_out->close();
+$fh_out->close() if $fh_out;
 $fh_in->close();
 
 if ($changed) {
@@ -109,8 +109,8 @@ if ($changed) {
 } else {
   info(($dryrun) ? "[DRY_RUN] " : '',
        "no changes necessary to $pdfile",
-       (-e $pdfilenew) ? '' : ": removing $pdfilenew");
-  unlink $pdfilenew if -e $pdfilenew;
+       ($pdfilenew and -e $pdfilenew) ? ": removing $pdfilenew" : '');
+  unlink $pdfilenew if ($pdfilenew and -e $pdfilenew);
 }
 
 1;
