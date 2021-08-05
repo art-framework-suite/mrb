@@ -494,8 +494,6 @@ tdefined ROOT_INCLUDE_PATH setenv CET_PLUGIN_PATH `dropit -p \"\${CET_PLUGIN_PAT
 EOF
 }
 
-my $cetb_cmake_args = ($cetbuildtools_compat) ? cmake_cetb_compat_defs() : ();
-
 # Take a side-trip to re-order.
 my $ordered_products =
   order_products($setup_products_hash, $checked_out_products);
@@ -569,9 +567,7 @@ my $mrb_pi =
     ($build_type) ? (build_type => $build_type) : (),
     version => $mrb_project_version,
     qualspec => $mrb_quals,
-    cmake_args =>
-    [ @{$cetb_cmake_args || []},
-      @{reconcile_cmake_args($all_packages, @ordered_prod_list)} ]
+    cmake_args => [ @{reconcile_cmake_args($all_packages, @ordered_prod_list)} ]
   };
 
 get_derived_parent_data($mrb_pi, $sourcedir, $mrb_quals);
