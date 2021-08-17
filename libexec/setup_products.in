@@ -522,7 +522,7 @@ foreach my $product (sort { $ordered_products->{$a}->{order} <=>
   $product_info->{cmake_args} = ups_to_cmake($product_info);
   # Needed by us to set up the development environment.
   my $product_uc = uc $product;
-  error_exit("unable to ascertain version for product $product_uc from ups/product_deps or CMakeLists.txt")
+  error_exit("unable to ascertain version for product $product from ups/product_deps or CMakeLists.txt")
     if (not $product_info->{version});
   print $tfh <<EOF;
 
