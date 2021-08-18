@@ -34,6 +34,7 @@ END { print "$_failscript\n" if ($?); }
 
 my $max_resolution_loops = 200;
 my $min_cetm_version = '@MRB_MIN_CETMODULES_VERSION@';
+my $min_cetm_module_plugins_version = '2.24.00';
 my $min_cetb_version = '@cetmodules_MIN_CETBUILDTOOLS_VERSION@';
 
 sub reconcile_cmake_args {
@@ -348,6 +349,18 @@ if ( $srcbase eq "ups" ) {
   $inputdir = File::Spec->catfile($sourcedir, "ups");
 }
 
+# See if any packages need to have CMake MODULE_LIBRARY plugins disabled:
+my $no_module_plugins_products =
+  { map
+    { my $prod = $_;
+      my $phash = $setup_products_hash->{$prod}->{phash};
+      (exists $phash->{cetmodules} and
+       exists $phash->{cetmodules}->{version} and
+       version_cmp($min_cetm_module_plugins_version,
+                   $phash->{cetmodules}->{version}) > 0) ? ($prod => 1): (); }
+    keys %{$setup_products_hash}
+  };
+
 my $regular_products = reconcile_deps($setup_products_hash);
 my $cetbuildtools_compat = (exists $regular_products->{cetbuildtools}) ? 1 : 0;
 
@@ -442,6 +455,8 @@ map { my $pinfo = $all_packages->{$_};
         compiler_for_quals($pinfo->{qhash}->{compiler},
                            $checked_out_products->{$_}->{qualspec})
           if $pinfo->{qhash}->{compiler} && ! $pinfo->{noarch};
+      $pinfo->{module_plugins} = 'FALSE'
+        if (exists $no_module_plugins_products->{$_});
     } sort keys %$checked_out_products;
 
 # Now, reduce the length of project_variable_prefix for each project.
@@ -520,6 +535,13 @@ foreach my $product (sort { $ordered_products->{$a}->{order} <=>
   write_table_frag($product_info->{name}, $product_info->{pfile});
   # Needed by buildtool to specify CMake arguments.
   $product_info->{cmake_args} = ups_to_cmake($product_info);
+  # Add some CMake arguments of our own, if appropriate.
+  push @{$product_info->{cmake_args}},
+    sprintf('-DCET_PV_%s_MODULE_PLUGINS=%s',
+            $product_info->{project_variable_prefix},
+            $product_info->{module_plugins})
+    if defined $product_info->{module_plugins};
+
   # Needed by us to set up the development environment.
   my $product_uc = uc $product;
   error_exit("unable to ascertain version for product $product from ups/product_deps or CMakeLists.txt")
