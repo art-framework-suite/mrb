@@ -54,31 +54,17 @@ then
   exit 1
 fi
 
-# if we are using ninja, abort
-if [ -e ${MRB_BUILDDIR}/rules.ninja ]
-then
-  echo "ERROR: mrb makePackage does not currently work with the ninja genenerator."
-  echo '       rebuild with make if you need makePackage'
-  exit 1
-fi
-
-
 # define the temporary install directory and make sure it is empty
-temp_install_dir=${MRB_BUILDDIR}/tempinstall
-rm -rf ${temp_install_dir}
+temp_install_path=${MRB_BUILDDIR}/tempinstall
+rm -rf "${temp_install_path}"
 
-# run make install
-make DESTDIR=${temp_install_dir} install ${jcores} $*
-
-# full path to products
-mrb_install_path=`$MRB_DIR/libexec/findDir.sh ${MRB_INSTALL}`
-temp_install_path=${temp_install_dir}/${mrb_install_path}
-
-product_list=`ls ${temp_install_path}`
-echo $product_list
+# run a redirected install
+env DESTDIR="${temp_install_path}" \
+    cmake --build "${MRB_BUILDDIR}" $jcores -t install "$@" || \
+  { echo "ERROR in $thisCom: redirected temporary install failed" 1>&2
+    exit 1; }
 
 thisos=`get-directory-name os`
-
 myflvr=`ups flavor -4`
 myOS=`uname -s`
 if [ ${myOS} = "Darwin" ]
@@ -87,19 +73,29 @@ then
 fi
 myqualdir=`echo ${MRB_QUALS} | sed s'/:/-/g'`
 mydotver=`echo ${distribution_version} |  sed -e 's/_/./g' | sed -e 's/^v//'`
-
 manifest=${distribution_name}-${mydotver}-${myflvr}-${myqualdir}_MANIFEST.txt
-
-echo "create manifest ${manifest}"
 rm -f ${manifest}
 touch ${manifest}
-for thisprod in $product_list
-do
-  thisver=`ls ${temp_install_path}/${thisprod} | grep -v version`
+
+echo "create manifest ${manifest}"
+
+# full path to products
+temp_products="${temp_install_path}${MRB_INSTALL}"
+
+# make this a real products area
+ln -s "$MRB_INSTALL/.upsfiles" "$temp_products" || \
+  { echo 1>&2 <<EOF
+ERROR in $thisCom: unable to link $temp_products/.upsfiles -> $MRB_INSTALL/.upsfiles
+EOF
+    exit 1; }
+
+
+ups list -aK+ -z "$temp_products" | sed -Ene 's&^"([^"]+)".*$&\1&p' | while read thisprod; do
+  thisver=`ls ${temp_products}/${thisprod} | grep -v version`
   thisdotver=`echo ${thisver} | sed -e 's/_/./g' | sed -e 's/^v//'`
-  if [ -e ${temp_install_path}/${thisprod}/${thisver}/${thisos}* ]
+  if [ -e ${temp_products}/${thisprod}/${thisver}/${thisos}* ]
   then
-    flvrdir=`ls -d ${temp_install_path}/${thisprod}/${thisver}/${thisos}*`
+    flvrdir=`ls -d ${temp_products}/${thisprod}/${thisver}/${thisos}*`
     thisflvr=$(basename ${flvrdir})
     #echo ${thisprod} ${thisver} ${thisflvr}
     tarflvr=`echo ${thisflvr} | sed -e 's/\./-/g'`
@@ -108,7 +104,7 @@ do
     tarballname=${thisprod}-${thisdotver}-noarch.tar.bz2
   fi
   echo "making ${tarballname}"
-  cd ${temp_install_path}; tar cjf ${MRB_BUILDDIR}/${tarballname} ${thisprod}
+  cd ${temp_products}; tar cjf ${MRB_BUILDDIR}/${tarballname} ${thisprod}
   printf "%-20s %-15s %-60s\n" "${thisprod}" "${thisver}" "${tarballname}" >> "${MRB_BUILDDIR}/${manifest}"
 done
 cd ${MRB_BUILDDIR}
