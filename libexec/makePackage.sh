@@ -111,6 +111,11 @@ ups list -aK+ -z "$temp_products" | sed -Ene 's&^"([^"]+)".*$&\1&p' | while read
 ERROR in $thisCom: unable to create "${MRB_BUILDDIR}/${tarballname}"
 EOF
       exit 1; }
+  sha256sum "${MRB_BUILDDIR}/${tarballname}" 2>/dev/null \
+            >"${MRB_BUILDDIR}/${tarballname}".sha256 || \
+    echo 1>&2 <<EOF
+WARNING in $thisCom: unable to generate checksum using sha256sum
+EOF
   printf "%-20s %-15s %-60s\n" "${thisprod}" "${thisver}" "${tarballname}" >> "${MRB_BUILDDIR}/${manifest}"
 done
 cd "${MRB_BUILDDIR}"
