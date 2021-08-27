@@ -4,8 +4,8 @@
 # use temporary install directory structure to determine tarball names
 
 # Determine the name of this command
-thisComFull=$(basename $0)
-thisCom=${thisComFull%.*}
+thisComFile="${0##*/}"
+thisCom="${thisComFile%.*}"
 
 # Merge it with the "umbrella" command (like mrb)
 fullCom="${mrb_command} $thisCom"
@@ -14,14 +14,14 @@ fullCom="${mrb_command} $thisCom"
 function usage() 
 {
   cat 1>&2 << EOF
-Usage: $fullCom [options] [-- options for make]
+Usage: $fullCom [options] [-- options for cmake --build]
   Make distribution tarballs for each product installed by this build
   Options:
      -n <distribution_name> = the name for the manifest (e.g., uboone, lbne, ...)
          If unspecified, this defaults to MRB_PROJECT
      -v <version> = the version for the manifest (vx_y_z format)
          If unspecified, this defaults to MRB_PROJECT_VERSION
-     -j <ncores> = pass along the -j flag to make for backwards compatibility
+     -j <ncores> = pass along the -j flag to cmake --build for backwards compatibility
   -- signals the end of the options for ${thisCom}
   
   For instance: mrb mp -m xyz -- -j4	 
@@ -47,7 +47,7 @@ do
 done
 shift $((OPTIND - 1))
 
-if [ -z ${MRB_BUILDDIR} ]
+if [ -z "${MRB_BUILDDIR}" ]
 then
   echo "ERROR in ${thisCom}: MRB_BUILDDIR is not defined."
   echo '       source the appropriate localProductsXXX/setup'
@@ -55,8 +55,11 @@ then
 fi
 
 # define the temporary install directory and make sure it is empty
-temp_install_path=${MRB_BUILDDIR}/tempinstall
+temp_install_path="${MRB_BUILDDIR}"/tempinstall
 rm -rf "${temp_install_path}"
+
+# Cleanup at end.
+trap "rm -rf \"$temp_install_path\" >/dev/null 2>&1" EXIT
 
 # run a redirected install
 env DESTDIR="${temp_install_path}" \
@@ -89,27 +92,25 @@ ERROR in $thisCom: unable to link $temp_products/.upsfiles -> $MRB_INSTALL/.upsf
 EOF
     exit 1; }
 
-
+# loop over products and make tarballs
 ups list -aK+ -z "$temp_products" | sed -Ene 's&^"([^"]+)".*$&\1&p' | while read thisprod; do
   thisver=`ls ${temp_products}/${thisprod} | grep -v version`
   thisdotver=`echo ${thisver} | sed -e 's/_/./g' | sed -e 's/^v//'`
-  if [ -e ${temp_products}/${thisprod}/${thisver}/${thisos}* ]
-  then
-    flvrdir=`ls -d ${temp_products}/${thisprod}/${thisver}/${thisos}*`
-    thisflvr=$(basename ${flvrdir})
-    #echo ${thisprod} ${thisver} ${thisflvr}
-    tarflvr=`echo ${thisflvr} | sed -e 's/\./-/g'`
-    tarballname=${thisprod}-${thisdotver}-${tarflvr}.tar.bz2
+  proddirs=("${temp_products}/${thisprod}/${thisver}/${thisos}"*)
+  if [ -d "${proddirs[*]}" ]; then
+    flvrdir=`ls -d "${temp_products}/${thisprod}/${thisver}/${thisos}"*`
+    thisflvr=${flvrdir##*/}
+    tarflvr=${thisflvr//./-}
+    tarballname="${thisprod}-${thisdotver}-${tarflvr}.tar.bz2"
   else
-    tarballname=${thisprod}-${thisdotver}-noarch.tar.bz2
+    tarballname="${thisprod}-${thisdotver}-noarch.tar.bz2"
   fi
   echo "making ${tarballname}"
-  cd ${temp_products}; tar cjf ${MRB_BUILDDIR}/${tarballname} ${thisprod}
+  tar -C "${temp_products}" -cjf "${MRB_BUILDDIR}/${tarballname}" ${thisprod} || \
+    { echo 1>&2 <<EOF
+ERROR in $thisCom: unable to create "${MRB_BUILDDIR}/${tarballname}"
+EOF
+      exit 1; }
   printf "%-20s %-15s %-60s\n" "${thisprod}" "${thisver}" "${tarballname}" >> "${MRB_BUILDDIR}/${manifest}"
 done
-cd ${MRB_BUILDDIR}
-
-# cleanup
-rm -rf ${temp_install_dir}
-
-exit 0
+cd "${MRB_BUILDDIR}"
