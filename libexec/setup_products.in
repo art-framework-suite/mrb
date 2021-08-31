@@ -563,13 +563,21 @@ EOF
 
 chdir($oldcwd);
 
-# Ensure . is at the front of FHICL_FILE_PATH.
 print $tfh <<EOF;
 
 ########################################################################
 # Postamble
+
+# Required environment.
 setenv CETPKG_SOURCE "${sourcedir}"
 setenv CETPKG_BUILD  "${builddir}"
+
+# Ensure top-level CMakeLists.txt is current.
+mrb uc >/dev/null; test "$?" != 0 && \
+  echo ERROR\:\ failure\ to\ freshen\ $sourcedir/CMakeLists.txt && \
+  return 1 || true
+
+# Ensure . is at the front of FHICL_FILE_PATH.
 tdefined FHICL_FILE_PATH || set_ FHICL_FILE_PATH=''
 setenv FHICL_FILE_PATH \`dropit -esf -p "\${FHICL_FILE_PATH}" '.'\`
 EOF
