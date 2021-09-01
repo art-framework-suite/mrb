@@ -83,20 +83,26 @@ sub verified_github_url;
 # 4. $default_repo_type.
 #
 ########################################################################
-my $art_repo = fnal_repo("art");
-$art_repo->{fnal}->{git_args} = [ qw(--recurse-submodules) ];
-
+my $art_github = "art-framework-suite";
+my $art_repo = github_repo("art", $art_github);
+$art_repo->{github}->{git_args} = [ qw(--recurse-submodules) ];
 my @known_specs_art =
-  ( prod_info("fhiclcpp", fnal_repo("fhicl-cpp")),
-    prod_info("fhiclpy", fnal_repo("fhicl-py")),
-    prod_info("cetmodules", github_repo("cetmodules", "FNALssi")),
-    prod_info("art", $art_repo)
-  ) ;
+    (
+     prod_info("cetmodules", github_repo("cetmodules", "FNALssi")),
+     prod_info("cetlib_except", github_repo("cetlib-except", $art_github)),
+     prod_info("hep_concurrency", github_repo("hep-concurrency", $art_github)),
+     prod_info("fhiclcpp", github_repo("fhicl-cpp", $art_github)),
+     prod_info("art", $art_repo),
+     prod_info("canvas_root_io", github_repo("canvas-root-io", $art_github)),
+     prod_info("art_root_io", github_repo("art-root-io", $art_github)),
+     prod_info("fhiclpy", github_repo("fhicl-py", $art_github)),
+  );
 
+# Fill in art suite members whose product names match their repository
+# names and aren't already in @known_specs_art.
 my $art_special = { map { $_->{product} => 1; } @known_specs_art };
-
 push @known_specs_art,
-  map { ($art_special->{$_}) ? () : prod_info($_, fnal_repo($_)); }
+  map { ($art_special->{$_}) ? () : prod_info($_, github_repo($_, $art_github)); }
   @{$known_suites->{art}};
 
 my @known_specs_artdaq =
