@@ -1,8 +1,8 @@
 project_variable(LIBEXEC_DIR CONFIG ${CMAKE_INSTALL_LIBEXECDIR})
 
 configure_file(setup_products.in setup_products @ONLY)
-cet_script(add_to_cmake.sh
-  checkBuildDir.sh
+cet_script(
+	${CMAKE_CURRENT_BINARY_DIR}/setup_products
 	changeQual.sh
 	copy_dependency_database.sh
 	copy_files_to_srcs.sh
@@ -16,9 +16,7 @@ cet_script(add_to_cmake.sh
 	makePackage.sh
 	newDev.sh
 	newProduct.sh
-	mrbSetEnv
 	pullDep.py
-	${CMAKE_CURRENT_BINARY_DIR}/setup_products
 	svnCheckout.sh
 	updateDepsCM.sh
 	updateDepsPV.sh
@@ -26,14 +24,34 @@ cet_script(add_to_cmake.sh
 	zapBuild.sh
 	zapDist.sh
 	zapInstall.sh
+  add_to_cmake.sh
+  checkBuildDir.sh
   DESTINATION ${${PROJECT_NAME}_LIBEXEC_DIR})
 
 cet_localize_pv(cetmodules LIBEXEC_DIR)
-install(FILES
+
+set(mrb_files
 	shell_independence
 	unset_shell_independence
-  ${cetmodules_LIBEXEC_DIR}/fail
-  ${cetmodules_LIBEXEC_DIR}/parse_deps.pm
-  ${cetmodules_LIBEXEC_DIR}/pass
+  mrbSetEnv
   setup_local_products
+  )
+
+foreach(file IN LISTS mrb_files)
+  configure_file("${file}" "${file}" COPYONLY)
+  list(APPEND install_files "${CMAKE_CURRENT_BINARY_DIR}/${file}")
+endforeach()
+
+set(cetmodules_files
+  fail
+  parse_deps.pm
+  pass
+  )
+
+foreach (file IN LISTS cetmodules_files)
+  configure_file("${cetmodules_LIBEXEC_DIR}/${file}" "${file}" COPYONLY)
+  list(APPEND install_files "${CMAKE_CURRENT_BINARY_DIR}/${file}")
+endforeach()
+
+install(FILES ${install_files}
   DESTINATION ${${PROJECT_NAME}_LIBEXEC_DIR})
