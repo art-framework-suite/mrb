@@ -24,6 +24,7 @@ cet_script(
 	zapBuild.sh
 	zapDist.sh
 	zapInstall.sh
+  ${cetmodules_LIBEXEC_DIR}/cet_lock
   add_to_cmake.sh
   checkBuildDir.sh
   DESTINATION ${${PROJECT_NAME}_LIBEXEC_DIR})
@@ -44,6 +45,7 @@ endforeach()
 
 set(cetmodules_files
   fail
+  message_functions.sh
   parse_deps.pm
   pass
   )

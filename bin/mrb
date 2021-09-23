@@ -113,6 +113,9 @@ in the environment" || return
 # Forward remaining args by default.
 cmd_args=("$@")
 
+# For locking operations.
+resources=(build);
+
 # Determine how to dispatch
 case $subcmd in
   # h3. Help
@@ -120,31 +123,31 @@ case $subcmd in
 
   # h3. Subcommands
   # Set up a new development area (calls &l=bin/newDev.sh&)
-  newDev|n) cmd="$mrb_libexec/newDev.sh";;
+  newDev|n) cmd="$mrb_libexec/newDev.sh"; resources+=(top cml);;
   gitCheckout|g) cmd="$mrb_libexec/gitCheckout";;
   svnCheckout|svn) cmd="$mrb_libexec/svnCheckout";;
-  newProduct|p) cmd="$mrb_libexec/newProduct.sh";;
+  newProduct|p) cmd="$mrb_libexec/newProduct.sh"; resources+=(cml);;
   setEnv|s) error_exit 5 \
     "please invoke the mrbsetenv alias to ensure correct environment setup" || \
     return;;
   setup_local_products|slp) error_exit 5 \
     "please invoke the mrbslp alias to ensure correct environment setup" || \
     return;;
-  build|install|test|b|i|t)
+  build|install|test|b|i|t) resources=() # Handled by buildtool
     prep_buildtool ${MRB_INSTALL:+-I "${MRB_INSTALL}"} -${subcmd:0:1} \
       "${cmd_args[@]}" || return;;
-  makePackage|mp) cmd="$mrb_libexec/makePackage.sh";;
+  makePackage|mp) cmd="$mrb_libexec/makePackage.sh"; resources+=(package);;
   zapBuild|z) cmd="$mrb_libexec/zapBuild.sh";;
-  zapInstall|zi) cmd="$mrb_libexec/zapInstall.sh";;
-  zapDist|zd) cmd="$mrb_libexec/zapDist.sh";;
-  changelog|changeLog|c) cmd=git
+  zapInstall|zi) cmd="$mrb_libexec/zapInstall.sh"; resources+=(install);;
+  zapDist|zd) cmd="$mrb_libexec/zapDist.sh"; resources+=(install);;
+  changelog|changeLog|c) cmd=git; resources=()
     cmd_args=(
       log
       --graph
       --pretty=tformat:'%Cgreen%ad%Creset%C(bold blue)% aN(%G?)%Creset%Cred% h%Creset% s%C(yellow)% d%Creset'
       --date=short --abbrev-commit
       "${cmd_args[@]}");;
-  updateDepsCM|uc) cmd="$mrb_libexec/updateDepsCM.sh";;
+  updateDepsCM|uc) cmd="$mrb_libexec/updateDepsCM.sh"; resources+=(cml);;
   updateDepsPV|uv) cmd="$mrb_libexec/updateDepsPV.sh";;
   updateSource) cmd="$mrb_libexec/updateSource.sh";;
   changeQual|cq) cmd="$mrb_libexec/changeQual.sh";;
@@ -164,6 +167,26 @@ MRB_TOP=$MRB_TOP
   *) echo "unknown ${prog} command ${subcmd}" 1>&2; usage || return
 esac
 
+if (( ${#resources[*]} )); then # Utilize locking.
+  lock_cmd=("$mrb_libexec/cet_lock"
+            -d "${MRB_BUILDDIR}/.locks"
+            -l "$prog $subcmd"
+            -s 5
+            -t 30
+           )
+  for resource in ${resources[*]:+"${resources[@]}"}; do
+    lock_cmd+=(-r)
+    case $resource in
+      build) lock_cmd+=("${MRB_PROJECT}_MRB-$MRB_PROJECT_VERSION");;
+      cml) lock_cmd+=("$MRB_TOP/.locks:srcs/CMakeLists.txt");;
+      top) lock_cmd+=("$MRB_TOP/.locks:$resource");;
+      *) lock_cmd+=("$resource")
+    esac
+  done
+fi
+
 # Dispatch.
-exec -a "${cmd##*/}" "${cmd}" "${cmd_args[@]}" || \
+exec -a "${cmd##*/}" \
+     ${lock_cmd[*]:+"${lock_cmd[@]}" --} \
+     "${cmd}" ${cmd[*]:+"${cmd_args[@]}"} || \
   error_exit "unable to execute command ${cmd##*/} ${cmd_args[*]}" || return
