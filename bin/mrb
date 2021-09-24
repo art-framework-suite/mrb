@@ -116,6 +116,8 @@ cmd_args=("$@")
 # For locking operations.
 resources=(build);
 
+thisdir="$(pwd -P)"
+
 # Determine how to dispatch
 case $subcmd in
   # h3. Help
@@ -123,7 +125,7 @@ case $subcmd in
 
   # h3. Subcommands
   # Set up a new development area (calls &l=bin/newDev.sh&)
-  newDev|n) cmd="$mrb_libexec/newDev.sh"; resources+=(top cml);;
+  newDev|n) cmd="$mrb_libexec/newDev.sh"; resources=(top);;
   gitCheckout|g) cmd="$mrb_libexec/gitCheckout";;
   svnCheckout|svn) cmd="$mrb_libexec/svnCheckout";;
   newProduct|p) cmd="$mrb_libexec/newProduct.sh"; resources+=(cml);;
@@ -169,7 +171,7 @@ esac
 
 if (( ${#resources[*]} )); then # Utilize locking.
   lock_cmd=("$mrb_libexec/cet_lock"
-            -d "${MRB_BUILDDIR}/.locks"
+            -d "${MRB_BUILDDIR:-${MRB_TOP:-$thisdir}}/.locks"
             -l "$prog $subcmd"
             -s 5
             -t 30
@@ -178,8 +180,8 @@ if (( ${#resources[*]} )); then # Utilize locking.
     lock_cmd+=(-r)
     case $resource in
       build) lock_cmd+=("${MRB_PROJECT}_MRB-$MRB_PROJECT_VERSION");;
-      cml) lock_cmd+=("$MRB_TOP/.locks:srcs/CMakeLists.txt");;
-      top) lock_cmd+=("$MRB_TOP/.locks:$resource");;
+      cml) lock_cmd+=("${MRB_SOURCE:-$thisdir/srcs}/.locks:CMakeLists.txt");;
+      top) lock_cmd+=("${MRB_TOP:-$thisdir}/.locks:$resource");;
       *) lock_cmd+=("$resource")
     esac
   done
