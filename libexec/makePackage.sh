@@ -76,7 +76,7 @@ then
 fi
 myqualdir=`echo $MRB_QUALS | sed s'/:/-/g'`
 mydotver=`echo $distribution_version |  sed -e 's/_/./g' | sed -e 's/^v//'`
-manifest=$distribution_name-$mydotver-$myflvr-$myqualdir_MANIFEST.txt
+manifest=$distribution_name-$mydotver-$myflvr-${myqualdir}_MANIFEST.txt
 rm -f $manifest
 touch $manifest
 
