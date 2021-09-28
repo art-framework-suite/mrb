@@ -133,10 +133,23 @@ my @known_specs_expt =
   ( prod_info("lariatfragments",
               fnal_repo("lariat-online-lariatfragments", "lariat-online")),
     prod_info("lariatutil", fnal_repo("lardbt-lariatutil", "lardbt")),
-    prod_info("garsoft", github_repo("garsoft", "dune")),
-    prod_info("garana", github_repo("garana", "dune")),
-    prod_info("duneanaobj", github_repo("duneanaobj", "dune")),
+    prod_info("garsoft", github_repo("garsoft", "DUNE")),
+    prod_info("garana", github_repo("garana", "DUNE")),
+    prod_info("duneanaobj", github_repo("duneanaobj", "DUNE")),
     prod_info("lbne_raw_data", fnal_repo("lbne-raw-data"))
+  );
+
+# NuSoftHEP
+my $nu_github = "NuSoftHEP";
+my @known_specs_nu =
+    (
+     prod_info("nutools", github_repo("nutools", $nu_github)),
+     prod_info("nuevdb", github_repo("nuevdb", $nu_github)),
+     prod_info("nug4", github_repo("nug4", $nu_github)),
+     prod_info("nugen", github_repo("nugen", $nu_github)),
+     prod_info("nurandom", github_repo("nurandom", $nu_github)),
+     prod_info("nusimdata", github_repo("nusimdata", $nu_github)),
+     prod_info("geant4reweight", github_repo("geant4reweight", $nu_github))
   );
 
 my @known_specs_sbn =
@@ -169,6 +182,7 @@ my @known_specs_larsoft =
 my @known_specs = (@known_specs_art,
                    @known_specs_artdaq,
                    @known_specs_expt,
+                   @known_specs_nu,
                    @known_specs_sbn,
                    @known_specs_sbndaq,
                    @known_specs_larsoft);
