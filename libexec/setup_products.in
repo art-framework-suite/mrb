@@ -573,7 +573,7 @@ setenv CETPKG_SOURCE "${sourcedir}"
 setenv CETPKG_BUILD  "${builddir}"
 
 # Ensure top-level CMakeLists.txt is current.
-mrb uc >/dev/null; test "$?" != 0 && \
+mrb uc >/dev/null; test "\$?" != 0 && \
   echo ERROR\:\ failure\ to\ freshen\ $sourcedir/CMakeLists.txt && \
   return 1 || true
 

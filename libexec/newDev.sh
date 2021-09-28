@@ -298,6 +298,13 @@ function check_qualList() {
     fi
 }
 
+# Return success if any specified directory is not empty (ignoring MRB
+# lock directories).
+function dir_is_dirty()
+{
+  ls -1AF "$@" | grep -qvEe '^\.locks/$'
+}
+
 # Set up configuration
 doForce=""
 doNewBuildDir=""
@@ -510,7 +517,7 @@ echo
 if [ ${makeSrcs} ]
 then
     # Make sure the source directory is empty (e.g. leave room for @srcs/@)
-    if [ -d ${srcTopDir} ] && [ "$(ls -A ${srcTopDir})" ]; then
+    if [ -d ${srcTopDir} ] && dir_is_dirty "$srcTopDir"; then
 
         # Directory has stuff in it, error unless force option is given.
         if [ ! $doForce ]; then
@@ -524,7 +531,7 @@ fi
 if [ ${makeBuild} ]
 then
      # Make sure the directory for build is empty
-    if [ "$buildTopDir" != "$srcTopDir" ] && [ -d ${buildTopDir} ] && [ "$(ls -A $buildTopDir)" ]; then
+    if [ "$buildTopDir" != "$srcTopDir" ] && [ -d ${buildTopDir} ] && dir_is_dirty "$buildTopDir"; then
 
       # Directory has stuff in it, error unless force option is given.
       if [ ! $doForce ]; then
@@ -539,7 +546,7 @@ fi
 if [ ${makeLP} ]
 then
      # Make sure the directory for build and local products is empty
-    if [ "$lpTopDir" != "$srcTopDir" ] && [ -d ${lpTopDir} ] && [ "$(ls -A $lpTopDir)" ]; then
+    if [ "$lpTopDir" != "$srcTopDir" ] && [ -d ${lpTopDir} ] && dir_is_dirty "$lpTopDir"; then
 
       # Directory has stuff in it, error unless force option is given.
       if [ ! $doForce ]; then
