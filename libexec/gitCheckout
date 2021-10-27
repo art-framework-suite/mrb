@@ -96,6 +96,7 @@ my @known_specs_art =
      prod_info("canvas_root_io", github_repo("canvas-root-io", $art_github)),
      prod_info("art_root_io", github_repo("art-root-io", $art_github)),
      prod_info("fhiclpy", github_repo("fhicl-py", $art_github)),
+     prod_info("ifdh_art", github_repo("ifdh-art", $art_github))
   );
 
 # Fill in art suite members whose product names match their repository
