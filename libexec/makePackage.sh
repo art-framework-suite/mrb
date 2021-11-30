@@ -83,10 +83,10 @@ touch $manifest
 echo "create manifest $manifest"
 
 # full path to products
-temp_products="$temp_install_path$MRB_INSTALL"
+temp_products="$temp_install_path$( cd "$MRB_INSTALL" && pwd -P)"
 
 # make this a real products area
-ln -s "$MRB_INSTALL/.upsfiles" "$temp_products" || \
+ln -s "$MRB_INSTALL/.upsfiles" "$temp_products/" || \
   { echo 1>&2 <<EOF
 ERROR in $thisCom: unable to link $temp_products/.upsfiles -> $MRB_INSTALL/.upsfiles
 EOF
