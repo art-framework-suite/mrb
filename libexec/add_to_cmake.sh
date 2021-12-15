@@ -16,6 +16,8 @@ Usage: $fullCom <MRB_SOURCE> <repository_name>
 EOF
 }
 
+libexec="$(dirname "$BASH_SOURCE")"
+
 MRB_SOURCE="${1}"
 pkglist="${2}"
 
@@ -53,8 +55,8 @@ else
    cmake_include_fragment=${MRB_SOURCE}/.cmake_include_dirs
 fi
 
-cd ${MRB_SOURCE}
-$MRB_DIR/libexec/copy_files_to_srcs.sh ${MRB_SOURCE} || exit
+cd "${MRB_SOURCE}"
+"$libexec/copy_files_to_srcs.sh" "${MRB_SOURCE}" || exit
 
 # have to accumulate the include_directories command in one fragment
 # and the add_subdirectory commands in another fragment

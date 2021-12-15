@@ -44,7 +44,7 @@ mrb_dot_version=${MRB_VERSION#v}
 mrb_dot_version=${mrb_dot_version//_/.}
 sed -Ee 's&\@mrb_project\@&'"$MRB_PROJECT"'_MRB&' \
   -e 's&\@mrb_dot_version\@&'"$mrb_dot_version"'&' \
-  $mrb_templates/CMakeLists.txt.main > ${MRB_SOURCE}/CMakeLists.txt || exit
+  "${mrb_templates:-$(dirname $BASH_SOURCE)/../templates}/CMakeLists.txt.main" > ${MRB_SOURCE}/CMakeLists.txt || exit
 
 if (( clean )); then # Clear subdirectories.
   if [ -e ${cmake_subdir_fragment} ]; then rm -f ${cmake_subdir_fragment}; fi
