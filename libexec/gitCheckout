@@ -32,7 +32,7 @@ my $known_suites =
                   canvas canvas_root_io art art_root_io gallery critic)],
     gallery => [qw(cetlib_except cetlib hep_concurrency fhiclcpp messagefacility
                    canvas canvas_root_io fhiclpy gallery)],
-    larsoftobj => [qw(larcoreobj lardataobj larcorealg lardataalg larsoftobj)],
+    larsoftobj => [qw(larcoreobj lardataobj larcorealg lardataalg larvecutils larsoftobj)],
     nu => [qw(nusimdata nuevdb nug4 nugen nurandom nutools)],
     uboone=> [qw(uboonecode ubutil uboonedata ublite ubana ubreco ubsim
                  ubevt ubraw ubcrt ubcore ubcv ubobj)],
