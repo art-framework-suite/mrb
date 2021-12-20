@@ -1,34 +1,47 @@
 #!/usr/bin/env perl
+# -*- cperl -*-
+########################################################################
+# setup_products
 #
-# setup products for the build environment
-# use product_deps and MRB_QUALS
+#   Set up products for the build environment.
+#
+# * Invoked by mrbsetenv.
+#
+########################################################################
+
+use 5.016;
 use strict;
-use warnings FATAL =>
-  qw(io regexp severe syntax uninitialized void);;
+use warnings FATAL => qw(io regexp severe syntax uninitialized void);
 
-use Cwd qw(:DEFAULT chdir abs_path);
-use File::Basename;
-use File::Path 'make_path';
-use File::Spec; # For catfile;
-use FileHandle;
-use POSIX qw(uname);
+##
+use Cwd qw(abs_path chdir getcwd);
+use File::Spec qw();
+use FindBin qw();
 
-use vars qw ($_mydir $_failscript);
+my ($_libexec, $_failscript);
+
+
 BEGIN {
-  my $_me = readlink($0);
-  if (not $_me) {
-    $_me = $0;
-  } elsif ($_me !~ m &^/&) {
-    $_me = abs_path(File::Spec->catfile(dirname($0), $_me));
-  }
-  $_mydir = dirname($_me);
-  $_failscript = abs_path(File::Spec->catfile($_mydir, 'fail'));
+  $_libexec = $FindBin::RealBin;
+  $_failscript = abs_path(File::Spec->catfile($_libexec, 'fail'));
 }
 
-use lib $_mydir;
+use lib $_libexec;
 
-use parse_deps qw(:DEFAULT $btype_table $pathspec_info);
-use warnings FATAL => 'parse_deps';
+##
+use Cetmodules qw();
+use Cetmodules::CMake qw(get_CMakeLists_hash);
+use Cetmodules::Util qw(error_exit shortest_unique_prefix version_cmp version_sort);
+use Cetmodules::UPS::ProductDeps qw($BTYPE_TABLE get_product_list get_parent_info get_qualifier_matrix sort_qual);
+use Cetmodules::UPS::Setup qw(cetpkg_info_file classify_deps compiler_for_quals deps_for_quals get_derived_parent_data print_dep_setup print_dep_setup_one print_dev_setup ups_to_cmake write_table_deps write_table_frag);
+use File::Basename qw(basename);
+use File::Path qw(make_path);
+use IO::File qw();
+use IO::Handle qw();
+use POSIX qw(uname);
+
+##
+use warnings FATAL => qw(Cetmodules);
 
 END { print "$_failscript\n" if ($?); }
 
@@ -215,7 +228,7 @@ my $simple = (not $mrb_quals or
 
 my $build_type;
 ($build_type) =
-  map { $mrb_quals_sorted[$#mrb_quals_sorted] eq $_ ? $btype_table->{$_} : (); }
+  map { $mrb_quals_sorted[$#mrb_quals_sorted] eq $_ ? $BTYPE_TABLE->{$_} : (); }
   qw(debug opt prof) if (scalar @mrb_quals_sorted and not $simple);
 
 

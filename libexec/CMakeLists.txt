@@ -1,4 +1,10 @@
+project_variable(CPAN_DIR CONFIG CPAN)
 project_variable(LIBEXEC_DIR CONFIG ${CMAKE_INSTALL_LIBEXECDIR})
+
+install(DIRECTORY ${cetmodules_CPAN_DIR}/
+  DESTINATION ${${CETMODULES_CURRENT_PROJECT_NAME}_CPAN_DIR})
+file(COPY ${cetmodules_CPAN_DIR}
+  DESTINATION ../${${CETMODULES_CURRENT_PROJECT_NAME}_CPAN_DIR}/..)
 
 configure_file(setup_products.in setup_products @ONLY)
 cet_script(
@@ -29,8 +35,6 @@ cet_script(
   checkBuildDir.sh
   DESTINATION ${${PROJECT_NAME}_LIBEXEC_DIR})
 
-cet_localize_pv(cetmodules LIBEXEC_DIR)
-
 set(mrb_files
 	shell_independence
 	unset_shell_independence
@@ -46,14 +50,21 @@ endforeach()
 set(cetmodules_files
   fail
   message_functions.sh
-  parse_deps.pm
   pass
   )
 
 foreach (file IN LISTS cetmodules_files)
-  configure_file("${cetmodules_LIBEXEC_DIR}/${file}" "${file}" COPYONLY)
+  configure_file(${cetmodules_LIBEXEC_DIR}/${file} . COPYONLY)
   list(APPEND install_files "${CMAKE_CURRENT_BINARY_DIR}/${file}")
 endforeach()
+
+file(COPY ${cetmodules_LIBEXEC_DIR}
+  DESTINATION ../${${CETMODULES_CURRENT_PROJECT_NAME}_LIBEXEC_DIR}/..
+  FILES_MATCHING PATTERN "*.pm" PATTERN "Migrate" EXCLUDE)
+
+install(DIRECTORY ${cetmodules_LIBEXEC_DIR}/
+  DESTINATION  ${${CETMODULES_CURRENT_PROJECT_NAME}_LIBEXEC_DIR}
+  FILES_MATCHING PATTERN "*.pm" PATTERN "Migrate" EXCLUDE)
 
 install(FILES ${install_files}
   DESTINATION ${${PROJECT_NAME}_LIBEXEC_DIR})
