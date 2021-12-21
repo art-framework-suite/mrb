@@ -137,6 +137,16 @@ my @known_specs_expt =
     prod_info("garsoft", github_repo("garsoft", "DUNE")),
     prod_info("garana", github_repo("garana", "DUNE")),
     prod_info("duneanaobj", github_repo("duneanaobj", "DUNE")),
+    prod_info("dunecore", github_repo("dunecore", "DUNE")),
+    prod_info("duneopdet", github_repo("duneopdet", "DUNE")),
+    prod_info("dunesim", github_repo("dunesim", "DUNE")),
+    prod_info("dunecalib", github_repo("dunecalib", "DUNE")),
+    prod_info("duneprototypes", github_repo("duneprototypes", "DUNE")),
+    prod_info("dunedataprep", github_repo("dunedataprep", "DUNE")),
+    prod_info("dunereco", github_repo("dunereco", "DUNE")),
+    prod_info("duneana", github_repo("duneana", "DUNE")),
+    prod_info("duneexamples", github_repo("duneexamples", "DUNE")),
+    prod_info("dunesw", github_repo("dunesw", "DUNE")),
     prod_info("lbne_raw_data", fnal_repo("lbne-raw-data"))
   );
 
