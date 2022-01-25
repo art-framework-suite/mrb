@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.19.6...3.20 FATAL_ERROR)
 
-set(MRB_MIN_CETMODULES_VERSION 2.29.01)
+set(MRB_MIN_CETMODULES_VERSION 2.31.00)
 find_package(cetmodules ${MRB_MIN_CETMODULES_VERSION})
 
-project(mrb VERSION 5.19.09 LANGUAGES NONE)
+project(mrb VERSION 5.19.10 LANGUAGES NONE)
 
 # No tests of cetmodules.
 set(BUILD_TESTING OFF)
