@@ -83,7 +83,21 @@ touch $manifest
 echo "create manifest $manifest"
 
 # full path to products
-temp_products="$temp_install_path$( cd "$MRB_INSTALL" && pwd -P)"
+
+temp_products="$temp_install_path$MRB_INSTALL"
+[ -d "$temp_products" ] || \
+  temp_products="$temp_install_path$( { cd "$MRB_INSTALL" && pwd -P; } 2>/dev/null )" && \
+    [ -d "$temp_products" ] || \
+      { echo 1>&2 <<EOF
+ERROR in $thisCom: unable to find temporary product installation at
+
+  $temp_install_path$MRB_INSTALL
+
+ OR
+
+  $temp_products
+EOF
+        exit 1; }
 
 # make this a real products area
 ln -s "$MRB_INSTALL/.upsfiles" "$temp_products/" || \
