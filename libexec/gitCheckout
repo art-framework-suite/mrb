@@ -30,6 +30,8 @@ my $known_suites =
                canvas canvas_root_io art art_root_io gallery critic)],
     critic => [qw(cetlib_except cetlib hep_concurrency fhiclcpp messagefacility
                   canvas canvas_root_io art art_root_io gallery critic)],
+    dune => [qw(dunecore duneopdet dunesim dunecalib duneprototypes dunedataprep
+                dunereco duneana duneexamples dunesw duneutil protoduneana)],
     gallery => [qw(cetlib_except cetlib hep_concurrency fhiclcpp messagefacility
                    canvas canvas_root_io fhiclpy gallery)],
     larsoftobj => [qw(larcoreobj lardataobj larcorealg lardataalg larvecutils larsoftobj)],
@@ -130,13 +132,28 @@ my @known_specs_artdaq =
               fnal_repo("mf-extensions-git"))
   );
 
+my @known_specs_dune =
+  ( prod_info("garsoft", github_repo("garsoft", "DUNE")),
+    prod_info("garana", github_repo("garana", "DUNE")),
+    prod_info("duneanaobj", github_repo("duneanaobj", "DUNE")),
+    prod_info("dunecore", github_repo("dunecore", "DUNE")),
+    prod_info("duneopdet", github_repo("duneopdet", "DUNE")),
+    prod_info("dunesim", github_repo("dunesim", "DUNE")),
+    prod_info("dunecalib", github_repo("dunecalib", "DUNE")),
+    prod_info("duneprototypes", github_repo("duneprototypes", "DUNE")),
+    prod_info("dunedataprep", github_repo("dunedataprep", "DUNE")),
+    prod_info("dunereco", github_repo("dunereco", "DUNE")),
+    prod_info("duneana", github_repo("duneana", "DUNE")),
+    prod_info("duneexamples", github_repo("duneexamples", "DUNE")),
+    prod_info("dunesw", github_repo("dunesw", "DUNE")),
+    prod_info("duneutil", github_repo("duneutil", "DUNE")),
+    prod_info("protoduneana", github_repo("protoduneana", "DUNE"))
+  );
+
 my @known_specs_expt =
   ( prod_info("lariatfragments",
               fnal_repo("lariat-online-lariatfragments", "lariat-online")),
     prod_info("lariatutil", fnal_repo("lardbt-lariatutil", "lardbt")),
-    prod_info("garsoft", github_repo("garsoft", "DUNE")),
-    prod_info("garana", github_repo("garana", "DUNE")),
-    prod_info("duneanaobj", github_repo("duneanaobj", "DUNE")),
     prod_info("lbne_raw_data", fnal_repo("lbne-raw-data"))
   );
 
@@ -182,6 +199,7 @@ my @known_specs_larsoft =
 
 my @known_specs = (@known_specs_art,
                    @known_specs_artdaq,
+                   @known_specs_dune,
                    @known_specs_expt,
                    @known_specs_nu,
                    @known_specs_sbn,
