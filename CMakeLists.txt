@@ -7,7 +7,7 @@ find_package(cetmodules ${MRB_MIN_INTERNAL_CETMODULES_VERSION})
 ###########################
 # Project information.
 project(mrb LANGUAGES NONE)
-set(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING 6.00.00-rc2)
+set(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING 6.00.00-rc3)
 
 # Installed file locations.
 list(APPEND ${PROJECT_NAME}_ADD_ARCH_DIRS CPAN_DIR)
