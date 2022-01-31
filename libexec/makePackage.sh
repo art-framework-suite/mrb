@@ -108,7 +108,7 @@ EOF
 
 # loop over products and make tarballs
 ups list -aK+ -z "$temp_products" | sed -Ene 's&^"([^"]+)".*$&\1&p' | while read thisprod; do
-  thisver=`ls $temp_products/$thisprod | grep -v version`
+  thisver=`ls $temp_products/$thisprod | grep -Ev -e '\.(version|chain)$'`
   thisdotver=`echo $thisver | sed -e 's/_/./g' | sed -e 's/^v//'`
   proddirs=("$temp_products/$thisprod/$thisver/$thisos"*)
   if [ -d "${proddirs[*]}" ]; then
