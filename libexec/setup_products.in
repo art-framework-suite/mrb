@@ -17,6 +17,7 @@ use warnings FATAL => qw(io regexp severe syntax uninitialized void);
 use Cwd qw(abs_path chdir getcwd);
 use File::Spec qw();
 use FindBin qw();
+use List::Util qw();
 
 my ($_libexec, $_failscript);
 
@@ -273,19 +274,22 @@ foreach my $pkg (keys %{$all_packages}) {
                                   ''),
           qhash => $qqhash->{''} || {}
         };
-    } elsif (exists $qqhash->{$mrb_quals}) { # We have an entry.
-      $setup_products_hash->{$pkg} =
-        { qualspec => $mrb_quals,
-          phash => deps_for_quals($product_info->{pfile},
-                                  $product_info->{phash},
-                                  $product_info->{qhash},
-                                  $mrb_quals),
-          qhash => $qqhash->{$mrb_quals}
-        };
     } else {
-      error_exit("product $pkg must have an entry in qualifier_list corresponding to\n",
-                 "specified MRB_QUALS ${mrb_quals}, or a dependent package that does."
-                 );
+      my $pkg_quals = List::Util::first { exists $qqhash->{$_}; } $mrb_quals, q();
+      if (defined $pkg_quals) { # We have an entry.
+        $setup_products_hash->{$pkg} =
+          { qualspec => $pkg_quals,
+            phash => deps_for_quals($product_info->{pfile},
+                                    $product_info->{phash},
+                                    $product_info->{qhash},
+                                    $pkg_quals),
+            qhash => $qqhash->{$pkg_quals} || {}
+          };
+      } else {
+        error_exit("product $pkg must have an entry in qualifier_list corresponding to\n",
+                   "specified MRB_QUALS ${mrb_quals}, or a dependent package that does."
+                  );
+      }
     }
   }
 }
