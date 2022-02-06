@@ -19,7 +19,7 @@ use lib $_libexec;
 
 ##
 use Cetmodules qw();
-use Cetmodules::Util qw(error_exit info is_ups_version parse_version_string to_cmake_version to_ups_version to_version_string verbose);
+use Cetmodules::Util qw(error_exit info is_ups_version notify parse_version_string to_cmake_version to_ups_version to_version_string verbose);
 use Cetmodules::CMake qw(@PROJECT_KEYWORDS process_cmake_file);
 use Cetmodules::CMake::Util qw(is_comment);
 use Cetmodules::UPS::ProductDeps qw(get_parent_info);
@@ -51,17 +51,19 @@ my $version_quote = $+{quote} ? '"' : '';
 my $ups_version = to_ups_version($new_version);
 my $cmake_version = to_cmake_version($new_version);
 my $version_string = to_version_string($new_version);
+my $new_version_quoted = "$version_quote$version_string$version_quote";
 my $dryrun = ($ARGV[3] // '') =~ m&^(y(?:es)?|1|t(?:rue))&i;
 my $cmfilenew = $dryrun ? '' : "$cmfile.new";
 my $cmdir = dirname($cmfile);
 my $project_function_keywords =
   '^(?:DESCRIPTION|HOMEPAGE_URL|LANGUAGES|VERSION)$';
 my $pinfo_file = abs_path(File::Spec->catfile($cmdir, 'ups', 'product_deps'));
+my $need_version_string_var = $new_version->{extra} ? 1 : 0;
 
 # Info from this Cmake_File.txt file.
-my ($process_cmfile, $pv_prefix);
+my ($process_cmfile, $pv_prefix, $cpi);
 if (defined $pinfo_file and -e $pinfo_file) {
-  my $cpi = get_cmake_project_info($cmdir, (quiet_warnings => 1)) || {};
+  $cpi = get_cmake_project_info($cmdir, (quiet_warnings => 1)) || {};
   $pv_prefix = (($cpi->{cmake_project_name} // '') =~ m&^[A-Za-z_][0-9A-Za-z_-]*$&) ?
   $cpi->{cmake_project_name} : '${PROJECT_NAME}';
   # Is this the UPS product we're interested in?
@@ -71,7 +73,14 @@ if (defined $pinfo_file and -e $pinfo_file) {
     $old_version =~ s&^(?<quote>["']?)(?<ver>.*)\g{quote}$&\g{ver}& if $old_version;
     if (not defined $old_version or
         $version_string ne to_version_string($old_version)) { # Need to update.
-      $process_cmfile = 1;
+      exists $cpi->{CMAKE_PROJECT_VERSION_STRING} or
+        $cpi->{EXTENDED_VERSION_SEMANTICS}
+        and $need_version_string_var = 1;
+      if ($cpi->{VERSION_FILE}) {
+        $process_cmfile = 3;
+      } else {
+        $process_cmfile = 1;
+      }
     }
   }
 } else {
@@ -83,17 +92,27 @@ my $seen_functions = {};
 
 if ($process_cmfile) {
   if ($dryrun) {
-    notify("[DRY_RUN] these changes will be made:\n\n");
+    notify("[DRY_RUN] these changes would have been made:\n\n");
   } else {
     info("writing $cmfile to $cmfilenew\n\n");
   }
+  if ($process_cmfile == 3) {
+    if ($dryrun) {
+      notify("[DRY_RUN] would have updated $product to $version_string in $cpi->{VERSION_FILE}");
+    } else {
+      my $fh = IO::File->new($cpi->{VERSION_FILE}, q(>));
+      $fh->printf("$version_string");
+      $fh->close();
+    }
+  }
 
-  my @callbacks = ($process_cmfile == 2) ?
-    qw(create_product_variables create_version_variables) :
-      qw(project set cet_cmake_env);
+  my ($func, @callbacks) = ($process_cmfile == 2)
+    ? ( \&_update_distribution_variables,
+        qw(create_product_variables create_version_variables) )
+    : ( \&_update_project_version, qw(cet_cmake_env project set) );
   my $options =
     { $dryrun ? ("dry-run" => 1) : (output => $cmfilenew),
-      map { ( "${_}_cmd" => \&_update_project_version ); }
+      map { ( "${_}_cmd" => $func ); }
       @callbacks };
   my ($results, $status) = process_cmake_file($cmfile, $options);
   $changed = keys %$status;
@@ -114,51 +133,55 @@ if ($changed) {
 } else {
   info(sprintf("%sno changes necessary to $cmfile%s",
                ($dryrun) ? "[DRY_RUN] " : '',
-               (-e $cmfilenew) ? '' : ": removing $cmfilenew"));
+               ($cmfilenew and -e $cmfilenew) ? '' : ": removing $cmfilenew"));
   unlink $cmfilenew if -e $cmfilenew;
 }
 
 1;
 
+sub _update_distribution_variables {
+  my ($cmd_infos, $cmd_info, $cmake_file, $options) = @_;
+  $cmd_info->interpolated_arg_at(0) eq $product or return;
+
+  if ($cmd_info->has_keyword('LIST')) {
+    $cmd_info->insert_args_at($cmd_info->keyword_arg_append_position(qw(LIST NAME NOP QUALIFIERS)), $ups_version);
+  } else { # insert or replace
+    my @all_idx_idx = $cmd_info->all_idx_idx();
+    my $replace = List::MoreUtils::first_value {
+      my $idx = $_;
+      is_ups_version(scalar $cmd_info->interpolated_arg_at($_));
+    } @all_idx_idx;
+    if (defined $replace) {
+      # Replace the version with our new one, preserving any variable suffix.
+      my @separated = $cmd_info->arg_at($replace);
+      my $old = $separated[(scalar @separated > 1) ? 1 : 0];
+      my ($suffix) = ($old =~ m&(\$\{[^}]*\}.*)\z&msx);
+      defined $suffix or $suffix = q();
+      $cmd_info->replace_arg_at($replace, "$ups_version$suffix");
+    } else {
+      $cmd_info->add_args_after(0, $ups_version);
+    }
+  }
+  return;
+}
+
+
 sub _update_project_version {
   my ($cmd_infos, $cmd_info, $cmake_file, $options) = @_;
-  # If we have to add a line setting ${PROJECT}_CMAKE_PROJECT_VERSION_STRING.
-  my $need_version_string_var = $new_version->{extra} ? 1 : 0;
-  my $new_version_quoted = "$version_quote$version_string$version_quote";
-  if ($cmd_info->{name} =~ m&\Acreate_(?:product|version)_variables\z&msx and
-      $cmd_info->interpolated_arg_at(0) eq $product) {
-    # Distribution definitions.
-    if ($cmd_info->has_keyword('LIST')) {
-      $cmd_info->insert_args_at($cmd_info->keyword_arg_append_position(qw(LIST NAME NOP QUALIFIERS)), $ups_version);
-    } else { # insert or replace
-      my @all_idx_idx = $cmd_info->all_idx_idx();
-      my $replace = List::MoreUtils::first_value {
-        my $idx = $_;
-        is_ups_version(scalar $cmd_info->interpolated_arg_at($_));
-      } @all_idx_idx;
-      if (defined $replace) {
-        # Replace the version with our new one, preserving any variable suffix.
-        my @separated = $cmd_info->arg_at($replace);
-        my $old = $separated[(scalar @separated > 1) ? 1 : 0];
-        my ($suffix) = ($old =~ m&(\$\{[^}]*\}.*)\z&msx);
-        defined $suffix or $suffix = q();
-        $cmd_info->replace_arg_at($replace, "$ups_version$suffix");
-      } else {
-        $cmd_info->add_args_after(0, $ups_version);
-      }
-    }
-  } elsif ($seen_functions->{cet_cmake_env}) {
-    # Remaining interesting calls must all occur before cet_cmake_env().
-  } elsif ($cmd_info->{name} eq 'cet_cmake_env') {
+  # Interesting calls must all occur before cet_cmake_env().
+  $seen_functions->{cet_cmake_env} and return;
+
+  if ($cmd_info->{name} eq 'cet_cmake_env') {
     ++$seen_functions->{cet_cmake_env};
-    # If we need to set ${PROJECT}_CMAKE_PROJECT_VERSION_STRING and we
+    # If we need to set ${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING and we
     # haven't seen one, add the set() call here.
     if ($need_version_string_var and
         $seen_functions->{project} and
-        not $seen_functions->{CMAKE_PROJECT_VERSION_STRING}) {
+        not ($seen_functions->{CMAKE_PROJECT_VERSION_STRING} or
+             $cpi->{VERSION_FILE})) {
       unshift @$cmd_infos,
         sprintf(<<'EOF',
-%sset(${PROJECT}_CMAKE_PROJECT_VERSION_STRING%s)
+%sset(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING%s)
 EOF
                 $cmd_info->{pre_cmd_ws},
                 ($new_version_quoted ne q()) ? " $new_version_quoted" : q());
@@ -179,30 +202,37 @@ EOF
     # Add in our new one if this is the appropriate place.
     $need_version_string_var or
       $cmd_info->add_args_after(0, 'VERSION', $new_version_quoted);
-  } elsif ($cmd_info->{name} eq 'set' and
-           $cmd_info->interpolated_arg_at(0) =~
-           m&\A.*_CMAKE_PROJECT_VERSION_STRING\z&msx) { # Found one.
-    if ($seen_functions->{CMAKE_PROJECT_VERSION_STRING}++) {
-      # Already did this bit.
-      @$cmd_infos = ();
-    } else {
-      # Replace with a new call, preserving a suffix variable if
-      # appropriate:
-      my $replace = 1;
-      my @separated = $cmd_info->arg_at($replace);
-      my $suffix;
-      if (my $old = $separated[(scalar @separated > 1) ? 1 : 0]) {
-        ($suffix) = ($old =~ m&(\$\{[^}]*\}.*)\z&msx);
-        if (defined $suffix) {
-          $need_version_string_var |= 1;
+  } elsif ($cmd_info->{name} eq 'set') {
+    local $_; ## no critic qw(Variables::RequireInitializationForLocalVars)
+    given ($cmd_info->interpolated_arg_at(0)) {
+      when (m&\A.*_CMAKE_PROJECT_VERSION_STRING\z&msx) { # Found one.
+        if ($seen_functions->{CMAKE_PROJECT_VERSION_STRING}++) {
+          # Already did this bit.
+          @$cmd_infos = ();
         } else {
-          $suffix = q();
+          # Replace with a new call, preserving a suffix variable if
+          # appropriate:
+          my $replace = 1;
+          my @separated = $cmd_info->arg_at($replace);
+          my $suffix;
+          if (my $old = $separated[(scalar @separated > 1) ? 1 : 0]) {
+            ($suffix) = ($old =~ m&(\$\{[^}]*\}.*)\z&msx);
+            if (defined $suffix) {
+              $need_version_string_var |= 1;
+            } else {
+              $suffix = q();
+            }
+          } else {
+            $suffix = q();
+          }
+          $cmd_info->replace_arg_at($replace,
+                                    "$version_quote$version_string$suffix$version_quote");
         }
-      } else {
-        $suffix = q();
       }
-      $cmd_info->replace_arg_at($replace,
-                                "$version_quote$version_string$suffix$version_quote");
+      when (m&(?:\A|_)(EXTENDED_VERSION_SEMANTICS)\z&msx) {
+        ++$seen_functions->{$1};
+      }
+      default { }
     }
   } else { # Nothing to do.
   }

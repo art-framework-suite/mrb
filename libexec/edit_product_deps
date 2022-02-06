@@ -47,7 +47,7 @@ my $dryrun = ($ARGV[3] // '') =~ m&^(y(?:es)?|1|t(?:rue))&;
 my ($pdfilenew, $fh_out);
 
 if ($dryrun) {
-  notify("[DRY RUN]: these changes will be made:\n\n");
+  notify("[DRY RUN]: these changes would have been made:\n\n");
 } else {
   $pdfilenew = "$pdfile.new";
   info("writing $pdfile as $pdfilenew\n\n");
