@@ -1,4 +1,21 @@
+project_variable(CPAN_DIR ${${CETMODULES_CURRENT_PROJECT_NAME}_EXEC_PREFIX}/CPAN)
 project_variable(LIBEXEC_DIR CONFIG ${CMAKE_INSTALL_LIBEXECDIR})
+
+if (WANT_UPS)
+  set(cpan_tmp
+    "${PROJECT_BINARY_DIR}/${${CETMODULES_CURRENT_PROJECT_NAME}_EXEC_PREFIX}/.cpan/tmp")
+  add_custom_command(OUTPUT "${cpan_tmp}/CPAN.stamp"
+    COMMAND ${CMAKE_COMMAND} -E env PERL5LIB=${cetmodules_LIBEXEC_DIR}:$ENV{PERL5LIB}
+    ${cetmodules_LIBEXEC_DIR}/bootstrap-perl-env "${PROJECT_SOURCE_DIR}"
+    DEPFILE "${cpan_tmp}/CPAN.d"
+    COMMENT "Obtain Perl prerequisites for ${CETMODULES_CURRENT_PROJECT_NAME}"
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
+    VERBATIM)
+  add_custom_target(perl-prereq ALL DEPENDS "${cpan_tmp}/CPAN.stamp" VERBATIM)
+  # Bundle required Perl modules.
+  install(DIRECTORY ${PROJECT_BINARY_DIR}/${${CETMODULES_CURRENT_PROJECT_NAME}_CPAN_DIR}/
+    DESTINATION ${${CETMODULES_CURRENT_PROJECT_NAME}_CPAN_DIR})
+endif()
 
 configure_file(setup_products.in setup_products @ONLY)
 cet_script(
@@ -29,8 +46,6 @@ cet_script(
   checkBuildDir.sh
   DESTINATION ${${PROJECT_NAME}_LIBEXEC_DIR})
 
-cet_localize_pv(cetmodules LIBEXEC_DIR)
-
 set(mrb_files
 	shell_independence
 	unset_shell_independence
@@ -46,14 +61,21 @@ endforeach()
 set(cetmodules_files
   fail
   message_functions.sh
-  parse_deps.pm
   pass
   )
 
 foreach (file IN LISTS cetmodules_files)
-  configure_file("${cetmodules_LIBEXEC_DIR}/${file}" "${file}" COPYONLY)
+  configure_file(${cetmodules_LIBEXEC_DIR}/${file} . COPYONLY)
   list(APPEND install_files "${CMAKE_CURRENT_BINARY_DIR}/${file}")
 endforeach()
+
+file(COPY ${cetmodules_LIBEXEC_DIR}
+  DESTINATION ../${${CETMODULES_CURRENT_PROJECT_NAME}_LIBEXEC_DIR}/..
+  FILES_MATCHING PATTERN "*.pm" PATTERN "Migrate" EXCLUDE)
+
+install(DIRECTORY ${cetmodules_LIBEXEC_DIR}/
+  DESTINATION  ${${CETMODULES_CURRENT_PROJECT_NAME}_LIBEXEC_DIR}
+  FILES_MATCHING PATTERN "*.pm" PATTERN "Migrate" EXCLUDE)
 
 install(FILES ${install_files}
   DESTINATION ${${PROJECT_NAME}_LIBEXEC_DIR})
