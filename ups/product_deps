@@ -87,7 +87,7 @@
 #>  define_pythonpath
 ####################################
 parent		mrb
-chains		current
+chains		old
 no_fq_dir
 noarch
 ####################################
