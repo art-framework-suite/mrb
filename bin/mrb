@@ -126,10 +126,10 @@ case $subcmd in
   # h3. Subcommands
   # Set up a new development area (calls &l=bin/newDev.sh&)
   newDev|n) cmd="$mrb_libexec/newDev.sh"; resources=(top);;
-  gitCheckout|g) cmd="$mrb_libexec/gitCheckout";;
-  svnCheckout|svn) cmd="$mrb_libexec/svnCheckout";;
+  gitCheckout|g) cmd="$mrb_libexec/gitCheckout"; resources+=(src);;
+  svnCheckout|svn) cmd="$mrb_libexec/svnCheckout"; resources+=(src);;
   newProduct|p) cmd="$mrb_libexec/newProduct.sh"; resources+=(cml);;
-  setEnv|s) error_exit 5 \
+  set[Ee]nv|s) error_exit 5 \
     "please invoke the mrbsetenv alias to ensure correct environment setup" || \
     return;;
   setup_local_products|slp) error_exit 5 \
@@ -142,7 +142,7 @@ case $subcmd in
   zapBuild|z) cmd="$mrb_libexec/zapBuild.sh";;
   zapInstall|zi) cmd="$mrb_libexec/zapInstall.sh"; resources+=(install);;
   zapDist|zd) cmd="$mrb_libexec/zapDist.sh"; resources+=(install);;
-  changelog|changeLog|c) cmd=git; resources=()
+  changelog|changeLog|c) cmd=git; resources=(src)
     cmd_args=(
       log
       --graph
@@ -150,12 +150,12 @@ case $subcmd in
       --date=short --abbrev-commit
       "${cmd_args[@]}");;
   updateDepsCM|uc) cmd="$mrb_libexec/updateDepsCM.sh"; resources+=(cml);;
-  updateDepsPV|uv) cmd="$mrb_libexec/updateDepsPV.sh";;
-  updateSource) cmd="$mrb_libexec/updateSource.sh";;
-  changeQual|cq) cmd="$mrb_libexec/changeQual.sh";;
-  makeDeps|md) cmd="$mrb_libexec/makeDep.py";;
+  updateDepsPV|uv) cmd="$mrb_libexec/updateDepsPV.sh"; resources+=(src);;
+  updateSource) cmd="$mrb_libexec/updateSource.sh"; resources+=(src);;
+  changeQual|cq) cmd="$mrb_libexec/changeQual.sh"; resources+=(src cml);;
+  makeDeps|md) cmd="$mrb_libexec/makeDep.py"; resources+=(src);;
   checkDeps|cd) cmd="$mrb_libexec/pullDep.py"; cmd_args=(-n "$@");;
-  pullDeps|pd) cmd="$mrb_libexec/pullDep.py";;
+  pullDeps|pd) cmd="$mrb_libexec/pullDep.py"; resources=(src cml);;
   debug) echo "mrb_bin=$mrb_bin
 mrb_command=$mrb_command
 MRB_BUILDDIR=$MRB_BUILDDIR
@@ -181,6 +181,7 @@ if (( ${#resources[*]} )); then # Utilize locking.
     case $resource in
       build) lock_cmd+=("${MRB_PROJECT}_MRB-$MRB_PROJECT_VERSION");;
       cml) lock_cmd+=("${MRB_SOURCE:-$thisdir/srcs}/.locks:CMakeLists.txt");;
+      src) lock_cmd+=("${MRB_SOURCE:-$thisdir/srcs}/.locks:$resource");;
       top) lock_cmd+=("${MRB_TOP:-$thisdir}/.locks:$resource");;
       *) lock_cmd+=("$resource")
     esac

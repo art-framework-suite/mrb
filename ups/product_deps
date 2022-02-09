@@ -87,9 +87,7 @@
 #>  define_pythonpath
 ####################################
 parent		mrb
-chains		current
-no_fq_dir
-noarch
+chains		new
 ####################################
 
 ####################################
@@ -175,6 +173,10 @@ noarch
 #     Wirecell data.
 #
 ####################################
+bindir	product_dir
+fcldir	-
+incdir	-
+libdir	-
 ####################################
 
 ####################################
@@ -250,7 +252,7 @@ noarch
 product		version		qual	flags		<table_format=2>
 cetpkgsupport	-c
 gitflow		-c
-cetmodules	v2_31_01	-	only_for_build
+cetmodules	v3_04_00	-	only_for_build
 git		-c		-	optional
 hub		-c		-	optional
 end_product_list
@@ -317,9 +319,11 @@ end_qualifier_list
 #
 ####################################
 table_fragment_begin
-# aliases for the sourced scripts
-addalias(mrbsetenv, source ${UPS_PROD_DIR}/libexec/mrbSetEnv)
-addalias(mrbslp, source ${UPS_PROD_DIR}/libexec/setup_local_products)
+    # aliases for the sourced scripts
+    addalias(mrbsetenv, source ${UPS_PROD_DIR}/libexec/mrbSetEnv)
+    addalias(mrbslp, source ${UPS_PROD_DIR}/libexec/setup_local_products)
+    # Make sure we can see our bundled Perl modules.
+    sourceRequired(${UPS_PROD_DIR}/config/ups/perl-env.${UPS_SHELL}, UPS_ENV)
 table_fragment_end
 ####################################
 
