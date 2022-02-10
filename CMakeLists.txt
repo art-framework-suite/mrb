@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19.6...3.20 FATAL_ERROR)
 
 set(MRB_MIN_CETMODULES_VERSION 2.31.00)
-set(${MRB_MIN_INTERNAL_CETMODULES_VERSION} 3.05.00)
+set(${MRB_MIN_INTERNAL_CETMODULES_VERSION} 3.05.01)
 find_package(cetmodules ${MRB_MIN_INTERNAL_CETMODULES_VERSION})
 
 ###########################
