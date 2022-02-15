@@ -72,7 +72,9 @@ if (WANT_UPS)
   add_custom_target(perl-prereq ALL DEPENDS "${cpan_tmp}/CPAN.stamp" VERBATIM)
   # Bundle required Perl modules.
   install(DIRECTORY ${PROJECT_BINARY_DIR}/${${CETMODULES_CURRENT_PROJECT_NAME}_CPAN_DIR}/
-    DESTINATION ${${CETMODULES_CURRENT_PROJECT_NAME}_CPAN_DIR})
+    DESTINATION ${${CETMODULES_CURRENT_PROJECT_NAME}_CPAN_DIR}
+    USE_SOURCE_PERMISSIONS
+    )
 endif()
 
 install(DIRECTORY ${cetmodules_LIBEXEC_DIR}/
