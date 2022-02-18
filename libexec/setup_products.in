@@ -53,7 +53,7 @@ my $min_cetb_version = '@cetmodules_MIN_CETBUILDTOOLS_VERSION@';
 
 sub reconcile_cmake_args {
   my ($all_packages, @products) = @_;
-  my $results = { map { map { m&^-DCET_PV_PREFIX:STRING=& ? () : ($_ => 1); } @{$all_packages->{$_}->{cmake_args}}; } @products };
+  my $results = { map { map { m&\A-D(?:CET_PV_PREFIX|WANT_UPS|CMAKE_BUILD_TYPE)(?::[^=]+)=&msx ? () : ($_ => 1); } @{$all_packages->{$_}->{cmake_args}}; } @products };
   my @results = sort keys %$results;
   return \@results;
 }
@@ -614,7 +614,9 @@ my $mrb_pi =
     ($build_type) ? (build_type => $build_type) : (),
     version => $mrb_project_version,
     qualspec => $mrb_quals,
-    cmake_args => [ @{reconcile_cmake_args($all_packages, @ordered_prod_list)} ]
+    cmake_args => [ @{reconcile_cmake_args($all_packages, @ordered_prod_list)},
+                    '-DWANT_UPS:BOOL=ON',
+                    sprintf("-DCMAKE_BUILD_TYPE:STRING=%s", $build_type // q()) ]
   };
 
 get_derived_parent_data($mrb_pi, $sourcedir, $mrb_quals);
