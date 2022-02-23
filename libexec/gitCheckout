@@ -67,8 +67,8 @@ my $repo_handlers =
   };
 
 # Declare prototypes for repository post-processors here.
-sub hub_fork($$);
-sub git_flow_init($$);
+sub github_fork;
+sub git_flow_init;
 
 # Declare URL verifiers here.
 sub verified_fnal_url;
@@ -323,7 +323,7 @@ sub github_repo {
                        ssh_access => "git\@github.com",
                        rw_url => "git\@github.com:${ghorg}/${repo}.git",
                        ro_url => "https://github.com/${ghorg}/${repo}.git",
-                       post => \&hub_fork,
+                       fork => \&github_fork,
                        url_picker => \&verified_github_url
                      }
          };
@@ -681,7 +681,7 @@ sub checkout_tree_ish {
 #
 # Usage: git_flow_init($destination, $options)
 #
-sub git_flow_init($$) {
+sub git_flow_init {
   my ($destination, $options) = @_;
   report("Initializing git flow for $destination.", -level => 'VERBOSE');
   my $path = File::Spec->catdir($ENV{MRB_SOURCE}, $destination);
@@ -704,37 +704,20 @@ sub git_flow_init($$) {
 }
 
 ####################################
-# hub_fork - Run hub fork for the specified repository.
+# github_fork - Run hub fork for the specified repository.
 #
-# Usage: hub_fork($destination, $options)
+# Usage: github_fork($destination, $options)
 #
-sub hub_fork($$) {
+sub github_fork {
   my ($destination, $options) = @_;
-  report("Forking Github repo for $destination.", -level => 'VERBOSE');
-  my $hubcred = File::Spec->catdir($ENV{HOME},'.config/hub');
-  unless (-e $hubcred or defined $ENV{GITHUB_TOKEN} or (defined $ENV{GITHUB_USER} and defined $ENV{GITHUB_PASSWORFD})) {
-       my $err_msg = << 'EOM';
-
-   The Hub utility requires GitHub OAuth authentication to create forks of the repo(s).
-
-   From 'man hub':
-
-   GitHub OAuth authentication
-       Hub will prompt for GitHub username  password the first time it needs to access the API and exchange it for an OAuth token, which it
-       saves in ~/.config/hub.
-
-       To avoid being prompted, use GITHUB_USER and GITHUB_PASSWORD environment variables.
-
-       Alternatively, you may provide GITHUB_TOKEN, an access token with repo permissions. This will not be written to ~/.config/hub.
-
-   Please run 'hub api -t'.
-
-EOM
-       error("$err_msg");
-    }
   my $path = File::Spec->catdir($ENV{MRB_SOURCE}, $destination);
-  my $output = `(cd \"${path}\" && hub fork --remote-name=origin) 2>&1`;
-  if ($? == 0) {
+  report("Forking Github repo for $destination.", -level => 'VERBOSE');
+  my ($fork_cmd, $fork_output) = (system("gh auth status >/dev/null 2>&1") == 0)
+    ? gh_fork($path, $options)
+    : hub_fork($path, $options);
+  my $status = $?;
+  if ($status == 0) {
+    # Handle created branches.
     my $remote = `(cd \"${path}\" && git remote | grep -v upstream | head -1) 2>&1`;
     $? == 0 or error("Forked repo $remote is not defined.");
     # If we had to create any branches, inform the user how they should
@@ -755,10 +738,60 @@ EOM
         report("Branch `$branch' has been created: when pushing upstream, use `git push -u $remote $branch' to configure future pull operations.");
       }
     }
+  } elsif ($status == -1) {
+    error("could not execute command \"$fork_cmd\": $!\n$fork_output");
+  } elsif ($status & 127) {
+    error(sprintf("command \"$fork_cmd\" died with signal %d%s:\n$fork_output",
+                  ($status & 128) ? ' (with coredump)' : q()));
   } else {
-    error("Unable to hub fork in $path: exit, code ",
-          $? >> 8, ", output:\n", $output);
+    error(sprintf("command \"$fork_cmd\" exited with status %d:\n$fork_output", $status >> 8));
   }
+}
+
+
+sub gh_fork {
+  my ($path, $options) = @_;
+  my $fork_cmd = "gh repo fork --remote=true";
+  return ($fork_cmd, qx^( cd \"$path\" && $fork_cmd ) 2>&1^);
+}
+
+
+sub hub_fork {
+  my ($path, $options) = @_;
+  my $hubcred = File::Spec->catdir($ENV{HOME},'.config/hub');
+  unless (-e $hubcred or defined $ENV{GITHUB_TOKEN} or (defined $ENV{GITHUB_USER} and defined $ENV{GITHUB_PASSWORD})) {
+    my $err_msg = << 'EOM';
+   Neither "gh" (GitHub CLI) nor "hub" commands are available and authorized to interact with this repository on GitHub.
+
+   * For "gh", execute:
+
+       gh auth login
+
+     and follow the prompts. A personal access token can be obtained at
+     https://github.com/settings/tokens.
+
+   * For "hub":
+
+       Hub will prompt for your GitHub username and password the first
+       time it needs to access the API and exchange it for an OAuth
+       token, which it saves in ~/.config/hub.
+
+       To avoid being prompted, use GITHUB_USER and GITHUB_PASSWORD environment variables.
+
+       Alternatively, you may provide the environment variable
+       GITHUB_TOKEN (see https://github.com/settings/tokens), an access
+       token with repo permissions. This will not be written to
+       ~/.config/hub.
+
+     To check and/or obtain credentials, execute:
+
+       hub api -t
+
+EOM
+       error("$err_msg");
+     }
+  my $fork_cmd = "hub fork --remote-name=origin";
+  return ($fork_cmd, qx^( cd \"$path\" && $fork_cmd ) 2>&1^);
 }
 
 ####################################
@@ -816,11 +849,6 @@ sub get_repo(\%) {
                            %{github_repo($prod_info->{$type}->{repo}, $options->{"github-org"})->{$type}}};
   }
 
-  if ($type eq "github") {
-    # remove call to hub_fork for Github repos unless fork option is specified
-    unless (exists $options->{"fork"}) {delete($prod_info->{$type}->{post});}
-  }
-
   my $destination = $options->{destination} ||
     $prod_info->{product} ||
     basename($prod_info->{repo});
@@ -842,6 +870,7 @@ sub get_repo(\%) {
                ($want_shallow) ? qw(--depth 1 --shallow-submodules) : ()
               );
   }
+
   # Post-processing for checked-out repository.
   if (exists $prod_info->{$type}->{post}) {
     if ($options->{"dry-run"}) {
@@ -852,6 +881,19 @@ sub get_repo(\%) {
         if $prod_info->{$type}->{post};
     }
   }
+
+  # Fork checked-out repository if selected.
+  if ($options->{"fork"} and exists $prod_info->{$type}->{post}) {
+    if ($options->{"dry-run"}) {
+      report("Would fork checked-out repository $destination.",
+            -level => "INFO");
+    } else {
+      &{$prod_info->{$type}->{fork}}($destination, $options)
+        if $prod_info->{$type}->{fork};
+    }
+  }
+
+  # Check out selected tree-ish.
   my $tree_ish = $prod_info->{"tree-ish"} || $global_tree_ish;
   if ($tree_ish) {
     if ($options->{"dry-run"}) {
@@ -861,6 +903,8 @@ sub get_repo(\%) {
       checkout_tree_ish($destination, $tree_ish) if $tree_ish;
     }
   }
+
+  # Update CMakeLists.txt.
   if ($options->{"dry-run"}) {
     report ("Would update CMakeLists.txt for checked-out repository $destination.",
             -level => "INFO");

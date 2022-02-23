@@ -255,6 +255,7 @@ gitflow		-c
 cetmodules	v3_05_03	-	only_for_build
 git		-c		-	optional
 hub		-c		-	optional
+gh		-c		-	optional
 end_product_list
 ####################################
 
@@ -309,8 +310,8 @@ end_product_list
 #   case it is optional.
 #
 ####################################
-qualifier	git	hub	gitflow	cetpkgsupport	notes
--nq-		-nq-	-nq-	-nq-	-nq-
+qualifier	git	gh	hub	gitflow	cetpkgsupport	notes
+-nq-		-nq-	-nq-	-nq-	-nq-	-nq-
 end_qualifier_list
 ####################################
 
