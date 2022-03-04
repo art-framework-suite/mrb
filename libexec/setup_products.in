@@ -32,6 +32,8 @@ use lib $_libexec;
 ##
 use Cetmodules qw();
 use Cetmodules::CMake qw(get_CMakeLists_hash);
+use Cetmodules::CMake::Presets qw(project_preset_data resolve_reference);
+use Cetmodules::CMake::Presets::Util qw(is_project_variable);
 use Cetmodules::Util qw(error_exit shortest_unique_prefix version_cmp version_sort);
 use Cetmodules::UPS::ProductDeps qw($BTYPE_TABLE get_product_list get_parent_info get_qualifier_matrix sort_qual);
 use Cetmodules::UPS::Setup qw(cetpkg_info_file classify_deps compiler_for_quals deps_for_quals get_derived_parent_data print_dep_setup print_dep_setup_one print_dev_setup ups_to_cmake write_table_deps write_table_frag);
@@ -195,6 +197,40 @@ sub find_at_least {
     error_exit("mrb $ENV{MRB_VERSION} needs at least $pkg version $vmin");
   }
   return $found_version;
+}
+
+
+sub reconstitute_cmake_args {
+  my ($preset_data) = @_;
+  my %cacheVars = map { %{$_}; } reverse resolve_presets_for(
+    resolve_reference($preset_data, 'configurePresets'), 'for_UPS');
+  return [ map { definition_for($_, $cacheVars{$_}); } sort keys %cacheVars ];
+}
+
+
+sub resolve_presets_for {
+  my ($preset_data, $preset) = @_;
+  my $selected_preset_data =
+    resolve_reference($preset_data, $preset) // return ();
+  my $inherits = resolve_reference($selected_preset_data, 'inherits') // [];
+  return (resolve_reference($selected_preset_data, 'cacheVariables') // (),
+          map { resolve_presets_for($preset_data, $_); }
+          (ref($inherits) eq 'ARRAY') ? @{$inherits} : ($inherits));
+}
+
+
+sub definition_for {
+  my ($var, $val) = @_;
+  defined $val or return q();
+  is_project_variable($val) and return $val->definition;
+  ref($val) eq 'HASH' and return
+    sprintf("-D$var%s=%s",
+            $val->{'type'} ? ":$val->{'type'}" : q(),
+            (($val->{'type'} // q()) eq 'BOOL')
+            ? (($val->{'value'} =~ m&\A(?:\0|0|OFF|NO|FALSE|N|IGNORE|(?:.*-)?NOTFOUND)?\z&imsx) ? 'OFF' : 'ON')
+            : $val->{'value'});
+  ref($val) or return "-D$var=$val";
+  error_exit("unable to reconstruct CMake definition for \"$var=$val\"");
 }
 
 if ($#ARGV < 1) {
@@ -533,6 +569,8 @@ my $ordered_products =
 # Now, take a moment to write the individual setup files for each
 # checked-out package as required by the build.
 my $oldcwd = getcwd();
+my $json = JSON->new->relaxed([]);
+
 foreach my $product (sort { $ordered_products->{$a}->{order} <=>
                               $ordered_products->{$b}->{order} }
                      keys %{$ordered_products}) {
@@ -552,6 +590,14 @@ foreach my $product (sort { $ordered_products->{$a}->{order} <=>
   write_table_frag($product_info->{name}, $product_info->{pfile});
   # Needed by buildtool to specify CMake arguments.
   $product_info->{cmake_args} = ups_to_cmake($product_info);
+  my $reconstituted_args =
+    reconstitute_cmake_args(project_preset_data(File::Spec->catfile($sourcedir, $product),
+                                                $product_info->{cmake_args},
+                                                { prefix => $product_info->{project_variable_prefix} },
+                                                { json => $json } ));
+  $reconstituted_args
+    and $product_info->{cmake_args} = $reconstituted_args;
+
   # Add some CMake arguments of our own, if appropriate.
   push @{$product_info->{cmake_args}},
     sprintf('-DCET_PV_%s_MODULE_PLUGINS=%s',
