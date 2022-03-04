@@ -595,7 +595,7 @@ foreach my $product (sort { $ordered_products->{$a}->{order} <=>
                                                 $product_info->{cmake_args},
                                                 { prefix => $product_info->{project_variable_prefix} },
                                                 { json => $json } ));
-  $reconstituted_args
+  $reconstituted_args and scalar @{$reconstituted_args}
     and $product_info->{cmake_args} = $reconstituted_args;
 
   # Add some CMake arguments of our own, if appropriate.
