@@ -49,10 +49,6 @@
             "mrb_UPS_PRODUCT_NAME_INIT" : {
                "type" : "STRING",
                "value" : "mrb"
-            },
-            "mrb_UPS_USE_TIME_DEPENDENCIES_INIT" : {
-               "type" : "STRING",
-               "value" : "cetpkgsupport;gh;git;gitflow;hub"
             }
          },
          "description" : "Extra configuration for UPS package generation",
