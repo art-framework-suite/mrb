@@ -460,7 +460,7 @@ if (exists $all_packages->{cetbuildtools}) {
         setup_options => [qw(-j)] };
   } else {
     if (exists $regular_products->{cetbuildtools}->{$cetb_version}->{setup_options}) {
-      push $regular_products->{cetbuildtools}->{$cetb_version}->{setup_options}, '-j';
+      push @{ $regular_products->{cetbuildtools}->{$cetb_version}->{setup_options} }, '-j';
     } else {
       $regular_products->{cetbuildtools}->{$cetb_version}->{setup_options} = ['-j'];
     }
