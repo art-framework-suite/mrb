@@ -147,6 +147,7 @@ my @known_specs_dune =
     prod_info("duneexamples", github_repo("duneexamples", "DUNE")),
     prod_info("dunesw", github_repo("dunesw", "DUNE")),
     prod_info("duneutil", github_repo("duneutil", "DUNE")),
+    prod_info("dunepdlegacy", github_repo("dunepdlegacy", "DUNE")),
     prod_info("protoduneana", github_repo("protoduneana", "DUNE"))
   );
 
