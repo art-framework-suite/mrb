@@ -650,7 +650,7 @@ sub verified_github_url {
 # Usage: clone_repo($url, $destination)
 sub clone_repo {
   my ($url, $destination, @git_args) = @_;
-  my @clone_cmd = (qw(git clone), @git_args, $url, $destination);
+  my @clone_cmd = (qw(git clone --recurse-submodules), @git_args, $url, $destination);
   if ($options->{"dry-run"}) {
     report(sprintf("Would execute command %s.", join(" ", @clone_cmd)),
            -level => "INFO");
