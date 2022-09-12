@@ -86,15 +86,13 @@ sub verified_github_url;
 #
 ########################################################################
 my $art_github = "art-framework-suite";
-my $art_repo = github_repo("art", $art_github);
-$art_repo->{github}->{git_args} = [ qw(--recurse-submodules) ];
 my @known_specs_art =
     (
      prod_info("cetmodules", github_repo("cetmodules", "FNALssi")),
      prod_info("cetlib_except", github_repo("cetlib-except", $art_github)),
      prod_info("hep_concurrency", github_repo("hep-concurrency", $art_github)),
      prod_info("fhiclcpp", github_repo("fhicl-cpp", $art_github)),
-     prod_info("art", $art_repo),
+     prod_info("art", github_repo("art", $art_github, git_args => [ qw(--recurse-submodules) ])),
      prod_info("canvas_root_io", github_repo("canvas-root-io", $art_github)),
      prod_info("art_root_io", github_repo("art-root-io", $art_github)),
      prod_info("fhiclpy", github_repo("fhicl-py", $art_github)),
@@ -171,19 +169,24 @@ my @known_specs_nu =
      prod_info("geant4reweight", github_repo("geant4reweight", $nu_github))
   );
 
+my $sbn_github = "SBNSoftware";
 my @known_specs_sbn =
-  map { prod_info($_, github_repo($_, "SBNSoftware"), fnal_repo($_)); }
-  qw(icaruscode icarusutil icarusalg sbndcode sbndutil icarus_signal_processing
-     sbnana sbnanaobj sbnci sbncode sbnobj sbndqm sbnutil);
+  ( prod_info("sbncode", github_repo("sbncode", $sbn_github, git_args => [ qw(--recurse-submodules) ])) );
+# Fill in SBN suite members whose product names match their repository
+# names and aren't already in @known_specs_sbn.
+my $sbn_special = { map { $_->{product} => 1; } @known_specs_art };
+push @known_specs_art,
+  map { ($sbn_special->{$_}) ? () : prod_info($_, github_repo($_, $sbn_github), fnal_repo($_)); }
+  @{$known_suites->{sbn}}, qw(sbnci sbnutil);
 
 my @known_specs_sbndaq =
-  ( prod_info("sbndaq", github_repo("sbndaq", "SBNSoftware")),
-    prod_info("sbndaq_artdaq", github_repo("sbndaq-artdaq", "SBNSoftware")),
-    prod_info("sbndaq_artdaq_core", github_repo("sbndaq-artdaq-core", "SBNSoftware")),
-    prod_info("sbndaq_xporter", github_repo("sbndaq-xporter", "SBNSoftware")),
-    prod_info("sbndaq_minargon", github_repo("sbndaq-minargon", "SBNSoftware")),
-    prod_info("sbndaq_online", github_repo("sbndaq-online", "SBNSoftware")),
-    prod_info("sbndaq_decode", github_repo("sbndaq-decode", "SBNSoftware"))
+  ( prod_info("sbndaq", github_repo("sbndaq", $sbn_github)),
+    prod_info("sbndaq_artdaq", github_repo("sbndaq-artdaq", $sbn_github)),
+    prod_info("sbndaq_artdaq_core", github_repo("sbndaq-artdaq-core", $sbn_github)),
+    prod_info("sbndaq_xporter", github_repo("sbndaq-xporter", $sbn_github)),
+    prod_info("sbndaq_minargon", github_repo("sbndaq-minargon", $sbn_github)),
+    prod_info("sbndaq_online", github_repo("sbndaq-online", $sbn_github)),
+    prod_info("sbndaq_decode", github_repo("sbndaq-decode", $sbn_github))
   );
 
 my @known_specs_larsoft =
@@ -295,18 +298,19 @@ sub repo_args {
 ####################################
 # fnal_repo - Handle a FNAL Redmine repository specification.
 #
-# Usage: fnal_repo($product, $repo, $user)
+# Usage: fnal_repo($product, $repo, [$user], [%extras])
 #
 # Returns a repo type info hashref.
 sub fnal_repo {
-  my ($repo, $user) = @_;
-  $user = $repo unless $user;
+  my ($repo, @extras) = @_;
+  my $user = (scalar @extras % 2) ? shift @extras : $repo;
   return { fnal => { repo => ${repo},
                      ssh_access => "p-${user}\@cdcvs.fnal.gov",
                      rw_url => "ssh://p-${user}\@cdcvs.fnal.gov/cvs/projects/${repo}",
                      ro_url => "http://cdcvs.fnal.gov/projects/${repo}",
                      post => \&git_flow_init,
-                     url_picker => \&verified_fnal_url
+                     url_picker => \&verified_fnal_url,
+                     @extras
                    }
          };
 };
@@ -314,18 +318,19 @@ sub fnal_repo {
 ####################################
 # github_repo - Handle a GitHub repository specification.
 #
-# Usage: github_repo($product, $repo, $githuborg, $githubuser)
+# Usage: github_repo($product, $repo, [$githuborg], [%extras])
 #
 # Returns a repo type info hashref.
 sub github_repo {
-  my ($repo, $ghorg) = @_;
-  $ghorg = $repo unless $ghorg;
+  my ($repo, @extras) = @_;
+  my $ghorg = (scalar @extras % 2) ? shift @extras : $repo;
   return { github => { repo => "${repo}",
                        ssh_access => "git\@github.com",
                        rw_url => "git\@github.com:${ghorg}/${repo}.git",
                        ro_url => "https://github.com/${ghorg}/${repo}.git",
                        fork => \&github_fork,
-                       url_picker => \&verified_github_url
+                       url_picker => \&verified_github_url,
+                       @extras
                      }
          };
 }
