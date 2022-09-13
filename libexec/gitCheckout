@@ -23,8 +23,8 @@ my $libexec = dirname($0);
 my $options = {};
 my $default_repo_type = "fnal";
 my $known_suites =
-  { larsoft => [qw(larcore lardata larevt larsim larsimrad larg4 larreco larrecodnn
-                   larana larexamples lareventdisplay larpandora
+  { larsoft => [qw(larcore lardata larevt larsim larsimrad larsimdnn larg4 larreco larrecodnn
+                   larana larexamples lareventdisplay larpandora larfinder
                    larwirecell larsoft)],
     art => [qw(cetlib_except cetlib fhiclcpp messagefacility hep_concurrency
                canvas canvas_root_io art art_root_io gallery critic)],
