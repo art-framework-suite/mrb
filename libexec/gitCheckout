@@ -102,6 +102,7 @@ my @known_specs_art =
    ["canvas_root_io", { github => ["$art_github/canvas-root-io" ] }],
    ["art_root_io", { github => ["$art_github/art-root-io" ] }],
    ["fhiclpy", { github => ["$art_github/fhicl-py" ] }],
+   ["artg4tk", { github => ["$art_github/art-g4tk" ] }],
    ["ifdh_art", { github => ["$art_github/ifdh-art" ] }]
   );
 
