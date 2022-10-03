@@ -54,7 +54,7 @@ my $known_suites =
 
 my $global_tree_ish;
 
-my $version = "3.0.0";
+my $version = "3.0.1";
 
 # Declare prototypes for repository handlers here, implement wherever
 # you like. Specify the appropriate handler in $repo_handlers, below.
@@ -347,9 +347,10 @@ sub merged_product {
     }
   }
   my $known_repo = shift @{$known_prod_args->{$final_type}};
-  my $selected_repo = shift @{$prod_args{repo_args}} // $known_repo;
-  repo_name($selected_repo)
-    or $selected_repo = sprintf('%s%s', $selected_repo, repo_name($known_repo));
+  my $selected_repo = shift @{$prod_args{repo_args}};
+  my @repo_bits = (repo_org($selected_repo) // repo_org($known_repo) // (),
+                   repo_name($selected_repo) || repo_name($known_repo));
+  $selected_repo = join("/", @repo_bits);
   my $repo_info =
     {
      @{$known_prod_args->{$final_type}},
@@ -498,6 +499,12 @@ sub repo_name {
   my ($repo) = @_;
   my ($repo_name) = ($repo =~ m&/([^/]*)\Z&msx);
   return $repo_name // $repo;
+}
+
+sub repo_org {
+  my ($repo) = @_;
+  my ($repo_org) = ($repo =~ m&\A([^/]*)/&msx);
+  return $repo_org;
 }
 
 ####################################
