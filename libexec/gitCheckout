@@ -54,7 +54,7 @@ my $known_suites =
 
 my $global_tree_ish;
 
-my $version = "3.0.0";
+my $version = "3.0.2";
 
 # Declare prototypes for repository handlers here, implement wherever
 # you like. Specify the appropriate handler in $repo_handlers, below.
@@ -102,6 +102,7 @@ my @known_specs_art =
    ["canvas_root_io", { github => ["$art_github/canvas-root-io" ] }],
    ["art_root_io", { github => ["$art_github/art-root-io" ] }],
    ["fhiclpy", { github => ["$art_github/fhicl-py" ] }],
+   ["artg4tk", { github => ["$art_github/art-g4tk" ] }],
    ["ifdh_art", { github => ["$art_github/ifdh-art" ] }]
   );
 
@@ -347,9 +348,13 @@ sub merged_product {
     }
   }
   my $known_repo = shift @{$known_prod_args->{$final_type}};
-  my $selected_repo = shift @{$prod_args{repo_args}} // $known_repo;
-  repo_name($selected_repo)
-    or $selected_repo = sprintf('%s%s', $selected_repo, repo_name($known_repo));
+  my $selected_repo = shift @{$prod_args{repo_args}};
+  my $selected_repo_name = repo_name($selected_repo);
+  my @repo_bits = (repo_org($selected_repo) // repo_org($known_repo) // (),
+                   ($selected_repo eq $product or not $selected_repo_name)
+                   ? repo_name($known_repo)
+                   : $selected_repo_name);
+  $selected_repo = join("/", @repo_bits);
   my $repo_info =
     {
      @{$known_prod_args->{$final_type}},
@@ -498,6 +503,12 @@ sub repo_name {
   my ($repo) = @_;
   my ($repo_name) = ($repo =~ m&/([^/]*)\Z&msx);
   return $repo_name // $repo;
+}
+
+sub repo_org {
+  my ($repo) = @_;
+  my ($repo_org) = ($repo =~ m&\A([^/]*)/&msx);
+  return $repo_org;
 }
 
 ####################################
