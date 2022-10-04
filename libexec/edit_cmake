@@ -45,10 +45,12 @@ my $cmfile = $ARGV[0];
 my $product = $ARGV[1];
 
 error_exit("ill-formed new version: $ARGV[2]")
-  unless $ARGV[2] =~ m&^(?<quote>["']?)(.*)\g{quote}$&;
-my $new_version = parse_version_string($2);
+  unless $ARGV[2] =~ m&^(?<quote>["']?)(?<ver>.*)\g{quote}$&;
+my $new_ups_version = $+{ver};
+my $new_version = parse_version_string($+{ver});
 my $version_quote = $+{quote} ? '"' : '';
 my $ups_version = to_ups_version($new_version);
+my $ups_version_mismatch = ($new_ups_version =~ m&\Av[0-9]&msx and $new_ups_version ne $ups_version);
 my $cmake_version = to_cmake_version($new_version);
 my $version_string = to_version_string($new_version);
 my $new_version_quoted = "$version_quote$version_string$version_quote";
@@ -69,6 +71,8 @@ if (defined $pinfo_file and -e $pinfo_file) {
   # Is this the UPS product we're interested in?
   my $pinfo = get_parent_info($pinfo_file, (quiet_warnings => 1));
   if ($product eq $pinfo->{name}) { # Yes.
+    $ups_version_mismatch
+      and error_exit("refusing to update version info for $product due to non-standard new version ($new_ups_version vs $ups_version)");
     my $old_version = $cpi->{CMAKE_PROJECT_VERSION_STRING} // $cpi->{version_info} // undef;
     $old_version =~ s&^(?P<quote>["']?)(?P<ver>.*)\k<quote>$&$+{ver}& if $old_version;
     if (not defined $old_version or
@@ -143,9 +147,9 @@ if ($changed) {
 sub _update_distribution_variables {
   my ($cmd_infos, $cmd_info, $cmake_file, $options) = @_;
   $cmd_info->interpolated_arg_at(0) eq $product or return;
-
+  my $newver = $ups_version_mismatch ? $new_ups_version : $ups_version;
   if ($cmd_info->has_keyword('LIST')) {
-    $cmd_info->insert_args_at($cmd_info->keyword_arg_append_position(qw(LIST NAME NOP QUALIFIERS)), $ups_version);
+    $cmd_info->insert_args_at($cmd_info->keyword_arg_append_position(qw(LIST NAME NOP QUALIFIERS)), $newver);
   } else { # insert or replace
     my @all_idx_idx = $cmd_info->all_idx_idx();
     my $replace = List::MoreUtils::first_value {
@@ -158,9 +162,9 @@ sub _update_distribution_variables {
       my $old = $separated[(scalar @separated > 1) ? 1 : 0];
       my ($suffix) = ($old =~ m&(\$\{[^}]*\}.*)\z&msx);
       defined $suffix or $suffix = q();
-      $cmd_info->replace_arg_at($replace, "$ups_version$suffix");
+      $cmd_info->replace_arg_at($replace, "$newver$suffix");
     } else {
-      $cmd_info->add_args_after(0, $ups_version);
+      $cmd_info->add_args_after(0, $newver);
     }
   }
   return;

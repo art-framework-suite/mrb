@@ -41,7 +41,9 @@ my $product = $ARGV[1];
 
 error_exit("ill-formed new version: $ARGV[2]")
   unless $ARGV[2] =~ m&^(?<quote>["']?)(?<ver>.*)\g{quote}$&;
-my $new_version = to_ups_version($+{ver});
+my $new_version = $+{ver};
+$new_version =~ m&\Av[0-9]&msx or
+  $new_version = to_ups_version($+{ver});
 my $dryrun = ($ARGV[3] // '') =~ m&^(y(?:es)?|1|t(?:rue))&;
 
 my ($pdfilenew, $fh_out);
