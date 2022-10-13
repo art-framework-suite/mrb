@@ -337,14 +337,12 @@ sub merged_product {
   my ($product, $selected_type, %prod_args) = @_;
   my $final_type = $selected_type;
   my $known_prod_args = $known_products->{$product};
-  if ($selected_type eq 'user') {
-    $final_type = $options->{"repo-type"} || $default_repo_type;
-    if (not $known_prod_args->{$final_type}) {
-      if (scalar keys %{$known_prod_args} > 1) {
-        error("unable to ascertain unambiguous repository type for known product $product: please specify");
-      } elsif (scalar keys %{$known_prod_args} == 1) {
-        $final_type = (keys %{$known_prod_args})[0];
-      }
+  $final_type = $options->{"repo-type"} || $default_repo_type;
+  if (not $known_prod_args->{$final_type}) {
+    if (scalar keys %{$known_prod_args} > 1) {
+      error("unable to ascertain unambiguous repository type for known product $product: please specify");
+    } elsif (scalar keys %{$known_prod_args} == 1) {
+      $final_type = (keys %{$known_prod_args})[0];
     }
   }
   my $known_repo = shift @{$known_prod_args->{$final_type}};
@@ -396,7 +394,7 @@ sub prod_info {
 }
 
 ####################################
-# repo_type_request - message text to file a feauture request to
+# repo_type_request - message text to file a feature request to
 #                     implement a repository handler.
 #
 # Usage: repo_type_request($type)
@@ -484,17 +482,16 @@ sub process_repo_spec {
     error("unrecognized repo spec ${repo_spec}.\n");
   }
   $product =~ s&\.git\Z&&msx;
-  $repo_type or $repo_type = $options->{"repo-type"} || "user";
   defined $+{git_args} and push @repo_args, git_args => [split(m&\^&, $+{git_args})];
   my $prod_info =
     prod_info($product,
-              $repo_type,
+              $repo_type // $options->{"repo-type"} // $default_repo_type,
               $+{ga_append} ? (append_git_args => 1) : (),
               $+{tree_ish} ? (tree_ish => $+{tree_ish}) : (),
               repo_args => [ $repo, @repo_args ]
              );
   report("repository info:\n",
-         Dumper $prod_info,
+         Data::Dumper->Dump([$prod_info], ["$product"]),
          -level => "VERBOSE");
   return $prod_info;
 }
