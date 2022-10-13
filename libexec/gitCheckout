@@ -491,7 +491,7 @@ sub process_repo_spec {
               repo_args => [ $repo, @repo_args ]
              );
   report("repository info:\n",
-         Dumper $prod_info,
+         Data::Dumper->Dump([$prod_info], ["$product"]),
          -level => "VERBOSE");
   return $prod_info;
 }
