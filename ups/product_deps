@@ -252,7 +252,7 @@ libdir	-
 product		version		qual	flags		<table_format=2>
 cetpkgsupport	-c
 gitflow		-c
-cetmodules	v3_19_02	-	only_for_build
+cetmodules	v3_20_00	-	only_for_build
 git		-c		-	optional
 hub		-c		-	optional
 gh		-c		-	optional
