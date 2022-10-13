@@ -394,7 +394,7 @@ sub prod_info {
 }
 
 ####################################
-# repo_type_request - message text to file a feauture request to
+# repo_type_request - message text to file a feature request to
 #                     implement a repository handler.
 #
 # Usage: repo_type_request($type)
