@@ -170,6 +170,16 @@ my @known_specs_nu =
 my $sbn_github = "SBNSoftware";
 my @known_specs_sbn =
   (
+   ["icaruscode", { github => ["$sbn_github/icaruscode"] }],
+   ["icarusutil", { github => ["$sbn_github/icarusutil"] }],
+   ["icarusalg", { github => ["$sbn_github/icarusalg"] }],
+   ["sbndcode", { github => ["$sbn_github/sbndcode"] }],
+   ["sbndutil", { github => ["$sbn_github/sbndutil"] }],
+   ["icarus_signal_processing", { github => ["$sbn_github/icarus_signal_processing"] }],
+   ["sbnana", { github => ["$sbn_github/sbnana"] }],
+   ["sbnanaobj", { github => ["$sbn_github/sbnanaobj"] }],
+   ["sbnobj", { github => ["$sbn_github/sbnobj"] }],
+   ["sbndqm", { github => ["$sbn_github/sbndqm"] }],
    ["sbncode", { github => ["$sbn_github/sbncode", git_args => [ qw(--recurse-submodules) ]] }]
   );
 # Fill in SBN suite members whose product names match their repository
