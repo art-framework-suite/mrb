@@ -467,10 +467,10 @@ sub split_type_repo {
 #
 # Returns the prod_info hash.
 my $_product_re = qr&(?<product>.*?)%&msx;
-my $_user_url_re = qr&(?<user_url>.*?://.*?)&msx;
-my $_tree_ish_re = qr&@(?<tree_ish>[^/]+)&msx;
+my $_user_url_re = qr&(?<user_url>.*?://[^@%]*?)&msx;
+my $_tree_ish_re = qr&@(?<tree_ish>[^^]+)&msx;
 my $_git_args_re = qr&(?<ga_append>\+?)\^(?<git_args>.*?)&msx;
-my $_repo_user_re = qr&(?<repo>.*?)(?:%(?<user>.*))?&msx;
+my $_repo_user_re = qr&(?<repo>[^@%]*?)(?:%(?<user>.*))?&msx;
 
 sub process_repo_spec {
   my ($repo_spec) = @_;
