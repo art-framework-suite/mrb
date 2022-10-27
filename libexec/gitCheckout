@@ -879,7 +879,7 @@ sub get_repo {
   }
 
   # Check out selected tree-ish.
-  my $tree_ish = $prod_info->{"tree-ish"} || $global_tree_ish;
+  my $tree_ish = $prod_info->{tree_ish} || $global_tree_ish;
   if ($tree_ish) {
     if ($options->{"dry-run"}) {
       report("would check out $tree_ish for repository $destination",
