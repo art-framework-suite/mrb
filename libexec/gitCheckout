@@ -651,11 +651,11 @@ sub clone_repo {
 # checkout_tree_ish - Execute git checkout with the specified tree-ish.
 #
 # Usage: checkout_tree_ish($destination, $tree_ish)
-# 
+#
 sub checkout_tree_ish {
   my ($destination, $tree_ish) = @_;
   my $checkout_cmd =
-    sprintf("(cd \"%s\" && git checkout \"%s\")",
+    sprintf("(cd \"%s\" && git checkout \"%s\" && git submodule update --recursive)",
             File::Spec->catdir($ENV{MRB_SOURCE}, $destination),
             $tree_ish);
   system($checkout_cmd) == 0 or
@@ -879,7 +879,7 @@ sub get_repo {
   }
 
   # Check out selected tree-ish.
-  my $tree_ish = $prod_info->{"tree-ish"} || $global_tree_ish;
+  my $tree_ish = $prod_info->{tree_ish} || $global_tree_ish;
   if ($tree_ish) {
     if ($options->{"dry-run"}) {
       report("would check out $tree_ish for repository $destination",
