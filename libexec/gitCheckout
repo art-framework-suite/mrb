@@ -655,7 +655,7 @@ sub clone_repo {
 sub checkout_tree_ish {
   my ($destination, $tree_ish) = @_;
   my $checkout_cmd =
-    sprintf("(cd \"%s\" && git checkout \"%s\")",
+    sprintf("(cd \"%s\" && git checkout \"%s\" && git submodule update --recursive)",
             File::Spec->catdir($ENV{MRB_SOURCE}, $destination),
             $tree_ish);
   system($checkout_cmd) == 0 or
