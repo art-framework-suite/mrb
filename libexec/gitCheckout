@@ -651,7 +651,7 @@ sub clone_repo {
 # checkout_tree_ish - Execute git checkout with the specified tree-ish.
 #
 # Usage: checkout_tree_ish($destination, $tree_ish)
-# 
+#
 sub checkout_tree_ish {
   my ($destination, $tree_ish) = @_;
   my $checkout_cmd =
