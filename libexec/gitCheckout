@@ -39,7 +39,7 @@ my $known_suites =
     gallery => [qw(cetlib_except cetlib hep_concurrency fhiclcpp messagefacility
                    canvas canvas_root_io fhiclpy gallery)],
     larsoftobj => [qw(larcoreobj lardataobj larcorealg lardataalg larvecutils larsoftobj)],
-    nu => [qw(nusimdata nuevdb nug4 nugen nurandom nutools)],
+    nu => [qw(nusimdata nuevdb nug4 nugen nurandom nufinder nutools)],
     uboone=> [qw(uboonecode ubutil uboonedata ublite ubana ubreco ubsim
                  ubevt ubraw ubcrt ubcore ubcv ubobj)],
     sbn => [qw(icaruscode icarusutil icarusalg sbndcode sbndutil icarus_signal_processing
@@ -159,6 +159,7 @@ my $nu_github = "NuSoftHEP";
 my @known_specs_nu =
   (
    ["nutools", { github => ["$nu_github/nutools"] }],
+   ["nufinder", { github => ["$nu_github/nufinder"] }],
    ["nuevdb", { github => ["$nu_github/nuevdb"] }],
    ["nug4", { github => ["$nu_github/nug4"] }],
    ["nugen", { github => ["$nu_github/nugen"] }],
