@@ -330,6 +330,9 @@ sub fnal_repo {
 # Returns a repo type info hashref.
 sub github_repo {
   my ($repo, %extras) = @_;
+  # Update the github info hash with updated github org / user.
+  $options->{"github-org"}
+    and $repo =~ s&^.*/&$options->{"github-org"}/&;
   return
     { github =>
       {
@@ -832,10 +835,6 @@ sub get_repo {
     unless exists $prod_info->{$repo_type};
   my $repo = $prod_info->{$repo_type}->{repo};
   my $repo_name = repo_name($prod_info->{$repo_type}->{repo});
-  if ($repo_type eq "github" and $options->{"github-org"}) {
-    # Update the github info hash with updated github org / user.
-    $repo = sprintf('%s/%s',  $options->{"github-org"}, $repo_name);
-  }
 
   my $destination = $options->{destination}
     || $prod_info->{product}
@@ -1202,7 +1201,7 @@ A I<spec> may be:
 
 =item I<suite>[@I<branch|tag>]
 
-If known, suite is expanded to its list of repositories, otherwise I<spec> is interpreted per below. See B<--help-suites> for a table of known suites. This form is not available if the B<--no-expand> option is used. While B<mrb gitCheckout> is not capable of detecting the specification of a commit rather than a branch or tag here, its use is contraindicated and will almost certainly not do what you want.
+If known, I<suite> is expanded to its list of repositories, otherwise I<spec> is interpreted per below. See B<--help-suites> for a table of known suites. This form is not available if the B<--no-expand> option is used. While B<mrb gitCheckout> is not capable of detecting the specification of a commit rather than a branch or tag here, its use is contraindicated and will almost certainly not do what you want.
 
 =item [I<product>%] I<URL> [@I<branch|commit|tag>] [[+]^I<git_arg>[^I<git_arg>]...]
 
@@ -1216,9 +1215,11 @@ If not specified, I<product> is inferred from the basename of the URL.
 
 If not specified, I<type> defaults to C<fnal>, or as specified with B<--repo-type>. See B<--help-repo-types> for a full list of known types.
 
-If not specified, I<product> defaults to I<repo> and vice-versa.
+If not specified, I<product> defaults to I<repo> and vice-versa. If specified, I<repo> may be incompletely specified as I<org_or_user_name>/ (if supported by the specified or inferred repository type).
 
-If a known product or repository is recognized, its information is merged with any user-provided information with the latter taking priority. Merging can be prevented with the B<--no-expand> option. Note that user-specified git arguments will B<replace> any known internally for that product unless the first I<^> is preceded by a I<+>, in which case the user specified ones are appended (and therefore override where appropriate) those from the internal product specification.
+If a known product or repository is recognized—and B<--no-expand> is not present—its information is merged with any user-provided information with the latter taking priority.
+
+Note that any user-specified I<git_arg> will B<replace> any known internally for that product unless the first I<^> is preceded by a I<+>, in which case the user specified ones are appended to (and therefore override where appropriate) those from the internal product specification.
 
 
 =back
