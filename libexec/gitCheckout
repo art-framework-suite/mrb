@@ -330,6 +330,9 @@ sub fnal_repo {
 # Returns a repo type info hashref.
 sub github_repo {
   my ($repo, %extras) = @_;
+  # Update the github info hash with updated github org / user.
+  $options->{"github-org"}
+    and $repo =~ s&^.*/&$options->{"github-org"}/&;
   return
     { github =>
       {
@@ -832,10 +835,6 @@ sub get_repo {
     unless exists $prod_info->{$repo_type};
   my $repo = $prod_info->{$repo_type}->{repo};
   my $repo_name = repo_name($prod_info->{$repo_type}->{repo});
-  if ($repo_type eq "github" and $options->{"github-org"}) {
-    # Update the github info hash with updated github org / user.
-    $repo = sprintf('%s/%s',  $options->{"github-org"}, $repo_name);
-  }
 
   my $destination = $options->{destination}
     || $prod_info->{product}
