@@ -43,7 +43,7 @@ my $known_suites =
     uboone=> [qw(uboonecode ubutil uboonedata ublite ubana ubreco ubsim
                  ubevt ubraw ubcrt ubcore ubcv ubobj)],
     sbn => [qw(icaruscode icarusutil icarusalg sbndcode sbndutil icarus_signal_processing
-               sbnana sbnanaobj sbncode sbnobj sbndqm)],
+               sbnanaobj sbncode sbnobj sbndqm sbnci)],
     sbndaq => [qw(sbndaq sbndaq_artdaq sbndaq_artdaq_core sbndaq_xporter
                   sbndaq_minargon sbndaq_online sbndaq_decode)],
     artdaq => [qw(artdaq_core artdaq_core_demo artdaq_utilities
@@ -180,6 +180,7 @@ my @known_specs_sbn =
    ["sbnana", { github => ["$sbn_github/sbnana"] }],
    ["sbnanaobj", { github => ["$sbn_github/sbnanaobj"] }],
    ["sbnobj", { github => ["$sbn_github/sbnobj"] }],
+   ["sbnci", { github => ["$sbn_github/sbnci"] }],
    ["sbndqm", { github => ["$sbn_github/sbndqm"] }],
    ["sbncode", { github => ["$sbn_github/sbncode", git_args => [ qw(--recurse-submodules) ]] }]
   );
