@@ -42,8 +42,8 @@ my $known_suites =
     nu => [qw(nusimdata nuevdb nug4 nugen nurandom nufinder nutools)],
     uboone=> [qw(uboonecode ubutil uboonedata ublite ubana ubreco ubsim
                  ubevt ubraw ubcrt ubcore ubcv ubobj)],
-    sbn => [qw(icaruscode icarusutil icarusalg sbndcode sbndutil icarus_signal_processing
-               sbnanaobj sbncode sbnobj sbndqm sbnci)],
+    sbn => [qw(sbncode sbnobj sbnanaobj sbndata sbndcode sbndutil icaruscode  icarusutil
+               icarusalg  icarus_signal_processing  sbndaq_artdaq_core sbnci)],
     sbndaq => [qw(sbndaq sbndaq_artdaq sbndaq_artdaq_core sbndaq_xporter
                   sbndaq_minargon sbndaq_online sbndaq_decode)],
     artdaq => [qw(artdaq_core artdaq_core_demo artdaq_utilities
@@ -178,10 +178,12 @@ my @known_specs_sbn =
    ["sbndutil", { github => ["$sbn_github/sbndutil"] }],
    ["icarus_signal_processing", { github => ["$sbn_github/icarus_signal_processing"] }],
    ["sbnana", { github => ["$sbn_github/sbnana"] }],
+   ["sbndata", { github => ["$sbn_github/sbndata"] }],
    ["sbnanaobj", { github => ["$sbn_github/sbnanaobj"] }],
    ["sbnobj", { github => ["$sbn_github/sbnobj"] }],
    ["sbnci", { github => ["$sbn_github/sbnci"] }],
    ["sbndqm", { github => ["$sbn_github/sbndqm"] }],
+   ["sbndaq_artdaq_core", { github => ["$sbn_github/sbndaq_artdaq_core"] }],
    ["sbncode", { github => ["$sbn_github/sbncode", git_args => [ qw(--recurse-submodules) ]] }]
   );
 # Fill in SBN suite members whose product names match their repository
