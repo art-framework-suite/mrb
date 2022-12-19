@@ -54,7 +54,7 @@ my $known_suites =
 
 my $global_tree_ish;
 
-my $version = "3.0.2";
+my $version = "3.1.0";
 
 # Declare prototypes for repository handlers here, implement wherever
 # you like. Specify the appropriate handler in $repo_handlers, below.
