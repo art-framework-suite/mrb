@@ -42,8 +42,8 @@ my $known_suites =
     nu => [qw(nusimdata nuevdb nug4 nugen nurandom nufinder nutools)],
     uboone=> [qw(uboonecode ubutil uboonedata ublite ubana ubreco ubsim
                  ubevt ubraw ubcrt ubcore ubcv ubobj)],
-    sbn => [qw(sbncode sbnobj sbnanaobj sbndata sbndcode sbndutil icaruscode  icarusutil
-               icarusalg  icarus_signal_processing  sbndaq_artdaq_core sbnci)],
+    sbn => [qw(sbncode sbnobj sbnanaobj sbndcode sbndutil icaruscode icarusutil
+               icarusalg icarus_signal_processing sbnci)],
     sbndaq => [qw(sbndaq sbndaq_artdaq sbndaq_artdaq_core sbndaq_xporter
                   sbndaq_minargon sbndaq_online sbndaq_decode)],
     artdaq => [qw(artdaq_core artdaq_core_demo artdaq_utilities
