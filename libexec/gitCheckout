@@ -335,7 +335,7 @@ sub github_repo {
   my ($repo, %extras) = @_;
   # Update the github info hash with updated github org / user.
   $options->{"github-org"}
-    and $repo =~ s&^.*/&$options->{"github-org"}/&;
+    and $repo =~ s&^(.*/)?&$options->{"github-org"}/&;
   return
     { github =>
       {
