@@ -6,7 +6,7 @@ find_package(cetmodules ${MRB_MIN_INTERNAL_CETMODULES_VERSION})
 
 ###########################
 # Project information.
-project(mrb VERSION 6.08.00 LANGUAGES NONE)
+project(mrb VERSION 6.08.01 LANGUAGES NONE)
 
 ####################################
 
