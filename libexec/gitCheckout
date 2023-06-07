@@ -144,7 +144,8 @@ my @known_specs_dune =
    ["dunesw", { github => ["DUNE/dunesw"] }],
    ["duneutil", { github => ["DUNE/duneutil"] }],
    ["dunepdlegacy", { github => ["DUNE/dunepdlegacy"] }],
-   ["protoduneana", { github => ["DUNE/protoduneana"] }]
+   ["protoduneana", { github => ["DUNE/protoduneana"] }],
+   ["webevd", { github => ["DUNE/webevd"] }]
   );
 
 my @known_specs_expt =
@@ -213,7 +214,6 @@ my @known_specs_larsoft =
       larbatch
       larutils
       larsimdnn
-      webevd
       nusystematics
       systematicstools
    );
