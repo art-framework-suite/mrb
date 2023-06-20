@@ -29,7 +29,7 @@ my $default_repo_type = "fnal";
 my $known_suites =
   { larsoft => [qw(larcore lardata larevt larsim larsimrad larsimdnn larg4 larreco larrecodnn
                    larana larexamples lareventdisplay larpandora larfinder
-                   larwirecell larsoft)],
+                   larwirecell larnusystematics larsoft)],
     art => [qw(cetlib_except cetlib fhiclcpp messagefacility hep_concurrency
                canvas canvas_root_io art art_root_io gallery critic)],
     critic => [qw(cetlib_except cetlib hep_concurrency fhiclcpp messagefacility
