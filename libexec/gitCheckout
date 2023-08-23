@@ -145,6 +145,7 @@ my @known_specs_dune =
    ["duneutil", { github => ["DUNE/duneutil"] }],
    ["dunepdlegacy", { github => ["DUNE/dunepdlegacy"] }],
    ["protoduneana", { github => ["DUNE/protoduneana"] }],
+   ["sandreco", { github => ["DUNE/sandreco"] }],
    ["webevd", { github => ["DUNE/webevd"] }]
   );
 
