@@ -528,28 +528,45 @@ print $tfh <<'EOF';
 ##################
 tnotnull SETUP_CETMODULES && unsetup cetmodules
 tnotnull SETUP_CETBUILDTOOLS && unsetup -j cetbuildtools
+EOF
+
+########################################################################
+# Set up cetbuildtools (with -j) first to avoid complaints about
+# cetmodules mismatches, followed by cetmodules.
+
+# Save setup commands to a temporary variable to allow for boilerplate
+# wrapping.
+my $memtmp = "";
+open(my $memhandle, q(>), \$memtmp) or
+  error_exit("couldn't open scalar \$memtmp for write");
+foreach my $pkg qw(cetbuildtools cetmodules) {
+  if (exists $regular_products->{$pkg}) {
+    print_dep_setup_one("$pkg", $regular_products->{$pkg}, $memhandle);
+  }
+}
+close($memhandle);
+
+# If we're setting up cetbuildtools and/or cetmodules, we need some
+# boilerplate wrapping.
+if ($memtmp) {
+  print $tfh <<'EOF'; # Save and clear UPS_OVERRIDE.
 
 # Save and clear UPS_OVERRIDE to avoid trouble.
 tdefined UPS_OVERRIDE_SAFE && unsetenv_ UPS_OVERRIDE_SAFE
 tdefined UPS_OVERRIDE && setenv UPS_OVERRIDE_SAFE "$UPS_OVERRIDE"
 tdefined UPS_OVERRIDE && unsetenv_ UPS_OVERRIDE
 EOF
-
-# Set up cetbuildtools (with -j) first to avoid complaints about
-# cetmodules mismatches.
-foreach my $pkg qw(cetbuildtools cetmodules) {
-  if (exists $regular_products->{$pkg}) {
-    print_dep_setup_one("$pkg", $regular_products->{$pkg}, $tfh);
-  }
-}
-
-print $tfh <<'EOF';
+  print $tfh $memtmp; # Saved setup commands.
+  print $tfh <<'EOF'; # Restore UPS_OVERRIDE.
 
 # Restore any previous value for UPS_OVERRIDE.
 tdefined UPS_OVERRIDE_SAFE && setenv UPS_OVERRIDE "$UPS_OVERRIDE_SAFE"
 tdefined UPS_OVERRIDE_SAFE && unsetenv_ UPS_OVERRIDE_SAFE
 ##################
 EOF
+}
+
+########################################################################
 
 if (my $old_build_dir = $ENV{OLD_MRB_BUILDDIR}) {
   print $tfh <<EOF;
