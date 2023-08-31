@@ -643,7 +643,7 @@ EOF
     # If we have a local checkout of cetmodules, we should bootstrap its
     # Perl dependencies here.
     print $tfh <<'EOF';
-yes n | "$CETMODULES_DIR/libexec/bootstrap-perl-env" > "$CETPKG_BUILD/bootstrap.log"
+( cd "CETPKG_BUILD" && yes n | "$CETMODULES_DIR/libexec/bootstrap-perl-env" > "$CETPKG_BUILD/bootstrap.log" )
 test $? != 0 && echo "ERROR: bootstrap of Perl environment for cetmodules has failed: see $CETPKG_BUILD/bootstrap.log" && return 1 || true
 eval "`perl -I\"$CETPKG_BUILD/$CET_SUBDIR/CPAN/lib/perl5\" -Mlocal::lib=\"$CETPKG_BUILD/$CET_SUBDIR/CPAN\",\"$CETPKG_BUILD/$CET_SUBDIR/cpan_build\"\`test \"\$ss\" = \"csh\" && printf \",--shelltype=csh\"\``"
 test $? != 0 && echo "ERROR: setup of Perl environment for cetmodules has failed" && return 1 || true
