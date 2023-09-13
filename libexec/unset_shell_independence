@@ -1,6 +1,6 @@
 # All shells.
 unalias ifcsh_ endif endifcsh_
-unset ss
+unset ss _allout_1 _allout_2
 # csh only
 test $?shell = 1 && \
     unalias vecho_ set_ unsetenv_ tnotnull nullout return
