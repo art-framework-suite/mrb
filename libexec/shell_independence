@@ -40,6 +40,16 @@ test "$ss" = "sh" && \
         done ; \
         return $sts ;}'
 
+# Set up redirection
+test "$ss" = "csh" && \
+    set _allout_1=">&"
+test "$ss" = "csh" && \
+    set _allout_2=""
+test "$ss" = "sh" && \
+    _allout_1=">"
+test "$ss" = "sh" && \
+    _allout_2="2>&1"
+
 # setenv
 test "$ss" = "sh" && \
     eval 'setenv() { \
