@@ -167,7 +167,7 @@ my @known_specs_nu =
    ["nugen", { github => ["$nu_github/nugen"] }],
    ["nurandom", { github => ["$nu_github/nurandom"] }],
    ["nusimdata", { github => ["$nu_github/nusimdata"] }],
-   ["geant4reweight", { github => ["$nu_github/geant4reweight"] }]
+   ["geant4reweight", { github => ["$nu_github/Geant4Reweight"] }]
   );
 
 my $sbn_github = "SBNSoftware";
