@@ -35,7 +35,7 @@ my $known_suites =
     critic => [qw(cetlib_except cetlib hep_concurrency fhiclcpp messagefacility
                   canvas canvas_root_io art art_root_io gallery critic)],
     dune => [qw(dunecore duneopdet dunesim dunecalib duneprototypes dunedataprep
-                dunereco duneana duneexamples dunesw duneutil protoduneana)],
+                dunereco duneana duneexamples dunesw dunetrigger duneutil protoduneana)],
     gallery => [qw(cetlib_except cetlib hep_concurrency fhiclcpp messagefacility
                    canvas canvas_root_io fhiclpy gallery)],
     larsoftobj => [qw(larcoreobj lardataobj larcorealg lardataalg larvecutils larsoftobj)],
@@ -142,6 +142,7 @@ my @known_specs_dune =
    ["duneana", { github => ["DUNE/duneana"] }],
    ["duneexamples", { github => ["DUNE/duneexamples"] }],
    ["dunesw", { github => ["DUNE/dunesw"] }],
+   ["dunetrigger", { github => ["DUNE/dunetrigger"] }],
    ["duneutil", { github => ["DUNE/duneutil"] }],
    ["dunepdlegacy", { github => ["DUNE/dunepdlegacy"] }],
    ["protoduneana", { github => ["DUNE/protoduneana"] }],
