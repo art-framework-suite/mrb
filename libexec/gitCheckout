@@ -157,6 +157,23 @@ my @known_specs_expt =
    ["lbne_raw_data", { fnal => ["lbne-raw-data"] }]
   );
 
+my @known_specs_uboone =
+  (
+   ["uboonecode", { github => ["uboone/uboonecode"] }],
+   ["uboonedata", { github => ["uboone/uboonedata"] }],
+   ["ubana", { github => ["uboone/ubana"] }],
+   ["ubcore", { github => ["uboone/ubcore"] }],
+   ["ubcrt", { github => ["uboone/ubcrt"] }],
+   ["ubcv", { github => ["uboone/ubcv"] }],
+   ["ubevt", { github => ["uboone/ubevt"] }],
+   ["ublite", { github => ["uboone/ublite"] }],
+   ["ubraw", { github => ["uboone/ubraw"] }],
+   ["ubreco", { github => ["uboone/ubreco"] }],
+   ["ubsim", { github => ["uboone/ubsim"] }],
+   ["ubobj", { github => ["uboone/ubobj"] }],
+   ["ubutil", { github => ["uboone/ubutil"] }]
+  );
+
 # NuSoftHEP
 my $nu_github = "NuSoftHEP";
 my @known_specs_nu =
@@ -229,6 +246,7 @@ my $known_specs =
     @known_specs_nu,
     @known_specs_sbn,
     @known_specs_sbndaq,
+    @known_specs_uboone,
     @known_specs_larsoft
   ];
 
