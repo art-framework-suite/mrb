@@ -139,6 +139,10 @@ my @known_specs_sbndaq =
     prod_info("sbndaq_decode", github_repo("sbndaq-decode", "SBNSoftware"))
   );
 
+my @known_specs_uboone =
+  map { prod_info($_, github_repo($_, "uboone"), fnal_repo($_)); }
+  @{$known_suites->{uboone}} ;
+
 my @known_specs_larsoft =
   map { prod_info($_, github_repo($_, "LArSoft"), fnal_repo($_)); }
   @{$known_suites->{larsoftobj}},
@@ -156,6 +160,7 @@ my @known_specs = (@known_specs_art,
                    @known_specs_expt,
                    @known_specs_sbn,
                    @known_specs_sbndaq,
+		   @known_specs_uboone,
                    @known_specs_larsoft);
 
 my ($known_products); # Initialized on startup.
