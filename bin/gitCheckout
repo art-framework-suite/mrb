@@ -32,6 +32,7 @@ my $known_suites =
     gallery => [qw(cetlib_except cetlib hep_concurrency fhiclcpp messagefacility
                    canvas canvas_root_io fhiclpy gallery)],
     larsoftobj => [qw(larcoreobj lardataobj larcorealg lardataalg larsoftobj)],
+    lariat => [qw(lariatsoft lariatutil lariatfragments)],
     nu => [qw(nusimdata nuevdb nug4 nugen nurandom nutools)],
     uboone=> [qw(uboonecode ubutil uboonedata ublite ubana ubreco ubsim
                  ubevt ubraw ubcrt ubcore ubcv ubobj)],
@@ -114,10 +115,15 @@ my @known_specs_artdaq =
               fnal_repo("mf-extensions-git"))
   );
 
+my @known_specs_lariat =
+  (
+    prod_info("lariatsoft", github_repo("lariatsoft", "lariat")),
+    prod_info("lariatutil", github_repo("lariatutil", "lariat")),
+    prod_info("lariatfragments", github_repo("lariatfragments", "lariat"))
+  );
+
+
 my @known_specs_expt =
-  ( prod_info("lariatfragments",
-              fnal_repo("lariat-online-lariatfragments", "lariat-online")),
-    prod_info("lariatutil", fnal_repo("lardbt-lariatutil", "lardbt")),
     prod_info("garsoft", github_repo("garsoft", "dune")),
     prod_info("garana", github_repo("garana", "dune")),
     prod_info("duneanaobj", github_repo("duneanaobj", "dune")),
@@ -158,6 +164,7 @@ my @known_specs_larsoft =
 my @known_specs = (@known_specs_art,
                    @known_specs_artdaq,
                    @known_specs_expt,
+                   @known_specs_lariat,
                    @known_specs_sbn,
                    @known_specs_sbndaq,
 		   @known_specs_uboone,
