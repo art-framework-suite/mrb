@@ -39,6 +39,7 @@ my $known_suites =
     gallery => [qw(cetlib_except cetlib hep_concurrency fhiclcpp messagefacility
                    canvas canvas_root_io fhiclpy gallery)],
     larsoftobj => [qw(larcoreobj lardataobj larcorealg lardataalg larvecutils larsoftobj)],
+    lariat => [qw(lariatsoft lariatutil lariatfragments)],
     nu => [qw(nusimdata nuevdb nug4 nugen nurandom nufinder nutools)],
     uboone=> [qw(uboonecode ubutil uboonedata ublite ubana ubreco ubsim
                  ubevt ubraw ubcrt ubcore ubcv ubobj)],
@@ -150,10 +151,15 @@ my @known_specs_dune =
    ["webevd", { github => ["DUNE/webevd"] }]
   );
 
+my @known_specs_lariat =
+  (
+   ["lariatsoft", { github => ["lariat/lariatsoft"] }],
+   ["lariatutil", { github => ["lariat/lariatutil"] }],
+   ["lariatfragments", { github => ["lariat/lariatfragments"] }]
+  );
+
 my @known_specs_expt =
   (
-   ["lariatfragments", { fnal => ["lariat-online-lariatfragments", user => "lariat-online"] }],
-   ["lariatutil", { fnal => ["lardbt-lariatutil", user => "lardbt"] }],
    ["lbne_raw_data", { fnal => ["lbne-raw-data"] }]
   );
 
@@ -243,6 +249,7 @@ my $known_specs =
     @known_specs_artdaq,
     @known_specs_dune,
     @known_specs_expt,
+    @known_specs_lariat,
     @known_specs_nu,
     @known_specs_sbn,
     @known_specs_sbndaq,
