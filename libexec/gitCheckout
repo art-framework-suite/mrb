@@ -43,7 +43,7 @@ my $known_suites =
     nu => [qw(nusimdata nuevdb nug4 nugen nurandom nufinder nutools)],
     uboone=> [qw(uboonecode ubutil uboonedata ublite ubana ubreco ubsim
                  ubevt ubraw ubcrt ubcore ubcv ubobj)],
-    sbn => [qw(sbncode sbnobj sbnanaobj sbndcode sbndutil icaruscode icarusutil
+    sbn => [qw(sbncode sbnobj sbnanaobj sbnalg sbndcode sbndutil icaruscode icarusutil
                icarusalg icarus_signal_processing sbnci)],
     sbndaq => [qw(sbndaq sbndaq_artdaq sbndaq_artdaq_core sbndaq_xporter
                   sbndaq_minargon sbndaq_online sbndaq_decode)],
@@ -210,7 +210,8 @@ my @known_specs_sbn =
    ["sbnci", { github => ["$sbn_github/sbnci"] }],
    ["sbndqm", { github => ["$sbn_github/sbndqm"] }],
    ["sbndaq_artdaq_core", { github => ["$sbn_github/sbndaq_artdaq_core"] }],
-   ["sbncode", { github => ["$sbn_github/sbncode", git_args => [ qw(--recurse-submodules) ]] }]
+   ["sbncode", { github => ["$sbn_github/sbncode", git_args => [ qw(--recurse-submodules) ]] }],
+   ["sbnalg", { github => ["$sbn_github/sbnalg", git_args => [ qw(--recurse-submodules) ]] }]
   );
 # Fill in SBN suite members whose product names match their repository
 # names and aren't already in @known_specs_sbn.
