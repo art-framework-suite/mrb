@@ -192,6 +192,7 @@ my @known_specs_nu =
    ["nurandom", { github => ["$nu_github/nurandom"] }],
    ["nusimdata", { github => ["$nu_github/nusimdata"] }],
    ["geant4reweight", { github => ["$nu_github/Geant4Reweight"] }],
+   ["ppfxv2", { github => ["$nu_github/ppfxv2"] }],
    ["ppfx", { github => ["kordosky/ppfx"] }]
   );
 
