@@ -238,6 +238,7 @@ my @known_specs_larsoft =
   @{$known_suites->{larsoftobj}},
   @{$known_suites->{larsoft}},
   qw(
+      larrecoalg
       larpandoracontent
       larbatch
       larutils
